@@ -1,0 +1,29 @@
+{
+  "name": "maizemeals-app",
+  "version": "1.0.0",
+  "description": "Here is a professional, complete `README.md` tailored to your specific stack (Next.js Monorepo + Python Scraper + Supabase).",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npm run dev --prefix web",
+    "scrape": "cd scraper && python3 main.py",
+    "db:start": "npx supabase start",
+    "db:stop": "npx supabase stop",
+    "db:pull-prod": "npx dotenv -e .env -- sh -c 'npx supabase db dump --db-url \"$PROD_DB_URL\" -f supabase/schema.sql && npx supabase db reset'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MaizeMeals/maizemeals-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/MaizeMeals/maizemeals-app/issues"
+  },
+  "homepage": "https://github.com/MaizeMeals/maizemeals-app#readme",
+  "devDependencies": {
+    "dotenv-cli": "^11.0.0",
+    "supabase": "^1.145.4"
+  }
+}

@@ -11,7 +11,7 @@ export default function LoginPage() {
           Please sign in with your umich.edu Google account to continue.
         </p>
         <form action="/auth/login" method="post">
-          <Button className="mt-4">
+          <Button className="mt-4" variant="outline">
             Sign in with Google
           </Button>
         </form>

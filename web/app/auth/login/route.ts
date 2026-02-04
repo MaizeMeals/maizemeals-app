@@ -1,16 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { getURL } from '@/utils/get-url'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
+  const callbackUrl = `${getURL()}/auth/callback`
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      queryParams: {
-        hd: 'umich.edu',
-      },
-      redirectTo: 'http://localhost:3000/auth/callback',
+      queryParams: { hd: 'umich.edu' },
+      redirectTo: callbackUrl,
     },
   })
 

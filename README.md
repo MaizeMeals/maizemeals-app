@@ -1,9 +1,3 @@
-Here is a professional, complete `README.md` tailored to your specific stack (Next.js Monorepo + Python Scraper + Supabase).
-
-It includes the disclaimer you wrote, plus setup instructions that will help anyone (including "Future You") remember how to run the scraper and frontend.
-
----
-
 # MaizeMeals
 
 > **A modern, student-built dining companion for the University of Michigan.**
