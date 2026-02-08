@@ -1,13 +1,21 @@
 import Link from 'next/link';
-import Food24FilledIcon from './icons/Food24FilledIcon';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
-const Logo = () => {
+interface LogoProps {
+  forceWhite?: boolean;
+}
+
+const Logo = ({ forceWhite = false }: LogoProps) => {
   return (
     <Link href="/" className="flex items-center gap-2">
-      <Food24FilledIcon size={36} color="var(--color-maize)" />
-      <div className="text-xl font-bold">
+      <Image src="/logo.svg" alt="MaizeMeals Logo" width={36} height={36} />
+      <div className="text-xl font-bold font-poppins">
         <span className="text-maize">Maize</span>
-        <span className="text-blue">Meals</span>
+        <span className={cn(
+            "transition-colors",
+            forceWhite ? "text-white" : "text-[#004F99]"
+        )}>Meals</span>
       </div>
     </Link>
   );

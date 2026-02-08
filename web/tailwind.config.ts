@@ -18,9 +18,11 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui"],
+        poppins: ["var(--font-poppins)", "sans-serif"],
+      },
       colors: {
-        maize: "hsl(var(--maize))",
-        blue: "hsl(var(--blue))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

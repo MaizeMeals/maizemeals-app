@@ -1,0 +1,67 @@
+"use client"
+
+import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { ChevronRight } from "lucide-react"
+import { DiningHallCards } from "@/components/landing/DiningHallCards"
+
+export function Hero() {
+  return (
+    <section className="relative flex flex-col md:block md:min-h-screen overflow-hidden">
+
+        {/* Immersive Background */}
+        <div className="absolute top-0 inset-x-0 h-[600px] md:h-full z-0">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover transition-opacity duration-700"
+            style={{ objectPosition: 'center 40%' }}
+          >
+            <source src="/videos/campus-drone.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-maize/20 dark:bg-umich-blue/30 blur-[100px] rounded-full -z-10 mix-blend-multiply dark:mix-blend-screen" />
+        </div>
+
+        {/* Hero Content (Title & Buttons) */}
+        <div className="relative h-[600px] flex flex-col justify-center items-center text-center z-10 px-4 md:absolute md:inset-0 md:h-full">
+          <div className="container mx-auto">
+            <Badge className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-1000 bg-umich-blue text-white dark:bg-maize dark:text-umich-blue">
+              v0.1.0 Beta Now Live
+            </Badge>
+
+            <h1 className="text-4xl md:text-7xl font-extrabold tracking-tight text-white mb-6 drop-shadow-sm">
+              Dining at Michigan, <br className="hidden md:block" />
+              <span className="text-maize">Decoded.</span>
+            </h1>
+
+            <p className="max-w-2xl mx-auto text-lg md:text-xl text-slate-300 mb-10 leading-relaxed font-medium">
+              The unofficial <span className="font-semibold text-maize">companion</span> for U-M dining. View real-time menus, track nutrition, and rate food items.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-24">
+              <Button asChild size="lg" className="w-full sm:w-auto shadow-lg shadow-maize/20 bg-maize text-umich-blue hover:bg-maize/80 font-bold">
+                <Link href="/menus">
+                  Find Food Now
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="w-full sm:w-auto bg-white/50 dark:bg-black/50 backdrop-blur-sm border-input">
+                <Link href="/locations">Browse Dining Halls</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Dining Hall Cards - Stacks below video on mobile, Overlays on desktop */}
+        <div className="relative z-10 w-full bg-background py-8 md:bg-transparent md:absolute md:bottom-24 md:py-0">
+           <div className="container mx-auto px-4">
+              <DiningHallCards />
+           </div>
+        </div>
+      </section>
+  )
+}

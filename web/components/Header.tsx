@@ -1,9 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 import { redirect } from 'next/navigation'
-import Logo from './Logo'
-import { ThemeToggle } from './theme-toggle'
+import { HeaderContent } from './HeaderContent'
 
 export default async function Header() {
   const supabase = await createClient()
@@ -19,21 +16,5 @@ export default async function Header() {
     redirect('/login')
   }
 
-  return (
-    <header className="flex items-center justify-between p-4 border-b">
-      <Logo />
-      <div className="flex items-center gap-4">
-        <ThemeToggle />
-        {user ? (
-          <form action={signOut}>
-            <Button variant="outline">Logout</Button>
-          </form>
-        ) : (
-          <Button asChild variant="outline">
-            <Link href="/login">Login</Link>
-          </Button>
-        )}
-      </div>
-    </header>
-  )
+  return <HeaderContent user={user} signOut={signOut} />
 }
