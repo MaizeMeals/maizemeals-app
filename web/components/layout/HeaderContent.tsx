@@ -3,14 +3,17 @@
 import { useState, useEffect } from "react"
 import Link from 'next/link'
 import { Menu, X } from "lucide-react"
-import Logo from './Logo'
-import { ThemeToggle } from './theme-toggle'
-import { UserNav } from './UserNav'
-import { Button } from "./ui/button"
+import { usePathname } from "next/navigation"
+
 import { User } from "@supabase/supabase-js"
 import { cn } from "@/lib/utils"
-import { usePathname } from "next/navigation"
+
 import { useAnalytics } from "@/hooks/use-analytics"
+
+import Logo from '@/components/branding/Logo'
+import { ThemeToggle } from '@/components/layout/theme-toggle'
+import { UserNav } from '@/components/layout/UserNav'
+import { Button } from "@/components/ui/button"
 
 interface HeaderContentProps {
   user: User | null

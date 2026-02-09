@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { TrendingUp, Leaf, Dumbbell, Star, Clock, Users } from "lucide-react"
-import { MaizeIcon } from "@/components/MaizeIcon"
+import { MaizeIcon } from "@/components/branding/MaizeIcon"
 import { useAnalytics } from "@/hooks/use-analytics"
 
 export function DiningHallCards() {
