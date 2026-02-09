@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react"
 import Link from 'next/link'
+import { Menu, X } from "lucide-react"
 import Logo from './Logo'
 import { ThemeToggle } from './theme-toggle'
 import { UserNav } from './UserNav'
+import { Button } from "./ui/button"
 import { User } from "@supabase/supabase-js"
 import { cn } from "@/lib/utils"
 import { usePathname } from "next/navigation"
@@ -16,19 +18,25 @@ interface HeaderContentProps {
 
 export function HeaderContent({ user, signOut }: HeaderContentProps) {
   const [isScrolled, setIsScrolled] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
   const isLandingPage = pathname === "/"
 
   useEffect(() => {
     const handleScroll = () => {
-      const heroHeight = window.innerHeight - 80; 
+      const heroHeight = window.innerHeight - 80;
       setIsScrolled(window.scrollY > heroHeight)
     }
 
     window.addEventListener("scroll", handleScroll)
-    handleScroll() 
+    handleScroll()
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [pathname])
 
   const navLinks = [
     { name: 'Menus', href: '/menus' },
@@ -36,15 +44,20 @@ export function HeaderContent({ user, signOut }: HeaderContentProps) {
     { name: 'Nutrition', href: '/nutrition' },
   ]
 
-  // Header is transparent ONLY on landing page when at the top
-  const isTransparent = isLandingPage && !isScrolled
+  // Header is transparent ONLY on landing page when at the top AND mobile menu is closed
+  const isTransparent = isLandingPage && !isScrolled && !isMobileMenuOpen
 
   return (
     <header className={cn(
-        "fixed top-0 z-50 w-full transition-all duration-300 border-b",
-        !isTransparent 
-            ? "bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-border" 
-            : "bg-black/20 backdrop-blur-md border-white/10"
+      "fixed top-0 z-50 w-full transition-all duration-300 border-b transform-gpu",
+      "isolate z-50",
+      "will-change-[backdrop-filter]",
+      "[backface-visibility:hidden]",
+        isMobileMenuOpen
+          ? "bg-background border-border"
+          : !isTransparent
+            ? "bg-background/80 backdrop-blur backdrop-saturate-150 supports-[backdrop-filter]:bg-background/60 border-border"
+            : "bg-black/30 backdrop-blur-xl backdrop-saturate-150 border-white/10"
     )}>
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-6">
@@ -56,8 +69,8 @@ export function HeaderContent({ user, signOut }: HeaderContentProps) {
                         href={link.href}
                         className={cn(
                             "transition-colors",
-                            !isTransparent 
-                                ? "hover:text-maize text-foreground/80" 
+                            !isTransparent
+                                ? "hover:text-maize text-foreground/80"
                                 : "hover:text-maize text-white/90"
                         )}
                     >
@@ -68,10 +81,45 @@ export function HeaderContent({ user, signOut }: HeaderContentProps) {
         </div>
 
         <div className="flex items-center gap-4">
-          <ThemeToggle />
+          <ThemeToggle forceWhite={isTransparent} />
           <UserNav user={user} signOut={signOut} forceWhite={isTransparent} />
+
+          {/* Mobile Menu Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "md:hidden",
+              isTransparent ? "text-white hover:bg-white/20" : ""
+            )}
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
+            <span className="sr-only">Toggle menu</span>
+          </Button>
         </div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t border-border bg-background px-4 py-4 shadow-lg animate-in slide-in-from-top-2">
+          <nav className="flex flex-col gap-4">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-base font-medium text-foreground/80 hover:text-maize transition-colors py-2"
+              >
+                {link.name}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      )}
     </header>
   )
 }

@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ChevronRight } from "lucide-react"
 import { DiningHallCards } from "@/components/landing/DiningHallCards"
@@ -29,10 +28,6 @@ export function Hero() {
         {/* Hero Content (Title & Buttons) */}
         <div className="relative h-[600px] flex flex-col justify-center items-center text-center z-10 px-4 md:absolute md:inset-0 md:h-full">
           <div className="container mx-auto">
-            <Badge className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-1000 bg-umich-blue text-white dark:bg-maize dark:text-umich-blue">
-              v0.1.0 Beta Now Live
-            </Badge>
-
             <h1 className="text-4xl md:text-7xl font-extrabold tracking-tight text-white mb-6 drop-shadow-sm">
               Dining at Michigan, <br className="hidden md:block" />
               <span className="text-maize">Decoded.</span>
@@ -49,7 +44,7 @@ export function Hero() {
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="w-full sm:w-auto bg-white/50 dark:bg-black/50 backdrop-blur-sm border-input">
+              <Button asChild variant="outline" size="lg" className="w-full sm:w-auto bg-white/50 dark:bg-black/50 backdrop-blur-sm border-input transform-gpu">
                 <Link href="/locations">Browse Dining Halls</Link>
               </Button>
             </div>

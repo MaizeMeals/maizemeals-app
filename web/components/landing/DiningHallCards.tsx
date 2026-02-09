@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { TrendingUp, Leaf, Dumbbell, Star, Clock, Users } from "lucide-react"
 import { MaizeIcon } from "@/components/MaizeIcon"
 

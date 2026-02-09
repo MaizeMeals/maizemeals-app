@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { MaizeIcon } from './MaizeIcon';
 
 interface LogoProps {
   forceWhite?: boolean;
@@ -8,13 +8,13 @@ interface LogoProps {
 
 const Logo = ({ forceWhite = false }: LogoProps) => {
   return (
-    <Link href="/" className="flex items-center gap-2">
-      <Image src="/logo.svg" alt="MaizeMeals Logo" width={36} height={36} />
-      <div className="text-xl font-bold font-poppins">
+    <Link href="/" className="flex items-center gap-1.5">
+      <MaizeIcon forceWhite={forceWhite} className="w-7 h-7 shrink-0" />
+      <div className="text-lg font-bold font-poppins">
         <span className="text-maize">Maize</span>
         <span className={cn(
             "transition-colors",
-            forceWhite ? "text-white" : "text-[#004F99]"
+            forceWhite ? "text-white" : "text-umich-blue dark:text-white"
         )}>Meals</span>
       </div>
     </Link>

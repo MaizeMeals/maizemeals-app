@@ -34,8 +34,8 @@ export function UserNav({ user, signOut, forceWhite = false }: UserNavProps) {
       <div className="flex items-center gap-2">
         <Button asChild variant="ghost" className={cn(
           "hidden sm:inline-flex",
-          forceWhite 
-            ? "text-white/90 hover:bg-white/10 hover:text-white" 
+          forceWhite
+            ? "text-white/90 hover:bg-white/10 hover:text-white"
             : "hover:bg-muted hover:text-foreground"
         )}>
           <Link href="/login">Log in</Link>
@@ -47,8 +47,13 @@ export function UserNav({ user, signOut, forceWhite = false }: UserNavProps) {
     )
   }
 
-  const avatarUrl = user.user_metadata?.avatar_url
-  const fullName = user.user_metadata?.full_name || user.email
+  const meta = user.user_metadata || {}
+  const avatarUrl = meta.avatar_url
+  const name =
+    meta.full_name?.split(' ')[0] ||
+    meta.name?.split(' ')[0] ||
+    user.email?.split('@')[0] ||
+    "User"
 
   return (
     <div className="relative" ref={menuRef}>
@@ -56,12 +61,15 @@ export function UserNav({ user, signOut, forceWhite = false }: UserNavProps) {
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "flex items-center gap-2 p-1 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring",
-          forceWhite ? "hover:bg-white/10" : "hover:bg-accent"
+          forceWhite ? "hover:bg-white/10 text-white hover:text-white" : "hover:bg-accent"
         )}
       >
-        <div className="h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center border border-border">
+        <div className={cn(
+            "h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center border",
+            forceWhite ? "border-white/20" : "border-border"
+        )}>
           {avatarUrl ? (
-            <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+            <img src={avatarUrl} alt="Avatar" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
           ) : (
             <UserIcon className="h-5 w-5 text-muted-foreground" />
           )}
@@ -70,7 +78,7 @@ export function UserNav({ user, signOut, forceWhite = false }: UserNavProps) {
           "text-sm font-medium hidden md:block max-w-[100px] truncate",
           forceWhite ? "text-white/90" : "text-foreground"
         )}>
-          {fullName}
+          {name}
         </span>
         <ChevronDown className={cn(
           "h-4 w-4 transition-transform",
