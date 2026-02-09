@@ -6,6 +6,7 @@ import { User } from "@supabase/supabase-js"
 import { Button } from "@/components/ui/button"
 import { User as UserIcon, Settings, LogOut, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useAnalytics } from "@/hooks/use-analytics"
 
 interface UserNavProps {
   user: User | null
@@ -16,6 +17,13 @@ interface UserNavProps {
 export function UserNav({ user, signOut, forceWhite = false }: UserNavProps) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  const { track, reset } = useAnalytics()
+
+  const handleLogout = () => {
+    track('logout_clicked')
+    reset()
+  }
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -103,6 +111,7 @@ export function UserNav({ user, signOut, forceWhite = false }: UserNavProps) {
           <form action={signOut} className="w-full">
             <button
                 type="submit"
+                onClick={handleLogout}
                 className="flex items-center w-full px-2 py-1.5 text-sm rounded-sm hover:bg-destructive hover:text-destructive-foreground text-red-500 transition-colors"
             >
                 <LogOut className="mr-2 h-4 w-4" />

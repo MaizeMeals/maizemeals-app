@@ -10,6 +10,7 @@ import { Button } from "./ui/button"
 import { User } from "@supabase/supabase-js"
 import { cn } from "@/lib/utils"
 import { usePathname } from "next/navigation"
+import { useAnalytics } from "@/hooks/use-analytics"
 
 interface HeaderContentProps {
   user: User | null
@@ -17,10 +18,30 @@ interface HeaderContentProps {
 }
 
 export function HeaderContent({ user, signOut }: HeaderContentProps) {
+  const { track } = useAnalytics()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
   const isLandingPage = pathname === "/"
+
+  const handleMobileMenuToggle = () => {
+    const newState = !isMobileMenuOpen
+    setIsMobileMenuOpen(newState)
+    if (newState) {
+      track('mobile_menu_opened', {
+        current_page: pathname
+      })
+    }
+  }
+
+  const handleNavLinkClick = (linkName: string, linkHref: string, isMobile: boolean) => {
+    track('nav_link_clicked', {
+      link_name: linkName,
+      link_href: linkHref,
+      is_mobile: isMobile,
+      current_page: pathname
+    })
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -67,6 +88,7 @@ export function HeaderContent({ user, signOut }: HeaderContentProps) {
                     <Link
                         key={link.href}
                         href={link.href}
+                        onClick={() => handleNavLinkClick(link.name, link.href, false)}
                         className={cn(
                             "transition-colors",
                             !isTransparent
@@ -92,7 +114,7 @@ export function HeaderContent({ user, signOut }: HeaderContentProps) {
               "md:hidden",
               isTransparent ? "text-white hover:bg-white/20" : ""
             )}
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            onClick={handleMobileMenuToggle}
           >
             {isMobileMenuOpen ? (
               <X className="h-6 w-6" />
@@ -112,6 +134,7 @@ export function HeaderContent({ user, signOut }: HeaderContentProps) {
               <Link
                 key={link.href}
                 href={link.href}
+                onClick={() => handleNavLinkClick(link.name, link.href, true)}
                 className="text-base font-medium text-foreground/80 hover:text-maize transition-colors py-2"
               >
                 {link.name}

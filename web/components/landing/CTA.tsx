@@ -1,7 +1,26 @@
+'use client'
+
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useAnalytics } from "@/hooks/use-analytics"
 
 export function CTA() {
+  const { track } = useAnalytics()
+
+  const handleGetStartedClick = () => {
+    track('cta_get_started_clicked', {
+      section: 'landing_cta',
+      destination: '/login'
+    })
+  }
+
+  const handleViewMenuClick = () => {
+    track('cta_view_menu_clicked', {
+      section: 'landing_cta',
+      destination: '/menus'
+    })
+  }
+
   return (
     <section className="py-24 bg-background border-t border-border">
         <div className="container mx-auto px-4">
@@ -28,10 +47,10 @@ export function CTA() {
             </p>
             <div className="relative z-10 flex flex-col sm:flex-row justify-center gap-4">
               <Button asChild size="lg" className="bg-maize text-umich-blue hover:bg-maize/90 font-bold">
-                <Link href="/login">Get Started</Link>
+                <Link href="/login" onClick={handleGetStartedClick}>Get Started</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-white/20 bg-transparent text-white hover:bg-white/10 dark:hover:bg-white/10">
-                <Link href="/menus">View Today's Menu</Link>
+                <Link href="/menus" onClick={handleViewMenuClick}>View Today's Menu</Link>
               </Button>
             </div>
           </div>

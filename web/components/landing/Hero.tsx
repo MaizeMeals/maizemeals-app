@@ -4,8 +4,25 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ChevronRight } from "lucide-react"
 import { DiningHallCards } from "@/components/landing/DiningHallCards"
+import { useAnalytics } from "@/hooks/use-analytics"
 
 export function Hero() {
+  const { track } = useAnalytics()
+
+  const handleFindFoodClick = () => {
+    track('hero_find_food_clicked', {
+      section: 'hero',
+      destination: '/menus'
+    })
+  }
+
+  const handleBrowseHallsClick = () => {
+    track('hero_browse_halls_clicked', {
+      section: 'hero',
+      destination: '/locations'
+    })
+  }
+
   return (
     <section className="relative flex flex-col md:block md:min-h-screen overflow-hidden">
 
@@ -39,13 +56,13 @@ export function Hero() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-24">
               <Button asChild size="lg" className="w-full sm:w-auto shadow-lg shadow-maize/20 bg-maize text-umich-blue hover:bg-maize/80 font-bold">
-                <Link href="/menus">
+                <Link href="/menus" onClick={handleFindFoodClick}>
                   Find Food Now
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="w-full sm:w-auto bg-white/50 dark:bg-black/50 backdrop-blur-sm border-input transform-gpu">
-                <Link href="/locations">Browse Dining Halls</Link>
+                <Link href="/locations" onClick={handleBrowseHallsClick}>Browse Dining Halls</Link>
               </Button>
             </div>
           </div>

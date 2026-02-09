@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { HeaderContent } from './HeaderContent'
+import { HeaderContent } from '../HeaderContent'
 
 export default async function Header() {
   const supabase = await createClient()

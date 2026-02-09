@@ -50,3 +50,58 @@ This is a student-focused dining companion app for the University of Michigan. I
 - **Start Web:** `npm run dev` (in `/web`)
 - **Run Scraper:** `python main.py` (in `/scraper`)
 - **Update DB Types:** `npx supabase gen types typescript --local > web/types/supabase.ts`
+
+---
+
+## 📊 Analytics Architecture (PostHog)
+
+The project uses **PostHog** for product analytics, session replay, and feature flags.
+
+### **1. Core Principles**
+
+* **Adapter Pattern:** Do **not** import `posthog-js` directly in components. Always use the custom `useAnalytics` hook. This decouples our code from the vendor.
+* **Privacy First:** We **never** send PII (Email, Name, Phone) to PostHog. Users are identified solely by their Supabase UUID.
+* **Proxying:** Traffic is routed through `/ingest` (via `next.config.ts` rewrites) to bypass ad-blockers and ensure data accuracy.
+
+### **2. Client-Side Usage**
+
+Use the `useAnalytics` hook for all frontend interactions.
+
+```tsx
+import { useAnalytics } from "@/hooks/use-analytics"
+
+export function MyComponent() {
+  const { track } = useAnalytics()
+
+  const handleClick = () => {
+    track('feature_clicked', {
+      location: 'sidebar',
+      status: 'active'
+    })
+  }
+}
+
+```
+
+### **3. Server-Side Usage (API Routes)**
+
+For backend logic (e.g., Auth callbacks), use the server client.
+
+```typescript
+import { getPostHogClient } from "@/lib/posthog-server"
+
+const posthog = getPostHogClient()
+posthog.capture({
+  distinctId: user.id,
+  event: 'api_action_completed',
+  properties: { ... }
+})
+await posthog.shutdown() // ⚠️ MANDATORY: Flushes events before Vercel kills the lambda
+
+```
+
+### **4. Naming Conventions**
+
+* **Events:** `snake_case` (e.g., `menu_item_viewed`, `crowd_meter_loaded`).
+* **Properties:** `snake_case` (e.g., `dining_hall`, `is_logged_in`).
+* **Feature Flags:** `kebab-case` (e.g., `enable-crowd-meter`).

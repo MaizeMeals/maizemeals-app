@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useAnalytics } from "@/hooks/use-analytics"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -13,9 +14,15 @@ interface ThemeToggleProps {
 
 export function ThemeToggle({ forceWhite }: ThemeToggleProps) {
   const { setTheme, resolvedTheme } = useTheme()
+  const { track } = useAnalytics()
 
   const toggleTheme = () => {
-    setTheme(resolvedTheme === "dark" ? "light" : "dark")
+    const newTheme = resolvedTheme === "dark" ? "light" : "dark"
+    setTheme(newTheme)
+    track('theme_toggled', {
+      from_theme: resolvedTheme,
+      to_theme: newTheme
+    })
   }
 
   return (

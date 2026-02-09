@@ -4,8 +4,20 @@ import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { TrendingUp, Leaf, Dumbbell, Star, Clock, Users } from "lucide-react"
 import { MaizeIcon } from "@/components/MaizeIcon"
+import { useAnalytics } from "@/hooks/use-analytics"
 
 export function DiningHallCards() {
+  const { track } = useAnalytics()
+
+  const handleCardClick = (hallName: string, status: string, capacity: string) => {
+    track('dining_hall_card_clicked', {
+      hall_name: hallName,
+      status: status,
+      capacity: capacity,
+      section: 'landing_live_status'
+    })
+  }
+
   const getHighlightStyle = (type: string) => {
     switch (type) {
       case 'trending':
@@ -92,7 +104,7 @@ export function DiningHallCards() {
             const style = getHighlightStyle(hall.highlight.type);
 
             return (
-                <Card key={hall.name} className="group cursor-pointer hover:border-maize transition-all duration-300 flex flex-col h-full border-border bg-card">
+                <Card key={hall.name} className="group cursor-pointer hover:border-maize transition-all duration-300 flex flex-col h-full border-border bg-card" onClick={() => handleCardClick(hall.name, hall.status, hall.capacity)}>
                 {/* Image Area */}
                 <div className="h-32 w-full bg-muted relative overflow-hidden shrink-0">
                     <img
