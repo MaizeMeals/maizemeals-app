@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ChevronRight } from "lucide-react"
-import { DiningHallCards } from "@/components/landing/DiningHallCards"
 import { useAnalytics } from "@/hooks/use-analytics"
 
 export function Hero() {
@@ -43,7 +42,7 @@ export function Hero() {
         </div>
 
         {/* Hero Content (Title & Buttons) */}
-        <div className="relative h-[600px] flex flex-col justify-center items-center text-center z-10 px-4 md:absolute md:inset-0 md:h-full">
+        <div className="relative h-[600px] flex flex-col justify-center items-center text-center z-10 px-4 pt-16 md:absolute md:inset-0 md:h-full 2xl:pb-0">
           <div className="container mx-auto">
             <h1 className="text-4xl md:text-7xl font-extrabold tracking-tight text-white mb-6 drop-shadow-sm">
               Dining at Michigan, <br className="hidden md:block" />
@@ -56,23 +55,17 @@ export function Hero() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-24">
               <Button asChild size="lg" className="w-full sm:w-auto shadow-lg shadow-maize/20 bg-maize text-umich-blue hover:bg-maize/80 font-bold">
-                <Link href="/menus" onClick={handleFindFoodClick}>
+                <Link href="/menus" onClick={handleFindFoodClick} className="flex items-center gap-2">
+                  <span className="w-4" />
                   Find Food Now
-                  <ChevronRight className="ml-2 h-4 w-4" />
+                  <ChevronRight className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="w-full sm:w-auto bg-white/50 dark:bg-black/50 backdrop-blur-sm border-input transform-gpu">
+              <Button asChild variant="outline" size="lg" className="w-full sm:w-auto bg-white/80 dark:bg-black/50 backdrop-blur-sm border-input transform-gpu">
                 <Link href="/locations" onClick={handleBrowseHallsClick}>Browse Dining Halls</Link>
               </Button>
             </div>
           </div>
-        </div>
-
-        {/* Dining Hall Cards - Stacks below video on mobile, Overlays on desktop */}
-        <div className="relative z-10 w-full bg-background py-8 md:bg-transparent md:absolute md:bottom-24 md:py-0">
-           <div className="container mx-auto px-4">
-              <DiningHallCards />
-           </div>
         </div>
       </section>
   )

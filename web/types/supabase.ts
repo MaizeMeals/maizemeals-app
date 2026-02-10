@@ -7,48 +7,90 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
-      dining_halls: {
+      capacity_logs: {
         Row: {
+          capacity_percentage: number | null
+          dining_hall_id: string
           id: string
-          name: string
-          slug: string
+          patron_count: number | null
+          recorded_at: string | null
         }
         Insert: {
+          capacity_percentage?: number | null
+          dining_hall_id: string
           id?: string
-          name: string
-          slug: string
+          patron_count?: number | null
+          recorded_at?: string | null
         }
         Update: {
+          capacity_percentage?: number | null
+          dining_hall_id?: string
           id?: string
+          patron_count?: number | null
+          recorded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capacity_logs_dining_hall_id_fkey"
+            columns: ["dining_hall_id"]
+            isOneToOne: false
+            referencedRelation: "dining_halls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dining_halls: {
+        Row: {
+          address: string | null
+          display_name: string | null
+          email: string | null
+          id: string
+          image_url: string | null
+          latitude: number | null
+          longitude: number | null
+          max_capacity: number | null
+          name: string
+          official_id: number | null
+          phone: string | null
+          slug: string
+          type: string | null
+        }
+        Insert: {
+          address?: string | null
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          image_url?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          max_capacity?: number | null
+          name: string
+          official_id?: number | null
+          phone?: string | null
+          slug: string
+          type?: string | null
+        }
+        Update: {
+          address?: string | null
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          image_url?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          max_capacity?: number | null
           name?: string
+          official_id?: number | null
+          phone?: string | null
           slug?: string
+          type?: string | null
         }
         Relationships: []
       }
@@ -59,10 +101,15 @@ export type Database = {
           dietary_tags: string[] | null
           dining_hall_id: string
           id: string
+          is_mhealthy: boolean | null
+          item_type: string | null
           macronutrients: Json | null
           name: string
           normalized_name: string | null
           nutrition_score: number | null
+          serving_size: string | null
+          station: string | null
+          updated_at: string | null
         }
         Insert: {
           avg_rating?: number | null
@@ -70,10 +117,15 @@ export type Database = {
           dietary_tags?: string[] | null
           dining_hall_id: string
           id?: string
+          is_mhealthy?: boolean | null
+          item_type?: string | null
           macronutrients?: Json | null
           name: string
           normalized_name?: string | null
           nutrition_score?: number | null
+          serving_size?: string | null
+          station?: string | null
+          updated_at?: string | null
         }
         Update: {
           avg_rating?: number | null
@@ -81,10 +133,15 @@ export type Database = {
           dietary_tags?: string[] | null
           dining_hall_id?: string
           id?: string
+          is_mhealthy?: boolean | null
+          item_type?: string | null
           macronutrients?: Json | null
           name?: string
           normalized_name?: string | null
           nutrition_score?: number | null
+          serving_size?: string | null
+          station?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -100,23 +157,29 @@ export type Database = {
         Row: {
           date: string
           dining_hall_id: string
+          end_time: string | null
           id: string
           item_id: string
           meal: string
+          start_time: string | null
         }
         Insert: {
           date?: string
           dining_hall_id: string
+          end_time?: string | null
           id?: string
           item_id: string
           meal: string
+          start_time?: string | null
         }
         Update: {
           date?: string
           dining_hall_id?: string
+          end_time?: string | null
           id?: string
           item_id?: string
           meal?: string
+          start_time?: string | null
         }
         Relationships: [
           {
@@ -131,6 +194,44 @@ export type Database = {
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operating_hours: {
+        Row: {
+          created_at: string | null
+          date: string
+          dining_hall_id: string
+          end_time: string
+          event_name: string | null
+          id: string
+          start_time: string
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          dining_hall_id: string
+          end_time: string
+          event_name?: string | null
+          id?: string
+          start_time: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          dining_hall_id?: string
+          end_time?: string
+          event_name?: string | null
+          id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operating_hours_dining_hall_id_fkey"
+            columns: ["dining_hall_id"]
+            isOneToOne: false
+            referencedRelation: "dining_halls"
             referencedColumns: ["id"]
           },
         ]
@@ -169,6 +270,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_profiles: {
+        Row: {
+          created_at: string | null
+          health_focus: number | null
+          protein_priority: number | null
+          rating_sensitivity: number | null
+          restrictions: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          health_focus?: number | null
+          protein_priority?: number | null
+          rating_sensitivity?: number | null
+          restrictions?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          health_focus?: number | null
+          protein_priority?: number | null
+          rating_sensitivity?: number | null
+          restrictions?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_ratings: {
         Row: {
@@ -339,9 +470,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

@@ -1,168 +1,96 @@
-from bs4 import BeautifulSoup
-import os
-import datetime
-from supabase import create_client, Client
-from dotenv import load_dotenv
-import cloudscraper
+import time
+import argparse
+from datetime import datetime, timedelta
+from lib.api import fetch_locations, fetch_meal_hours, fetch_menu_data
+from lib.db import delete_events_for_date, get_supabase_client, upsert_dining_hall, upsert_items, get_hall_id_map, upsert_operating_hours
 
-# 1. Setup Supabase Connection
-load_dotenv()
-url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
+def run_scraper(days_ahead=1):
+    print(f"🚀 Starting Scrape for next {days_ahead} day(s)...")
+    supabase = get_supabase_client()
 
-if not url or not key:
-    raise ValueError("❌ Missing SUPABASE_URL or SUPABASE_KEY in .env file")
+    # --- PHASE 1: SYNC LOCATIONS ---
+    print("--- 1. Syncing Dining Locations ---")
+    locations = fetch_locations()
+    for loc in locations:
+        upsert_dining_hall(supabase, loc)
 
-supabase: Client = create_client(url, key)
+    hall_map = get_hall_id_map(supabase)
+    print(f"✓ Synced {len(hall_map)} locations.")
 
-def scrape_bursley_live():
-    print("🚀 Starting Live Scrape of Bursley...")
+    # --- PHASE 2: SCRAPE MENUS (Loop through dates) ---
+    today = datetime.now()
 
-    # --- STEP 1: GET DINING HALL ID ---
-    # We use the slug because that is stable and matches the URL
-    target_slug = "bursley"
+    for i in range(days_ahead):
+        # Calculate the target date
+        target_date = today + timedelta(days=i)
 
-    # Fetch the UUID for Bursley from our database
-    response = supabase.table('dining_halls').select('id').eq('slug', target_slug).execute()
+        # Format dates
+        api_date_str = target_date.strftime("%d-%m-%Y") # API: 09-02-2026
+        db_date_str = target_date.strftime("%Y-%m-%d")  # DB: 2026-02-09
 
-    if not response.data:
-        print(f"❌ Error: Could not find dining hall with slug '{target_slug}'. Did you run the SQL seed script?")
-        return
+        print(f"\n📅 Processing Date: {db_date_str} ({api_date_str})")
 
-    hall_uuid = response.data[0]['id']
-    print(f"✅ Found Dining Hall ID: {hall_uuid}")
+        for loc in locations:
+            official_id = loc['official_id']
+            hall_uuid = hall_map.get(official_id)
 
-    # --- STEP 2: FETCH HTML ---
-    target_url = f"https://dining.umich.edu/menus-locations/dining-halls/{target_slug}/"
-    scraper = cloudscraper.create_scraper()
+            if not hall_uuid:
+                # print(f"⚠ Warning: No UUID found for {loc['name']}")
+                continue
 
-    try:
-        response = scraper.get(target_url)
-    except Exception as e:
-        print(f"❌ Request failed: {e}")
-        return
+            # A. Get Open Hours (For ALL locations: Cafes, Markets, Halls)
+            schedule = fetch_meal_hours(loc['name'], api_date_str)
 
-    soup = BeautifulSoup(response.content, 'html.parser')
+            if schedule:
+                upsert_operating_hours(supabase, hall_uuid, schedule, db_date_str)
+            else:
+                # If closed, skip everything else for this location
+                continue
 
-    # --- STEP 3: PARSE MENUS ---
-    menu_container = soup.find('div', id='mdining-items')
-    if not menu_container:
-        print("❌ Error: Could not find <div id='mdining-items'>. The page structure might have changed.")
-        return
+            # B. Only fetch specific food items for Dining Halls
+            if loc['type'] != 'DINING HALLS':
+                continue
 
-    # U-M structure: <h3>Meal Name</h3> immediately before <div class="courses">
-    course_divs = menu_container.find_all('div', class_='courses')
+            print(f"   Processing Menu: {loc['display_name']}...")
 
-    items_processed = 0
+            # Clear old events to prevent duplicates/stale data
+            delete_events_for_date(supabase, hall_uuid, db_date_str)
 
-    for course_div in course_divs:
-        # 1. Find Meal Name (Breakfast, Lunch, Dinner)
-        # It lives in the <h3> tag immediately *before* the content div
-        header = course_div.find_previous_sibling('h3')
-        raw_meal_name = header.get_text(strip=True) if header else "Unknown"
+            for event in schedule:
+                meal_name = event['meal']
+                menu_items = fetch_menu_data(loc['name'], api_date_str, meal_name)
 
-        # Normalize Meal Name for DB Enum (Breakfast, Brunch, Lunch, Dinner)
-        if "Breakfast" in raw_meal_name: meal_name = "Breakfast"
-        elif "Brunch" in raw_meal_name: meal_name = "Brunch"
-        elif "Lunch" in raw_meal_name: meal_name = "Lunch"
-        elif "Dinner" in raw_meal_name: meal_name = "Dinner"
-        else:
-            print(f"⚠️ Skipping unknown meal type: {raw_meal_name}")
-            continue
+                if menu_items:
+                    # Extract Times from ISO string
+                    start_iso = event['start_time']
+                    end_iso = event['end_time']
+                    start_time = start_iso.split('T')[1].split('-')[0]
+                    end_time = end_iso.split('T')[1].split('-')[0]
 
-        print(f"\n📂 Processing Meal: {meal_name}")
-
-        # 2. Find Stations (The logic you requested to be fixed)
-        # Inside <div class="courses"> is <ul class="courses_wrapper">
-        station_list = course_div.find('ul', class_='courses_wrapper')
-        if not station_list: continue
-
-        # Each station is an <li> inside that list
-        stations = station_list.find_all('li', recursive=False)
-
-        for station in stations:
-            # Station Name is in an <h4>
-            station_header = station.find('h4')
-            if not station_header: continue
-
-            # 3. Find Items
-            # Inside the station <li> is a <ul class="items">
-            items_ul = station.find('ul', class_='items')
-            if not items_ul: continue
-
-            item_lis = items_ul.find_all('li', recursive=False)
-
-            for item_li in item_lis:
-                name_div = item_li.find('div', class_='item-name')
-                if not name_div: continue
-
-                item_name = name_div.get_text(strip=True)
-
-                # Extract Traits (Classes)
-                traits = []
-                nutrition_score = None # Default to None (null in DB)
-
-                classes = item_li.get('class', [])
-                for cls in classes:
-                    if cls.startswith('trait-'):
-                        clean_tag = cls.replace('trait-', '')
-                        traits.append(clean_tag)
-
-                        # LOGIC: Extract Score from "mhealthyX" tag
-                        if clean_tag.startswith('mhealthy'):
-                            try:
-                                # "mhealthy5" -> 5
-                                nutrition_score = int(clean_tag.replace('mhealthy', ''))
-                            except ValueError:
-                                pass
-
-                    elif cls.startswith('allergen-'):
-                        traits.append(f"contains-{cls.replace('allergen-', '')}")
-
-                # --- STEP 4: UPSERT ITEM ---
-                # Check if item exists (to get its ID)
-                existing_item = supabase.table('items') \
-                    .select('id') \
-                    .eq('dining_hall_id', hall_uuid) \
-                    .eq('name', item_name) \
-                    .execute()
-
-                if existing_item.data:
-                    item_id = existing_item.data[0]['id']
-                    # OPTIONAL: Update the score if it was missing before
-                    supabase.table('items').update({
-                        "nutrition_score": nutrition_score,
-                        "dietary_tags": traits
-                    }).eq('id', item_id).execute()
-                else:
-                    # Create new item with SCORE and TAGS
-                    new_item = supabase.table('items').insert({
-                        "dining_hall_id": hall_uuid,
-                        "name": item_name,
-                        "normalized_name": item_name.lower(),
-                        "dietary_tags": traits,
-                        "nutrition_score": nutrition_score, # <--- Saving it now!
-                        "avg_rating": 0
-                    }).execute()
-                    item_id = new_item.data[0]['id']
-
-                # --- STEP 5: SCHEDULE EVENT ---
-                # Link to Today
-                try:
-                    supabase.table('menu_events').insert({
-                        "item_id": item_id,
-                        "dining_hall_id": hall_uuid,
+                    event_data = {
                         "meal": meal_name,
-                        "date": datetime.date.today().isoformat()
-                    }).execute()
-                    print(f"   --> Added: {item_name}")
-                    items_processed += 1
-                except Exception as e:
-                    # Duplicate key error means we already added it today. Safe to ignore.
-                    if "duplicate key" not in str(e):
-                        print(f"   ⚠️ Error adding event: {e}")
+                        "date": db_date_str,
+                        "start_time": start_time,
+                        "end_time": end_time
+                    }
 
-    print(f"\n🎉 Finished! Scraped and scheduled {items_processed} items.")
+                    upsert_items(supabase, menu_items, hall_uuid, event_data)
+                    time.sleep(0.5) # Be polite to the API
+
+    print("\n🏁 Scrape Complete!")
 
 if __name__ == "__main__":
-    scrape_bursley_live()
+    # Create the argument parser
+    parser = argparse.ArgumentParser(description="Scrape UMich Dining Menus")
+
+    # Add the --days argument (optional, defaults to 1)
+    parser.add_argument(
+        "--days",
+        type=int,
+        default=1,
+        help="Number of days ahead to scrape (default: 1)"
+    )
+
+    # Parse args and run
+    args = parser.parse_args()
+    run_scraper(days_ahead=args.days)
