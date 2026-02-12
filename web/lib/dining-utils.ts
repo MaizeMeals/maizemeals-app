@@ -11,16 +11,18 @@ export type DiningStatus = {
 
 export const getMacroTags = (item: Item): string[] => {
   const tags: string[] = []
-  
+
   if (!item.macronutrients || typeof item.macronutrients !== 'object') return tags;
-  
+
   const macros = item.macronutrients as Record<string, number>;
   const protein = Number(macros["Protein"]) || 0;
   const fiber = Number(macros["Dietary Fiber"]) || 0;
 
+  const cal = Number(macros["Calories"]);
+
   // Thresholds
-  if (protein >= 12) tags.push("High Protein");
-  if (fiber >= 4) tags.push("High Fiber");
+  if ((protein / cal ) >= 0.085 && cal >= 25) tags.push("High Protein");
+  if ((fiber / cal) >= 0.02) tags.push("High Fiber");
 
   return tags;
 }

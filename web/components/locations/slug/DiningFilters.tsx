@@ -1,12 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Search, SlidersHorizontal, Star, X, Check, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetClose } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet"
 import { DualRangeSlider } from "@/components/ui/dual-slider"
 import { MScaleIndicator } from "./MScaleIndicator"
 import { getDietaryConfig } from "./DietaryTags"
+import { Database } from "@/types/supabase"
+import { MacroHistogram } from "./MacroHistogram"
+
+// Assuming Item type is available here, or import it
+type Item = Database['public']['Tables']['items']['Row']
 
 export type FilterState = {
   search: string
@@ -42,16 +47,87 @@ const DIETARY_OPTIONS = [
   { id: "kosher", label: "Kosher", color: "text-indigo-600 bg-indigo-50 border-indigo-200" },
   { id: "spicy", label: "Spicy", color: "text-red-600 bg-red-50 border-red-200" },
   { id: "highprotein", label: "High Protein", color: "text-rose-600 bg-rose-50 border-rose-200" },
+  { id: "highfiber", label: "High Fiber", color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
 ]
 
 interface DiningFiltersProps {
   filters: FilterState
-  setFilters: (f: FilterState) => void
+  setFilters: React.Dispatch<React.SetStateAction<FilterState>>
+  items: Item[]
 }
 
-export function DiningFilters({ filters, setFilters }: DiningFiltersProps) {
+export function DiningFilters({ filters, setFilters, items }: DiningFiltersProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [tempFilters, setTempFilters] = useState(filters)
+  const [activeCount, setActiveCount] = useState(0);
+
+  // Extract macro data for histograms
+  const allCalories = useMemo(() => items.map(i => {
+      const m = i.macronutrients as Record<string, number>
+      return Number(m?.["Calories"] || 0)
+  }), [items])
+
+  const allProtein = useMemo(() => items.map(i => {
+      const m = i.macronutrients as Record<string, number>
+      return Number(m?.["Protein"] || 0)
+  }), [items])
+
+  const allCarbs = useMemo(() => items.map(i => {
+      const m = i.macronutrients as Record<string, number>
+      return Number(m?.["Total Carbohydrate"] || 0)
+  }), [items])
+
+  // Calculate dynamic maxes based on actual data
+  const maxCalories = useMemo(() => Math.ceil(Math.max(...allCalories, 500) / 50) * 50, [allCalories])
+  const maxProtein = useMemo(() => Math.ceil(Math.max(...allProtein, 50) / 10) * 10, [allProtein])
+  const maxCarbs = useMemo(() => Math.ceil(Math.max(...allCarbs, 50) / 10) * 10, [allCarbs])
+
+  // AUTOMATICALLY UPDATE FILTERS WHEN DATA LOADS
+  useEffect(() => {
+    if (items.length === 0) return
+
+    setFilters((prev) => {
+      // Logic: Only update the upper bound if the user hasn't changed it manually yet.
+      // We check if the current upper bound matches the "Initial" default.
+
+      const newCaloriesMax = prev.macros.calories[1] === INITIAL_FILTERS.macros.calories[1]
+        ? maxCalories
+        : prev.macros.calories[1]
+
+      const newProteinMax = prev.macros.protein[1] === INITIAL_FILTERS.macros.protein[1]
+        ? maxProtein
+        : prev.macros.protein[1]
+
+      const newCarbsMax = prev.macros.carbs[1] === INITIAL_FILTERS.macros.carbs[1]
+        ? maxCarbs
+        : prev.macros.carbs[1]
+
+      return {
+        ...prev,
+        macros: {
+          ...prev.macros,
+          calories: [prev.macros.calories[0], newCaloriesMax] as [number, number],
+          protein: [prev.macros.protein[0], newProteinMax] as [number, number],
+          carbs: [prev.macros.carbs[0], newCarbsMax] as [number, number],
+        }
+      }
+    })
+  }, [maxCalories, maxProtein, maxCarbs, setFilters, items.length])
+
+  // UPDATE ACTIVE FILTER COUNT
+  useEffect(() => {
+    let count = 0;
+
+    if (filters.dietary.length > 0) count += filters.dietary.length;
+    if (filters.search.length > 0) count++;
+    if (filters.minMScale > 1) count++;
+    if (filters.minRating > 0) count++;
+    if (filters.macros.calories[0] > 0 || filters.macros.calories[1] < maxCalories) count++;
+    if (filters.macros.protein[0] > 0 || filters.macros.protein[1] < maxProtein) count++;
+    if (filters.macros.carbs[0] > 0 || filters.macros.carbs[1] < maxCarbs) count++;
+
+    setActiveCount(count);
+  }, [filters, maxCalories, maxProtein, maxCarbs])
 
   const handleOpen = () => {
     setTempFilters(filters)
@@ -64,7 +140,16 @@ export function DiningFilters({ filters, setFilters }: DiningFiltersProps) {
   }
 
   const resetFilters = () => {
-    const reset = { ...INITIAL_FILTERS, search: filters.search } // Keep search term
+    const reset = {
+      ...INITIAL_FILTERS,
+      macros: {
+        ...INITIAL_FILTERS.macros,
+        calories: [0, maxCalories] as [number, number],
+        protein: [0, maxProtein] as [number, number],
+        carbs: [0, maxCarbs] as [number, number],
+      },
+      search: filters.search
+    }
     setTempFilters(reset)
     setFilters(reset) // Apply immediately
   }
@@ -85,22 +170,15 @@ export function DiningFilters({ filters, setFilters }: DiningFiltersProps) {
     setFilters({ ...filters, dietary: next })
   }
 
-  // Count active advanced filters (excluding search and dietary which are visible)
-  const activeCount = 
-    (filters.minRating > 0 ? 1 : 0) +
-    (filters.minMScale > 1 ? 1 : 0) +
-    (filters.macros.calories[1] < 2000 ? 1 : 0) + 
-    (filters.macros.protein[0] > 0 ? 1 : 0);
-
   return (
     <div className="sticky top-16 z-20 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-b border-slate-100 dark:border-slate-800 pb-2 pt-2 transition-all">
       <div className="container mx-auto px-4 space-y-3">
-        
+
         {/* Top Row: Search + Filter Button */}
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
+            <input
               type="text"
               placeholder="Search menu..."
               value={filters.search}
@@ -108,7 +186,7 @@ export function DiningFilters({ filters, setFilters }: DiningFiltersProps) {
               className="w-full h-10 pl-9 pr-4 bg-slate-100 dark:bg-slate-900 border border-transparent focus:border-maize rounded-full text-sm outline-none transition-all"
             />
             {filters.search && (
-                <button 
+                <button
                     onClick={() => setFilters({...filters, search: ""})}
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 bg-slate-200 dark:bg-slate-800 rounded-full"
                 >
@@ -116,7 +194,7 @@ export function DiningFilters({ filters, setFilters }: DiningFiltersProps) {
                 </button>
             )}
           </div>
-          
+
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild onClick={handleOpen}>
               <Button variant="outline" className={`h-10 rounded-full border-slate-200 dark:border-slate-800 px-4 gap-2 ${activeCount > 0 ? 'bg-maize/10 border-maize text-maize-dark' : ''}`}>
@@ -129,8 +207,8 @@ export function DiningFilters({ filters, setFilters }: DiningFiltersProps) {
                 )}
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto">
-              <SheetHeader className="text-left mb-6">
+            <SheetContent side="left" className="w-full sm:max-w-md flex flex-col h-full p-0">
+              <SheetHeader className="text-left px-6 pt-6 pb-2">
                 <SheetTitle className="flex justify-between items-center">
                     <span>Menu Filters</span>
                     <Button variant="ghost" size="sm" onClick={resetFilters} className="text-xs h-8 text-slate-500 gap-1">
@@ -139,7 +217,7 @@ export function DiningFilters({ filters, setFilters }: DiningFiltersProps) {
                 </SheetTitle>
               </SheetHeader>
 
-              <div className="space-y-8 pb-20">
+              <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-8">
                 {/* 1. Dietary */}
                 <section>
                     <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 uppercase tracking-wider">Dietary Preferences</h3>
@@ -149,8 +227,8 @@ export function DiningFilters({ filters, setFilters }: DiningFiltersProps) {
                                 key={opt.id}
                                 onClick={() => toggleDietary(opt.id)}
                                 className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                                    tempFilters.dietary.includes(opt.id) 
-                                    ? "bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900" 
+                                    tempFilters.dietary.includes(opt.id)
+                                    ? "bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900"
                                     : "bg-white text-slate-600 border-slate-200 dark:bg-slate-900 dark:border-slate-800"
                                 }`}
                             >
@@ -185,7 +263,7 @@ export function DiningFilters({ filters, setFilters }: DiningFiltersProps) {
                     <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 uppercase tracking-wider">Nutrition Scale (Min)</h3>
                     <div className="flex items-center gap-4">
                         <div className="flex-1">
-                            <DualRangeSlider 
+                            <DualRangeSlider
                                 min={1} max={6} step={1}
                                 value={[tempFilters.minMScale]}
                                 onValueChange={(val) => setTempFilters({...tempFilters, minMScale: val[0]})}
@@ -207,8 +285,9 @@ export function DiningFilters({ filters, setFilters }: DiningFiltersProps) {
                                 <span className="font-medium text-slate-700 dark:text-slate-300">Calories</span>
                                 <span className="text-slate-500">{tempFilters.macros.calories[0]} - {tempFilters.macros.calories[1]} kcal</span>
                             </div>
-                            <DualRangeSlider 
-                                min={0} max={2000} step={50}
+                            <MacroHistogram data={allCalories} min={0} max={maxCalories} color="fill-slate-300 dark:fill-slate-700" />
+                            <DualRangeSlider
+                                min={0} max={maxCalories} step={50}
                                 value={tempFilters.macros.calories}
                                 onValueChange={(val) => setTempFilters({...tempFilters, macros: {...tempFilters.macros, calories: val as [number, number]}})}
                             />
@@ -218,8 +297,9 @@ export function DiningFilters({ filters, setFilters }: DiningFiltersProps) {
                                 <span className="font-medium text-slate-700 dark:text-slate-300">Protein (g)</span>
                                 <span className="text-slate-500">{tempFilters.macros.protein[0]} - {tempFilters.macros.protein[1]}g</span>
                             </div>
-                            <DualRangeSlider 
-                                min={0} max={100} step={5}
+                            <MacroHistogram data={allProtein} min={0} max={maxProtein} color="fill-rose-300 dark:fill-rose-700" />
+                            <DualRangeSlider
+                                min={0} max={maxProtein} step={5}
                                 value={tempFilters.macros.protein}
                                 onValueChange={(val) => setTempFilters({...tempFilters, macros: {...tempFilters.macros, protein: val as [number, number]}})}
                             />
@@ -229,8 +309,9 @@ export function DiningFilters({ filters, setFilters }: DiningFiltersProps) {
                                 <span className="font-medium text-slate-700 dark:text-slate-300">Carbs (g)</span>
                                 <span className="text-slate-500">{tempFilters.macros.carbs[0]} - {tempFilters.macros.carbs[1]}g</span>
                             </div>
-                            <DualRangeSlider 
-                                min={0} max={150} step={5}
+                            <MacroHistogram data={allCarbs} min={0} max={maxCarbs} color="fill-blue-300 dark:fill-blue-700" />
+                            <DualRangeSlider
+                                min={0} max={maxCarbs} step={5}
                                 value={tempFilters.macros.carbs}
                                 onValueChange={(val) => setTempFilters({...tempFilters, macros: {...tempFilters.macros, carbs: val as [number, number]}})}
                             />
@@ -239,7 +320,7 @@ export function DiningFilters({ filters, setFilters }: DiningFiltersProps) {
                 </section>
               </div>
 
-              <SheetFooter className="absolute bottom-0 left-0 w-full p-4 bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800">
+              <SheetFooter className="p-4 bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 mt-auto">
                  <Button onClick={applyFilters} className="w-full bg-umich-blue hover:bg-umich-blue/90 text-white h-12 rounded-xl text-base font-bold shadow-lg">
                     Show Results
                  </Button>
@@ -250,10 +331,10 @@ export function DiningFilters({ filters, setFilters }: DiningFiltersProps) {
 
         {/* Quick Toggles (Wrapped) */}
         <div className="flex flex-wrap gap-2 pb-1">
-            {DIETARY_OPTIONS.slice(0, 5).map(opt => {
+            {DIETARY_OPTIONS.map(opt => {
                 const config = getDietaryConfig(opt.id)
                 const Icon = config?.icon || Check
-                
+
                 return (
                 <button
                     key={opt.id}

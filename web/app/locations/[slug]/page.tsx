@@ -17,7 +17,7 @@ import { useParams } from "next/navigation"
 export default function LocationPage() {
   const params = useParams()
   const slug = params.slug as string
-  
+
   const { data, loading, error } = useLocationData(slug)
   const [activeTab, setActiveTab] = useState<string>("Lunch")
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
@@ -51,6 +51,7 @@ export default function LocationPage() {
   const { hall, status, menu } = data
   const meals = Object.keys(menu)
   let currentStationGroups = menu[activeTab] || []
+  const allItems = currentStationGroups.flatMap(g => g.items)
 
   // --- Filtering Logic ---
   const filteredGroups = currentStationGroups.map(group => {
@@ -126,23 +127,24 @@ export default function LocationPage() {
     <div className="min-h-screen bg-white dark:bg-slate-950 pb-20">
 
             {/* 1. Hero */}
-            <LocationHero 
-              name={hall.name} 
-              imageUrl={hall.image_url} 
+            <LocationHero
+              name={hall.name}
+              imageUrl={hall.image_url}
               address={hall.address}
               latitude={hall.latitude}
               longitude={hall.longitude}
-              status={status} 
+              status={status}
             />
 
       {/* 2.5 Filters */}
-      <DiningFilters filters={filters} setFilters={setFilters} />
+      <DiningFilters filters={filters} setFilters={setFilters} items={allItems} />
 
       {/* 3. Menu Tabs */}
       <MenuTabs
         meals={meals}
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        hours={data?.hours}
       />
 
       {/* 4. Menu Content */}
@@ -160,7 +162,7 @@ export default function LocationPage() {
           <div className="text-center py-20 text-slate-500">
             <Utensils className="w-12 h-12 mx-auto mb-4 opacity-20" />
             <p>No menu items matching your filters.</p>
-            <button 
+            <button
                 onClick={() => setFilters(INITIAL_FILTERS)}
                 className="text-maize hover:underline text-sm mt-2 font-bold"
             >

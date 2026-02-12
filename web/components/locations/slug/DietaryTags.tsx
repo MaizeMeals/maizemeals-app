@@ -1,4 +1,4 @@
-import { WheatOff, Vegan, Carrot, Beef, Sprout } from "lucide-react"
+import { WheatOff, Vegan, Carrot, Dumbbell, Sprout } from "lucide-react"
 import { FoodHalalIcon } from "@/components/icons/mdi-food-halal"
 import { FoodKosherIcon } from "@/components/icons/mdi-food-kosher"
 import { ChiliMildIcon } from "@/components/icons/mdi-chili-mild"
@@ -20,7 +20,7 @@ export const getDietaryConfig = (tag: string) => {
     case 'vegetarian':
       return { icon: Carrot, color: 'text-orange-500', label: 'Vegetarian', bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-100 dark:border-orange-900' }
     case 'highprotein':
-      return { icon: Beef, color: 'text-rose-600', label: 'High Protein', bg: 'bg-rose-50 dark:bg-rose-950/30', border: 'border-rose-100 dark:border-rose-900' }
+      return { icon: Dumbbell, color: 'text-rose-600', label: 'High Protein', bg: 'bg-rose-50 dark:bg-rose-950/30', border: 'border-rose-100 dark:border-rose-900' }
     case 'highfiber':
       return { icon: Sprout, color: 'text-emerald-600', label: 'High Fiber', bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-100 dark:border-emerald-900' }
     default:

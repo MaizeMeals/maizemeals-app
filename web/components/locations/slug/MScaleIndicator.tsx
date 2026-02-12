@@ -103,11 +103,10 @@ const NutritionInfoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
           onClick={(e) => e.stopPropagation()}
         />
-        <Dialog.Content
-          className="fixed left-[50%] top-[50%] z-[9999] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white dark:bg-slate-900 p-0 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-xl max-h-[90vh] overflow-y-auto border-slate-200 dark:border-slate-800 "
-          onClick={(e) => e.stopPropagation()}
-          onPointerDownOutside={(e) => {
-             // Optional: Prevent closing if interacting with specific outside elements,
+                <Dialog.Content 
+                  className="fixed z-[9999] bg-white dark:bg-slate-900 shadow-lg duration-200 w-full h-full top-0 left-0 md:top-[50%] md:left-[50%] md:w-full md:max-w-lg md:h-auto md:max-h-[90vh] md:translate-x-[-50%] md:translate-y-[-50%] md:rounded-xl md:border border-slate-200 dark:border-slate-800 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 grid overflow-y-auto"
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDownOutside={(e) => {             // Optional: Prevent closing if interacting with specific outside elements,
              // but usually strictly modal behavior is desired.
           }}
         >
