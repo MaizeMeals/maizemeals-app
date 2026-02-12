@@ -67,6 +67,7 @@ export function DiningHallGrid() {
             key={hall.id}
             hall={hall}
             onClick={() => track('card_click', { name: hall.name })}
+            href={`/locations/${hall.slug}`}
           />
         ))}
       </div>

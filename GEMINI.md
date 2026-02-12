@@ -105,3 +105,6 @@ await posthog.shutdown() // ⚠️ MANDATORY: Flushes events before Vercel kills
 * **Events:** `snake_case` (e.g., `menu_item_viewed`, `crowd_meter_loaded`).
 * **Properties:** `snake_case` (e.g., `dining_hall`, `is_logged_in`).
 * **Feature Flags:** `kebab-case` (e.g., `enable-crowd-meter`).
+
+### IMPORTANT: IMPORTING ADDITIOANL COMPONENTS.
+if importing from standard libraries such as shadcn, radix, etc; please feel free to do so; do NOT attempt to build these components from scratch and "re-invent the wheel" simply prompt the user if they can install those components.

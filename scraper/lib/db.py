@@ -62,14 +62,19 @@ def upsert_items(client, items, hall_uuid, meal_event_data):
         return
 
     # FIX 2: Deduplicate Items List
-    # We use a dictionary keyed by Item Name to ensure we only send unique items per batch.
     unique_items_map = {}
 
     for item in items:
         # Determine type (Food vs Header)
         i_type = 'station_header' if (not item['macronutrients'] and item['serving_size'] == 'TITLE') else 'food'
 
-        # Store in map (last writer wins, which is fine for duplicates)
+        # --- NEW FIX: Deduplicate Tags Here ---
+        # 1. Get tags (default to empty list if missing)
+        raw_tags = item.get('dietary_tags', [])
+        # 2. Convert to set to remove duplicates, then back to list
+        # 3. Sort them so ["vegan", "halal"] is always stored in the same order
+        clean_tags = sorted(list(set(raw_tags)))
+
         unique_items_map[item['name']] = {
             "dining_hall_id": hall_uuid,
             "name": item['name'],
@@ -78,7 +83,7 @@ def upsert_items(client, items, hall_uuid, meal_event_data):
             "station": item['station'],
             "macronutrients": item['macronutrients'],
             "is_mhealthy": item['is_mhealthy'],
-            "dietary_tags": item['dietary_tags'],
+            "dietary_tags": clean_tags,  # 👈 Usage of cleaned tags
             "serving_size": item['serving_size'],
             "item_type": i_type
         }
@@ -93,21 +98,22 @@ def upsert_items(client, items, hall_uuid, meal_event_data):
             on_conflict="dining_hall_id, name"
         ).execute()
 
+        # Check if data was returned
+        if not item_res.data:
+            print(f"   ⚠️ No data returned from upsert for {meal_event_data['meal']}")
+            return
+
         saved_items = item_res.data
 
         # FIX 3: Fix Case Sensitivity for Meal Name
-        # API says "BREAKFAST", DB wants "Breakfast"
-        meal_name = meal_event_data['meal'].title() # "LUNCH" -> "Lunch"
-
-        # Just in case: Handle "Light Lunch" or "Late Night" if your DB supports them
-        # If your constraint is strict, you might need to map them manually.
+        meal_name = meal_event_data['meal'].title()
 
         events_payload = []
         for saved_item in saved_items:
             events_payload.append({
                 "dining_hall_id": hall_uuid,
                 "item_id": saved_item['id'],
-                "meal": meal_name,                 # 👈 Using Title Case
+                "meal": meal_name,
                 "date": meal_event_data['date'],
                 "start_time": meal_event_data['start_time'],
                 "end_time": meal_event_data['end_time']

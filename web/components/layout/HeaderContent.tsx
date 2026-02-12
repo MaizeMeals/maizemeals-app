@@ -26,6 +26,7 @@ export function HeaderContent({ user, signOut }: HeaderContentProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const isLandingPage = pathname === "/";
+  const isLocationPage = pathname.startsWith("/locations/");
 
   const handleMobileMenuToggle = () => {
     const newState = !isMobileMenuOpen;
@@ -52,14 +53,21 @@ export function HeaderContent({ user, signOut }: HeaderContentProps) {
 
   useEffect(() => {
     const handleScroll = () => {
-      const heroHeight = window.innerHeight - 80;
-      setIsScrolled(window.scrollY > heroHeight);
+      // Landing page: Full screen video -> Threshold ~ 100vh
+      // Location page: 40vh hero (min 300px) -> Threshold ~ height - header
+      const heroHeight = isLocationPage 
+        ? Math.max(window.innerHeight * 0.4, 300) 
+        : window.innerHeight;
+
+      const threshold = heroHeight - 64;
+      
+      setIsScrolled(window.scrollY > threshold);
     };
 
     window.addEventListener("scroll", handleScroll);
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [isLocationPage]);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -72,20 +80,20 @@ export function HeaderContent({ user, signOut }: HeaderContentProps) {
     { name: "Nutrition", href: "/nutrition" },
   ];
 
-  // Header is transparent ONLY on landing page when at the top AND mobile menu is closed
-  const isTransparent = isLandingPage && !isScrolled && !isMobileMenuOpen;
+  // Header is transparent on Landing OR Location page when at top
+  const isTransparent = (isLandingPage || isLocationPage) && !isScrolled && !isMobileMenuOpen;
 
   return (
     <header
       className={cn(
-        "fixed top-0 z-50 w-full transition-all duration-300 border-b transform-gpu",
+        "fixed top-0 z-50 w-full transition-all duration-300 transform-gpu",
         "isolate z-50",
         "will-change-[backdrop-filter]",
         "backface-hidden",
         isMobileMenuOpen
-          ? "bg-background border-border"
+          ? "bg-background border-border border-b"
           : !isTransparent
-            ? "bg-background/80 backdrop-blur backdrop-saturate-150 supports-backdrop-filter:bg-background/60 border-border"
+            ? "bg-background border-border border-b shadow-sm" // Opaque + Border
             : "bg-black/30 backdrop-blur-xl backdrop-saturate-150 border-white/10",
       )}
     >
