@@ -1,4 +1,5 @@
 import { OperatingHour, Item } from "@/types/dining"
+import { getDynamicTags } from "./filter-utils"
 
 export type DiningStatus = {
   isOpen: boolean
@@ -22,24 +23,6 @@ export const CAPACITY_COLORS: Record<string, string> = {
   red: "text-red-600 dark:text-red-400",
   orange: "text-orange-600 dark:text-orange-400",
   slate: "text-muted-foreground",
-}
-
-export const getMacroTags = (item: Item): string[] => {
-  const tags: string[] = []
-
-  if (!item.macronutrients || typeof item.macronutrients !== 'object') return tags;
-
-  const macros = item.macronutrients as Record<string, number>;
-  const protein = Number(macros["Protein"]) || 0;
-  const fiber = Number(macros["Dietary Fiber"]) || 0;
-
-  const cal = Number(macros["Calories"]);
-
-  // Thresholds
-  if ((protein / cal ) >= 0.085 && cal >= 25) tags.push("High Protein");
-  if ((fiber / cal) >= 0.02) tags.push("High Fiber");
-
-  return tags;
 }
 
 // Helper: Format 24h time to 12h AM/PM
@@ -68,51 +51,75 @@ export function determineHallStatus(shifts: OperatingHour[]): DiningStatus {
   const estNow = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
 
   let bestShift: OperatingHour | null = null;
+  // Helper to parse priority (assuming lower number = higher priority, e.g. Dinner=1, Breakfast=3)
+  // Ensure this matches your actual getPriority logic
+  const getPriority = (name: string) => {
+      const n = name.toLowerCase();
+      if (n.includes('dinner')) return 1;
+      if (n.includes('lunch')) return 2;
+      if (n.includes('breakfast')) return 3;
+      return 4;
+  };
 
   for (const s of shifts) {
-     const [eh, em] = s.end_time.split(':').map(Number);
-     const eDate = new Date(estNow); eDate.setHours(eh, em, 0);
+      // Create date objects for Start (sDate) and End (eDate) of the current shift 's'
+      const [eh, em] = s.end_time.split(':').map(Number);
+      const eDate = new Date(estNow); eDate.setHours(eh, em, 0);
 
-     const [sh, sm] = s.start_time.split(':').map(Number);
-     const sDate = new Date(estNow); sDate.setHours(sh, sm, 0);
+      const [sh, sm] = s.start_time.split(':').map(Number);
+      const sDate = new Date(estNow); sDate.setHours(sh, sm, 0);
 
-     // Filter out shifts that have already ended
-     if (estNow < eDate) {
-         if (!bestShift) {
-             bestShift = s;
-         } else {
-             // --- COMPARISON LOGIC ---
-             const sPriority = getPriority(s.event_name || '');
-             const bestPriority = getPriority(bestShift.event_name || '');
+      // Filter out shifts that have already ended
+      if (estNow < eDate) {
+          if (!bestShift) {
+              bestShift = s;
+          } else {
+              // --- COMPARISON LOGIC ---
+              const sPriority = getPriority(s.event_name || '');
+              const bestPriority = getPriority(bestShift.event_name || '');
 
-             const isSActive = estNow >= sDate;
+              // Date objects for 'bestShift' (bDate)
+              const [bh, bm] = bestShift.start_time.split(':').map(Number);
+              const bDate = new Date(estNow); bDate.setHours(bh, bm, 0);
 
-             const [bh, bm] = bestShift.start_time.split(':').map(Number);
-             const bDate = new Date(estNow); bDate.setHours(bh, bm, 0);
-             const isBestActive = estNow >= bDate;
+              const isSActive = estNow >= sDate;
+              const isBestActive = estNow >= bDate;
 
-             // STARTING SOON CHECK:
-             const minsUntilBest = (bDate.getTime() - estNow.getTime()) / 60000;
-             const isBestStartingSoon = !isBestActive && minsUntilBest > 0 && minsUntilBest < 45;
+              // 1. Prefer ACTIVE over FUTURE
+              if (isSActive && !isBestActive) {
+                  bestShift = s;
+                  continue;
+              }
+              if (!isSActive && isBestActive) {
+                  continue; // Keep current best
+              }
 
-             // If the current best is a High Priority meal starting soon (e.g. Dinner in 5 mins),
-             // DO NOT switch to a low priority active shift (e.g. Kiosk).
-             if (isBestStartingSoon && bestPriority < sPriority) {
-                 continue; // Keep the best shift (Dinner)
-             }
+              // 2. If BOTH are ACTIVE: Use Priority (e.g. choose Dinner over Kiosk)
+              if (isSActive && isBestActive) {
+                  if (sPriority < bestPriority) {
+                      bestShift = s;
+                  }
+                  continue;
+              }
 
-             // If new shift is Active and current best is NOT active (and not starting soon)
-             if (isSActive && !isBestActive && !isBestStartingSoon) {
-                 bestShift = s;
-             }
-             // If both have same status (both active or both future), pick higher priority
-             else if ((isSActive === isBestActive) && (sPriority < bestPriority)) {
-                 bestShift = s;
-             }
-         }
-     }
+              // 3. If BOTH are FUTURE: Use Time Proximity (This was missing!)
+              // If it's 2 AM, pick Breakfast (7 AM) over Dinner (4 PM)
+              if (!isSActive && !isBestActive) {
+                  if (sDate < bDate) {
+                       bestShift = s;
+                  }
+                  // If times are same (rare), use priority as tiebreaker
+                  else if (sDate.getTime() === bDate.getTime() && sPriority < bestPriority) {
+                       bestShift = s;
+                  }
+              }
+          }
+      }
   }
 
+  // Fallback: If no shifts found (e.g. late night after all shifts ended), use the last one (usually Dinner)
+  // to show "Closed" status correctly, OR handle as "Tomorrow" logic if needed.
+  // For now, defaulting to the last shift is standard for "Closed" state.
   const targetShift = bestShift || shifts[shifts.length - 1];
 
   let status: DiningStatus = {
@@ -141,7 +148,7 @@ export function determineHallStatus(shifts: OperatingHour[]): DiningStatus {
               text: "Closed",
               label: "Closed",
               closesAt: null,
-              color: "red",
+              color: "red", // Or "gray" depending on preference
               details: `Opens ${formatTime(targetShift.start_time)}`
           };
       }

@@ -1,6 +1,6 @@
 import { Star } from "lucide-react"
 import { Item } from "@/types/dining"
-import { getMacroTags } from "@/lib/dining-utils"
+import { getDynamicTags } from "@/lib/filter-utils"
 import { MScaleIndicator } from "./MScaleIndicator"
 import { CarbonFootprint } from "./CarbonFootprint"
 import { DietaryTag } from "./DietaryTags"
@@ -12,10 +12,10 @@ interface FoodItemCardProps {
 
 export function FoodItemCard({ item, onClick }: FoodItemCardProps) {
   const carbonTag = item.dietary_tags?.find(t => t.toLowerCase().startsWith('carbon'))
-  const macroTags = getMacroTags(item)
+  const dynamicTags = getDynamicTags(item)
   const otherTags = Array.from(new Set([
     ...(item.dietary_tags?.filter(t => !t.toLowerCase().startsWith('carbon')) || []),
-    ...macroTags
+    ...dynamicTags
   ]))
 
   return (

@@ -3,6 +3,10 @@ import { FoodHalalIcon } from "@/components/icons/mdi-food-halal"
 import { FoodKosherIcon } from "@/components/icons/mdi-food-kosher"
 import { ChiliMildIcon } from "@/components/icons/mdi-chili-mild"
 
+export const DIETARY_IDS = [
+  "vegan", "vegetarian", "glutenfree", "halal", "kosher", "spicy", "highprotein", "highfiber"
+]
+
 export const getDietaryConfig = (tag: string) => {
   const normalized = tag.toLowerCase().replace(/[^a-z]/g, '')
 

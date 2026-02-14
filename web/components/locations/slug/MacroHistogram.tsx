@@ -1,29 +1,31 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useId } from "react"
 
 interface MacroHistogramProps {
   data: number[]
   min: number
   max: number
   bins?: number
-  height?: number
   color?: string
   selectedRange?: [number, number]
 }
 
-export function MacroHistogram({ 
-  data, 
-  min, 
-  max, 
-  bins = 30, 
-  height = 40,
-  color = "fill-muted",
+export function MacroHistogram({
+  data,
+  min,
+  max,
+  bins = 40, // Increased bins for smoother Airbnb look
+  color = "fill-primary", // Expecting a utility class like "fill-orange-500"
   selectedRange
 }: MacroHistogramProps) {
-  
-  const pathData = useMemo(() => {
-    if (data.length === 0) return ""
+  // 1. Stable ID for ClipPath (Fixes Disappearing Chart)
+  const uuid = useId()
+  const clipPathId = `histogram-clip-${uuid}`
+
+  // 2. Calculate Bar Geometry
+  const bars = useMemo(() => {
+    if (data.length === 0) return []
 
     const binSize = (max - min) / bins
     const counts = new Array(bins).fill(0)
@@ -31,64 +33,86 @@ export function MacroHistogram({
 
     // Populate bins
     data.forEach(val => {
-      if (val >= min && val <= max) {
-        const binIndex = Math.min(Math.floor((val - min) / binSize), bins - 1)
-        counts[binIndex]++
-        if (counts[binIndex] > maxCount) maxCount = counts[binIndex]
-      }
+      // Clamp values to ensure they fall within the visible range
+      const clampedVal = Math.max(min, Math.min(max, val))
+      const binIndex = Math.min(Math.floor((clampedVal - min) / binSize), bins - 1)
+      counts[binIndex]++
+      if (counts[binIndex] > maxCount) maxCount = counts[binIndex]
     })
 
-    if (maxCount === 0) return ""
-    
-    // Generate Bars
+    if (maxCount === 0) return []
+
+    // Map to SVG coordinates (0-100 scale)
     return counts.map((count, i) => {
-      const x = (i / bins) * 100
-      const width = (1 / bins) * 100
-      const barHeight = (count / maxCount) * 100
-      const y = 100 - barHeight
-      
-      // Add a small gap between bars if desired, or keep them flush
-      const gap = 0.5
-      
-      return (
-        <rect
-            key={i}
-            x={x + gap/2}
-            y={y}
-            width={Math.max(0, width - gap)}
-            height={barHeight}
-        />
-      )
+      const heightPercent = (count / maxCount) * 100
+      // Ensure even small values have a tiny bar (2%) so the chart isn't empty
+      const visualHeight = count > 0 ? Math.max(heightPercent, 2) : 0
+
+      return {
+        x: (i / bins) * 100,
+        width: (1 / bins) * 100,
+        y: 100 - visualHeight,
+        height: visualHeight,
+      }
     })
   }, [data, min, max, bins])
 
-  // Calculate clip path based on selected range
-  const clipPathId = useMemo(() => `clip-${Math.random().toString(36).substr(2, 9)}`, [])
-  const rangeX1 = selectedRange ? Math.max(0, ((selectedRange[0] - min) / (max - min)) * 100) : 0
-  const rangeX2 = selectedRange ? Math.min(100, ((selectedRange[1] - min) / (max - min)) * 100) : 100
+  // 3. Calculate Mask Position (0% to 100%)
+  const mask = useMemo(() => {
+    if (!selectedRange) return { x: 0, width: 100 }
+
+    // Convert values to percentages
+    const startPct = Math.max(0, ((selectedRange[0] - min) / (max - min)) * 100)
+    const endPct = Math.min(100, ((selectedRange[1] - min) / (max - min)) * 100)
+
+    return { x: startPct, width: endPct - startPct }
+  }, [selectedRange, min, max])
 
   return (
-    <div className="w-full h-12 mb-[-12px] px-1 relative z-0">
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-            <defs>
-                <clipPath id={clipPathId}>
-                    <rect x={rangeX1} y="0" width={rangeX2 - rangeX1} height="100" />
-                </clipPath>
-            </defs>
-            
-            {/* Background Bars (Unselected) */}
-            <g className="fill-muted/30">
-                {pathData}
-            </g>
-            
-            {/* Foreground Bars (Selected) */}
-            <g className={color} clipPath={`url(#${clipPathId})`}>
-                {pathData}
-            </g>
+    // w-full and h-full allow the parent to control sizing
+    <div className="w-full h-full relative">
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className="w-full h-full overflow-visible block"
+      >
+        <defs>
+          <clipPath id={clipPathId}>
+            <rect x={mask.x} y="0" width={mask.width} height="100" />
+          </clipPath>
+        </defs>
 
-            {/* Baseline Bar */}
-            <rect x="0" y="98" width="100" height="2" className={color} />
-        </svg>
+        {/* Layer 1: Background Bars (Inactive Gray) */}
+        <g className="fill-slate-200 dark:fill-slate-800">
+          {bars.map((bar, i) => (
+            <rect
+              key={`bg-${i}`}
+              x={bar.x + 0.5} // Slight gap offset
+              y={bar.y}
+              width={Math.max(0, bar.width - 0.5)} // Slight gap width
+              height={bar.height}
+              rx="0.5" // Subtle rounded top corners
+            />
+          ))}
+        </g>
+
+        {/* Layer 2: Foreground Bars (Active Color), Masked by ClipPath */}
+        <g className={color} clipPath={`url(#${clipPathId})`}>
+          {bars.map((bar, i) => (
+            <rect
+              key={`fg-${i}`}
+              x={bar.x + 0.5}
+              y={bar.y}
+              width={Math.max(0, bar.width - 0.5)}
+              height={bar.height}
+              rx="0.5"
+            />
+          ))}
+        </g>
+
+        {/* Optional: Bottom Baseline for structure */}
+        <line x1="0" y1="100" x2="100" y2="100" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
+      </svg>
     </div>
   )
 }

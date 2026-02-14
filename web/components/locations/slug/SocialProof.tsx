@@ -12,7 +12,7 @@ export function SocialProof() {
                 3 students rated lunch recently
               </p>
             </div>
-            <button className="text-sm font-medium text-umich-blue dark:text-maize">View All</button>
+            <button className="text-sm font-medium text-primary">View All</button>
          </div>
 
          {/* Horizontal Photo Scroll */}

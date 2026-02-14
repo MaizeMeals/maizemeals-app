@@ -2,7 +2,7 @@
 
 import { Star, X, Camera, ChevronRight, MessageSquarePlus } from "lucide-react"
 import { ItemWithPhotos } from "@/types/dining"
-import { getMacroTags } from "@/lib/dining-utils"
+import { getDynamicTags } from "@/lib/filter-utils"
 import { MScaleIndicator } from "./MScaleIndicator"
 import { CarbonFootprint } from "./CarbonFootprint"
 import { DietaryTag } from "./DietaryTags"
@@ -25,10 +25,10 @@ export function DetailDrawer({ item, isOpen, onClose }: FoodDetailDrawerProps) {
 
   // --- Data Parsing ---
   const carbonTag = item.dietary_tags?.find(t => t.toLowerCase().startsWith('carbon'))
-  const macroTags = getMacroTags(item)
+  const dynamicTags = getDynamicTags(item)
   const otherTags = Array.from(new Set([
     ...(item.dietary_tags?.filter(t => !t.toLowerCase().startsWith('carbon')) || []),
-    ...macroTags
+    ...dynamicTags
   ]))
 
   // UPDATED: Macro Parsing based on your provided JSON structure

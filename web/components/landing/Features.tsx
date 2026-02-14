@@ -14,32 +14,32 @@ export function Features() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <FeatureCard
-              icon={<Search className="h-8 w-8 text-umich-blue dark:text-maize" />}
+              icon={<Search className="h-8 w-8 text-primary" />}
               title="Accurate Menus"
               description="Bypassing the clutter. Get straight to the daily menu for Breakfast, Brunch, Lunch, and Dinner across all 7 dining halls."
             />
             <FeatureCard
-              icon={<MapPin className="h-8 w-8 text-umich-blue dark:text-maize" />}
+              icon={<MapPin className="h-8 w-8 text-primary" />}
               title="Location Specific"
               description="We track items by location. Rate the pizza at Markley differently than the pizza at East Quad. We know the difference."
             />
             <FeatureCard
-              icon={<Flame className="h-8 w-8 text-umich-blue dark:text-maize" />}
+              icon={<Flame className="h-8 w-8 text-primary" />}
               title="Dietary Intelligence"
               description="Filter by Vegan, Halal, Gluten-Free and more. View nutrition scores (1-6) instantly to make smarter choices."
             />
             <FeatureCard
-              icon={<Camera className="h-8 w-8 text-umich-blue dark:text-maize" />}
+              icon={<Camera className="h-8 w-8 text-primary" />}
               title="Visual Menus"
               description="Upload photos of your meal. Help others see what the 'Chef's Special' actually looks like before they walk across campus."
             />
             <FeatureCard
-              icon={<Star className="h-8 w-8 text-umich-blue dark:text-maize" />}
+              icon={<Star className="h-8 w-8 text-primary" />}
               title="Student Ratings"
               description="Trust your peers, not the menu description. Rate items out of 5 stars and see what's trending on campus."
             />
             <FeatureCard
-              icon={<Smartphone className="h-8 w-8 text-umich-blue dark:text-maize" />}
+              icon={<Smartphone className="h-8 w-8 text-primary" />}
               title="Mobile Optimized"
               description="A Progressive Web App experience designed for on-the-go checking while walking to class."
             />

@@ -16,17 +16,17 @@ export function StationGroup({ station, items, onItemClick }: StationGroupProps)
 
   return (
     <div className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-       <button 
+       <button
          onClick={() => setIsOpen(!isOpen)}
          className="w-full flex items-center gap-2 text-lg font-extrabold text-foreground uppercase tracking-wider mb-3 px-1 hover:opacity-80 transition-opacity text-left"
        >
           {isOpen ? <ChevronDown className="w-5 h-5 text-maize" /> : <ChevronRight className="w-5 h-5 text-maize" />}
           {station}
           <span className="ml-auto text-xs font-normal text-muted-foreground normal-case tracking-normal">
-            {items.length} items
+            {items.length} item{items.length === 1 ? "" : "s"}
           </span>
        </button>
-       
+
        {isOpen && (
          <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm animate-in slide-in-from-top-2 duration-200">
             {items.map((item) => (

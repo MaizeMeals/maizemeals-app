@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils"
 import { OperatingHour } from "@/types/dining"
 import { formatTime } from "@/lib/dining-utils"
-import { useEffect, useRef } from "react"
+import { useEffect, useMemo, useRef } from "react"
 
 interface MenuTabsProps {
   meals: string[]
@@ -13,69 +13,78 @@ interface MenuTabsProps {
 export function MenuTabs({ meals, activeTab, onTabChange, hours = [] }: MenuTabsProps) {
   const hasAutoSelected = useRef(false)
 
-  // Auto-select tab based on current time
+  const sortedMeals = useMemo(() => {
+    const getStartMinutes = (mealName: string) => {
+      const shift = hours.find(h => h.event_name?.toLowerCase() === mealName.toLowerCase())
+                  || hours.find(h => h.event_name?.toLowerCase().includes(mealName.toLowerCase()))
+
+      if (!shift) return 9999; // If no time found, push to the end
+
+      const [h, m] = shift.start_time.split(':').map(Number)
+      return h * 60 + m
+    }
+
+    // Create a copy and sort
+    return [...meals].sort((a, b) => getStartMinutes(a) - getStartMinutes(b))
+  }, [meals, hours])
+
   useEffect(() => {
-    if (hasAutoSelected.current || meals.length === 0 || hours.length === 0) return
+    if (hasAutoSelected.current || sortedMeals.length === 0 || hours.length === 0) return
 
     const now = new Date()
     const estNow = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }))
-    const currentMinutes = estNow.getHours() * 60 + estNow.getMinutes()
+
+    let currentMinutes = estNow.getHours() * 60 + estNow.getMinutes();
 
     let bestMatch: string | null = null
 
-    // 1. Try to find a currently active meal
-    for (const meal of meals) {
-       const shift = hours.find(h => h.event_name?.toLowerCase() === meal.toLowerCase()) 
-                  || hours.find(h => h.event_name?.toLowerCase().includes(meal.toLowerCase()))
-       
-       if (shift) {
-         const [sh, sm] = shift.start_time.split(':').map(Number)
-         const [eh, em] = shift.end_time.split(':').map(Number)
-         const start = sh * 60 + sm
-         const end = eh * 60 + em
-         
-         if (currentMinutes >= start && currentMinutes < end) {
-           bestMatch = meal
-           break
-         }
-       }
+    const parseTime = (t: string) => {
+      const [h, m] = t.split(':').map(Number)
+      return h * 60 + m
     }
 
-    // 2. If no active meal (e.g. between Lunch and Dinner), look for the NEXT starting meal
-    if (!bestMatch) {
-       let minDiff = Infinity
-       for (const meal of meals) {
-         const shift = hours.find(h => h.event_name?.toLowerCase() === meal.toLowerCase()) 
-                    || hours.find(h => h.event_name?.toLowerCase().includes(meal.toLowerCase()))
-         if (shift) {
-            const [sh, sm] = shift.start_time.split(':').map(Number)
-            const start = sh * 60 + sm
-            const diff = start - currentMinutes
-            
-            // If it starts in the future and is closer than others
-            if (diff > 0 && diff < minDiff) {
-               minDiff = diff
-               bestMatch = meal
-            }
-         }
-       }
+    let minDiff = Infinity
+
+    for (const meal of sortedMeals) {
+      const shift = hours.find(h => h.event_name?.toLowerCase() === meal.toLowerCase()
+                                || h.event_name?.toLowerCase().includes(meal.toLowerCase()))
+
+      if (shift) {
+        const start = parseTime(shift.start_time)
+        const end = parseTime(shift.end_time)
+
+        if (currentMinutes >= start && currentMinutes < end) {
+          bestMatch = meal;
+          break; // Found it, stop looking
+        }
+
+        let diff = Math.abs(start - currentMinutes)
+
+        if (diff > 0 && diff < minDiff) {
+          minDiff = diff;
+          bestMatch = meal;
+        }
+      }
+    }
+
+    if (!bestMatch && sortedMeals.length > 0) {
+        bestMatch = sortedMeals[0]
     }
 
     if (bestMatch && bestMatch !== activeTab) {
-       onTabChange(bestMatch)
+      onTabChange(bestMatch)
     }
-    
-    // Mark as attempted so we don't override user interaction later
+
     hasAutoSelected.current = true
-  }, [meals, hours, onTabChange, activeTab])
+  }, [sortedMeals, hours, onTabChange, activeTab])
 
   if (meals.length === 0) return null
 
   const getTimeRange = (mealName: string) => {
     // Try precise match first, then loose match
-    const shift = hours.find(h => h.event_name?.toLowerCase() === mealName.toLowerCase()) 
+    const shift = hours.find(h => h.event_name?.toLowerCase() === mealName.toLowerCase())
                || hours.find(h => h.event_name?.toLowerCase().includes(mealName.toLowerCase()))
-    
+
     if (!shift) return null
     return `${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}`
   }
@@ -84,10 +93,10 @@ export function MenuTabs({ meals, activeTab, onTabChange, hours = [] }: MenuTabs
     <div className="bg-background/95 border-b border-border">
       <div className="container mx-auto px-4 overflow-x-auto no-scrollbar">
          <div className="flex min-w-max">
-            {meals.map(meal => {
+            {sortedMeals.map(meal => {
               const timeRange = getTimeRange(meal)
               const isActive = activeTab === meal
-              
+
               return (
               <button
                 key={meal}
@@ -95,7 +104,7 @@ export function MenuTabs({ meals, activeTab, onTabChange, hours = [] }: MenuTabs
                 className={cn(
                   "flex-1 min-w-[100px] py-3 text-sm font-semibold transition-colors relative flex flex-col items-center justify-center gap-0.5",
                   isActive
-                    ? "text-umich-blue dark:text-maize"
+                    ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -109,7 +118,7 @@ export function MenuTabs({ meals, activeTab, onTabChange, hours = [] }: MenuTabs
                     </span>
                 )}
                 {isActive && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-umich-blue dark:bg-maize" />
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary" />
                 )}
               </button>
             )})}

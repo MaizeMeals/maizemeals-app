@@ -5,21 +5,6 @@ import { useState } from "react"
 import * as Dialog from "@radix-ui/react-dialog"
 
 /**
- * Visual slice of the citrus circle for the legend
- */
-const LegendSlice = ({ filled, color, rotation }: { filled: boolean; color: string; rotation: number }) => (
-  <svg viewBox="0 0 32 32" className={`w-full h-full absolute top-0 left-0 transition-opacity duration-500 ${filled ? 'opacity-100' : 'opacity-10'}`}>
-    <path
-      d="M16 16 L32 16 A16 16 0 0 1 20.944 31.216 Z"
-      transform={`rotate(${rotation} 16 16)`}
-      className={`${color}`}
-      stroke="white"
-      strokeWidth="1.5"
-    />
-  </svg>
-)
-
-/**
  * Explains the criteria required to earn slices
  */
 const ScaleBreakdown = () => {
@@ -103,7 +88,7 @@ const NutritionInfoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
           onClick={(e) => e.stopPropagation()}
         />
-                <Dialog.Content 
+                <Dialog.Content
                   className="fixed z-[9999] bg-background shadow-lg duration-200 w-full h-full top-0 left-0 md:top-[50%] md:left-[50%] md:w-full md:max-w-lg md:h-auto md:max-h-[90vh] md:translate-x-[-50%] md:translate-y-[-50%] md:rounded-xl md:border border-border data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 grid overflow-y-auto"
                   onClick={(e) => e.stopPropagation()}
                   onPointerDownOutside={(e) => {             // Optional: Prevent closing if interacting with specific outside elements,

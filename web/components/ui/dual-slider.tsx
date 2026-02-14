@@ -4,70 +4,44 @@ import * as React from "react"
 import * as SliderPrimitive from "@radix-ui/react-slider"
 import { cn } from "@/lib/utils"
 
-interface SliderProps {
-  min: number
-  max: number
-  step?: number
-  value: number[]
-  onValueChange: (value: number[]) => void
-  className?: string
-  formatLabel?: (value: number) => string
+interface DualRangeSliderProps extends React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root> {
   minimal?: boolean
+  color?: string
 }
 
 export function DualRangeSlider({
-  min,
-  max,
-  step = 1,
-  value,
-  onValueChange,
   className,
-  formatLabel,
-  minimal = false
-}: SliderProps) {
+  minimal = false,
+  color = "bg-primary",
+  ...props
+}: DualRangeSliderProps) {
   return (
-    <div className={cn("relative w-full py-4", className)}>
-      <SliderPrimitive.Root
-        className="relative flex w-full touch-none select-none items-end"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onValueChange={onValueChange}
-        minStepsBetweenThumbs={1}
+    <SliderPrimitive.Root
+      className={cn("relative flex w-full touch-none select-none items-center", className)}
+      {...props}
+    >
+      <SliderPrimitive.Track
+        className={cn(
+          "relative w-full grow overflow-hidden rounded-full",
+          minimal ? "h-full bg-transparent" : "h-2 bg-slate-200 dark:bg-slate-800"
+        )}
       >
-        <SliderPrimitive.Track className={cn(
-            "relative h-1.5 w-full grow overflow-hidden rounded-full transition-all",
-            minimal ? "bg-transparent h-12" : "bg-slate-200 dark:bg-slate-800"
-        )}>
-          <SliderPrimitive.Range className={cn("absolute h-full", minimal ? "bg-transparent" : "bg-maize")} />
-        </SliderPrimitive.Track>
-        
-        {value.map((_, i) => (
-          <SliderPrimitive.Thumb
-            key={i}
-            className="block h-5 w-5 rounded-full border-2 border-maize bg-white shadow-md ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:scale-110"
-          />
-        ))}
-      </SliderPrimitive.Root>
+        {minimal ? (
+          <>
+            <div className="absolute h-[1px] w-full bg-slate-200 dark:bg-slate-800 top-1/2 -translate-y-1/2" />
+            <SliderPrimitive.Range className={cn("absolute h-[1px] top-1/2 -translate-y-1/2", color)} />
+          </>
+        ) : (
+          <SliderPrimitive.Range className={cn("absolute h-full", color)} />
+        )}
+      </SliderPrimitive.Track>
 
-      {/* Labels */}
-      {formatLabel && (
-        <div className="absolute -bottom-2 w-full flex justify-between text-xs text-slate-500 font-medium font-mono">
-            {value.length === 1 ? (
-               // For single slider, maybe center label or put it near thumb? 
-               // For simplicty, just show min/max labels of the range if provided?
-               // The original code showed value[0] and value[1].
-               // If single value, let's just show that value.
-               <span className="w-full text-center">{formatLabel(value[0])}</span>
-            ) : (
-               <>
-                <span>{formatLabel(value[0])}</span>
-                <span>{formatLabel(value[value.length - 1])}</span>
-               </>
-            )}
-        </div>
-      )}
-    </div>
+      {props.value?.map((_, i) => (
+        <SliderPrimitive.Thumb
+          key={i}
+          className="block h-6 w-6 rounded-full border border-slate-200 bg-white shadow-md ring-offset-background transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:scale-110 cursor-grab active:cursor-grabbing active:scale-95"
+        />
+      ))}
+    </SliderPrimitive.Root>
   )
 }

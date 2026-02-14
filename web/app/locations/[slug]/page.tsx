@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { useLocationData } from "@/hooks/use-location-data"
 import { LocationHero } from "@/components/locations/slug/LocationHero"
 import { MenuTabs } from "@/components/locations/slug/MenuTabs"
@@ -10,8 +10,8 @@ import { SocialProof } from "@/components/locations/slug/SocialProof"
 import { Utensils, Camera } from "lucide-react"
 import { Item } from "@/types/dining"
 import { LocationSkeleton } from "@/components/locations/slug/LocationSkeleton"
-import { DiningFilters, FilterState, INITIAL_FILTERS } from "@/components/locations/slug/DiningFilters"
-import { getMacroTags } from "@/lib/dining-utils"
+import { DiningFilters } from "@/components/locations/slug/DiningFilters"
+import { FilterState, INITIAL_FILTERS } from "@/components/locations/slug/filters/types"
 import { filterItems } from "@/lib/filter-utils"
 import { useParams } from "next/navigation"
 
@@ -24,15 +24,16 @@ export default function LocationPage() {
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS)
 
-  // Auto-select meal based on time or available data
-  useEffect(() => {
-    if (data?.menu) {
-      const meals = Object.keys(data.menu)
-      if (meals.length > 0 && !meals.includes(activeTab)) {
-        setActiveTab(meals.includes("Lunch") ? "Lunch" : meals[0])
-      }
-    }
-  }, [data?.menu])
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
+    setFilters({
+      ...INITIAL_FILTERS,
+      dietary: filters.dietary // dont reset, its visible
+    })
+  }
+
+  const currentStationGroups = data?.menu?.[activeTab] || []
+  const allItems = useMemo(() => currentStationGroups.flatMap(g => g.items), [currentStationGroups])
 
   if (loading) {
     return <LocationSkeleton />
@@ -51,8 +52,7 @@ export default function LocationPage() {
 
   const { hall, status, menu } = data
   const meals = Object.keys(menu)
-  let currentStationGroups = menu[activeTab] || []
-  const allItems = currentStationGroups.flatMap(g => g.items)
+  // currentStationGroups and allItems are already defined above
 
   // --- Filtering Logic ---
   const filteredGroups = currentStationGroups.map(group => {
@@ -113,7 +113,7 @@ export default function LocationPage() {
       <MenuTabs
         meals={meals}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         hours={data?.hours}
       />
 
@@ -122,7 +122,7 @@ export default function LocationPage() {
         {sortedGroups.length > 0 ? (
           sortedGroups.map((group) => (
             <StationGroup
-              key={group.station}
+              key={activeTab + group.station}
               station={group.station}
               items={group.items}
               onItemClick={setSelectedItem}
@@ -147,7 +147,7 @@ export default function LocationPage() {
 
       {/* FAB */}
       <div className="fixed bottom-6 right-6 z-40">
-        <button className="bg-maize text-umich-blue p-4 rounded-full shadow-xl hover:scale-110 active:scale-95 transition-all border-2 border-umich-blue dark:border-white/10">
+        <button className="bg-maize text-primary p-4 rounded-full shadow-xl hover:scale-110 active:scale-95 transition-all border-2 border-secondary">
            <Camera className="w-6 h-6" />
         </button>
       </div>

@@ -54,7 +54,7 @@ export function UserNav({ user, signOut, forceWhite = false }: UserNavProps) {
         </Button>
         <Button
           asChild
-          className="bg-maize text-umich-blue hover:bg-yellow-400"
+          className="bg-maize text-umich-blue"
         >
           <Link href="/signup">Sign up</Link>
         </Button>

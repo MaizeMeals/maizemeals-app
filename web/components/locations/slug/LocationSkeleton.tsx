@@ -14,11 +14,10 @@ export function LocationSkeleton() {
 
       {/* Action Bar Skeleton */}
       <div className="bg-background border-b border-border">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <Skeleton className="h-10 w-24 rounded-full" />
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center gap-4">
+          <Skeleton className="h-10 w-full rounded-full bg-muted" />
           <div className="flex gap-2">
-             <Skeleton className="h-10 w-10 rounded-full" />
-             <Skeleton className="h-10 w-10 rounded-full" />
+             <Skeleton className="h-10 w-20 rounded-full bg-muted" />
           </div>
         </div>
       </div>
@@ -29,8 +28,8 @@ export function LocationSkeleton() {
           <div className="flex gap-6 py-4 min-w-max">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="flex flex-col items-center gap-1.5 opacity-70">
-                 <Skeleton className="h-4 w-16" />
-                 {i === 1 && <Skeleton className="h-0.5 w-full bg-maize" />}
+                 <Skeleton className="h-4 w-16 bg-muted" />
+                 {i === 1 && <Skeleton className="h-0.5 w-full bg-primary" />}
               </div>
             ))}
           </div>
@@ -44,24 +43,23 @@ export function LocationSkeleton() {
             {/* Station Header */}
             <div className="flex items-center gap-3">
               <Skeleton className="h-6 w-6 rounded bg-maize/20" />
-              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-6 w-48 bg-muted" />
             </div>
 
             {/* Food Items */}
-            <div className="rounded-xl border border-border overflow-hidden bg-card shadow-sm">
+            <div className="rounded-xl border border-border overflow-hidden shadow-sm">
               {[1, 2, 3].map((item) => (
                 <div key={item} className="flex items-start justify-between p-4 border-b border-border last:border-0">
                   <div className="space-y-2 flex-1">
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-3 w-1/4" />
+                    <Skeleton className="h-5 w-3/4 bg-muted" />
+                    <Skeleton className="h-3 w-1/4 bg-muted" />
                     <div className="flex gap-2 mt-2">
-                      <Skeleton className="h-4 w-12 rounded" />
-                      <Skeleton className="h-4 w-12 rounded" />
+                      <Skeleton className="h-4 w-12 rounded bg-muted" />
+                      <Skeleton className="h-4 w-12 rounded bg-muted" />
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <Skeleton className="h-4 w-8 rounded" />
-                    <Skeleton className="h-6 w-6 rounded-full" />
+                    <Skeleton className="h-8 w-8 rounded-full bg-muted" />
                   </div>
                 </div>
               ))}

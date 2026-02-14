@@ -55,7 +55,7 @@ export function DiningHallGrid() {
         </h3>
         <Link
           href="/locations"
-          className="text-sm font-medium hover:underline text-umich-blue dark:text-maize md:[@media(min-height:800px)]:text-maize 2xl:text-umich-blue 2xl:dark:text-maize transition-colors"
+          className="text-sm font-medium hover:underline text-primary md:[@media(min-height:800px)]:text-secondary dark:md:[@media(min-height:800px)]:text-primary 2xl:text-primary transition-colors"
         >
           View All Locations →
         </Link>
