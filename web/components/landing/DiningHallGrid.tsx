@@ -53,8 +53,8 @@ export function DiningHallGrid() {
         <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 md:[@media(min-height:800px)]:text-slate-300 2xl:text-muted-foreground transition-colors">
            <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" /> Live Status
         </h3>
-        <Link 
-          href="/locations" 
+        <Link
+          href="/locations"
           className="text-sm font-medium hover:underline text-umich-blue dark:text-maize md:[@media(min-height:800px)]:text-maize 2xl:text-umich-blue 2xl:dark:text-maize transition-colors"
         >
           View All Locations →

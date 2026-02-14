@@ -18,17 +18,17 @@ export function StationGroup({ station, items, onItemClick }: StationGroupProps)
     <div className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
        <button 
          onClick={() => setIsOpen(!isOpen)}
-         className="w-full flex items-center gap-2 text-lg font-extrabold text-slate-900 dark:text-white uppercase tracking-wider mb-3 px-1 hover:opacity-80 transition-opacity text-left"
+         className="w-full flex items-center gap-2 text-lg font-extrabold text-foreground uppercase tracking-wider mb-3 px-1 hover:opacity-80 transition-opacity text-left"
        >
           {isOpen ? <ChevronDown className="w-5 h-5 text-maize" /> : <ChevronRight className="w-5 h-5 text-maize" />}
           {station}
-          <span className="ml-auto text-xs font-normal text-slate-400 normal-case tracking-normal">
+          <span className="ml-auto text-xs font-normal text-muted-foreground normal-case tracking-normal">
             {items.length} items
           </span>
        </button>
        
        {isOpen && (
-         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm animate-in slide-in-from-top-2 duration-200">
+         <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm animate-in slide-in-from-top-2 duration-200">
             {items.map((item) => (
               <FoodItemCard
                 key={item.id}

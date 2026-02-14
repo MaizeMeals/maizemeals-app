@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import { useUserLocation } from "@/hooks/use-user-location"
 import { calculateDistance, formatDistance } from "@/lib/distance"
 
+import { STATUS_COLORS } from "@/lib/dining-utils"
+
 interface LocationHeroProps {
   name: string
   imageUrl: string | null
@@ -16,17 +18,14 @@ interface LocationHeroProps {
     text: string
     closesAt: string | null
     color: "green" | "red" | "orange"
+    details: string
   }
 }
 
-const Badge = ({ children, variant = "default" }: { children: React.ReactNode; variant?: "open" | "closed" | "default" }) => {
-  const variants = {
-    default: "bg-slate-100 text-slate-800",
-    open: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    closed: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  };
+const Badge = ({ children, color = "gray" }: { children: React.ReactNode; color?: string }) => {
+  const colorClass = STATUS_COLORS[color] || STATUS_COLORS["gray"];
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-transparent ${variants[variant]}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${colorClass}`}>
       {children}
     </span>
   );
@@ -38,15 +37,15 @@ export function LocationHero({ name, imageUrl, address, latitude, longitude, sta
 
   // Calculate distance if coords are available
   let distanceString: string | null = null
-  
+
   if (coords && latitude && longitude) {
     const dist = calculateDistance(coords.latitude, coords.longitude, latitude, longitude)
-    distanceString = `${formatDistance(dist)} away`
+    distanceString = dist < 0.1 ? "Nearby" : `${formatDistance(dist)} away`
   }
 
   // Fallback address logic: Use beginning of address or default
-  const locationText = distanceString 
-    ? distanceString 
+  const locationText = distanceString
+    ? distanceString
     : (address ? address.split(',')[0] : "North Campus");
 
   const handleShare = async () => {
@@ -79,7 +78,7 @@ export function LocationHero({ name, imageUrl, address, latitude, longitude, sta
       </div>
 
       {/* Immersive Image */}
-      <div className="absolute inset-0 bg-slate-900">
+      <div className="absolute inset-0">
         <img
           src={imageUrl ? `/images/dining_halls/${imageUrl}` : '/images/dining_halls/default.jpg'}
           alt={name}
@@ -89,7 +88,7 @@ export function LocationHero({ name, imageUrl, address, latitude, longitude, sta
           }}
         />
         {/* Gradient Fade */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[hsl(240_0%_5%)] via-[hsl(240_0%_5%)]/20 to-transparent" />
       </div>
 
       {/* Content Bottom-Left */}
@@ -97,7 +96,7 @@ export function LocationHero({ name, imageUrl, address, latitude, longitude, sta
         <div className="flex justify-between items-end">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Badge variant={status.isOpen ? "open" : "closed"}>
+              <Badge color={status.color}>
                 {status.text}
               </Badge>
               <span className="text-slate-300 text-xs font-medium tracking-wide uppercase">
@@ -114,28 +113,28 @@ export function LocationHero({ name, imageUrl, address, latitude, longitude, sta
               </div>
               <div className="flex items-center gap-1">
                 <Clock className="w-4 h-4 text-maize" />
-                <span>{status.isOpen && status.closesAt ? `Closes ${status.closesAt}` : status.text}</span>
+                <span>{status.details}</span>
               </div>
             </div>
           </div>
 
           {/* Action Buttons (Vertical on Mobile, Horizontal on Desktop) */}
           <div className="absolute right-4 bottom-20 flex flex-col gap-3 md:static md:flex-row md:gap-3 animate-in zoom-in slide-in-from-bottom-4 duration-700">
-             <button 
-               onClick={handleShare} 
+             <button
+               onClick={handleShare}
                className="md:hidden p-2 md:p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 active:scale-95 transition-all shadow-lg"
                aria-label="Share"
              >
                 <Share2 className="w-5 h-5" />
              </button>
-             <button 
+             <button
                className="p-2 md:p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 active:scale-95 transition-all shadow-lg"
                aria-label="Favorite"
              >
                 <Heart className="w-5 h-5" />
              </button>
-             <button 
-               onClick={handleInfo} 
+             <button
+               onClick={handleInfo}
                className="p-2 md:p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 active:scale-95 transition-all shadow-lg"
                aria-label="Info"
              >
@@ -147,4 +146,3 @@ export function LocationHero({ name, imageUrl, address, latitude, longitude, sta
     </header>
   )
 }
-

@@ -51,11 +51,11 @@ export function DetailDrawer({ item, isOpen, onClose }: FoodDetailDrawerProps) {
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="bottom" className="h-[85vh] p-0 rounded-t-3xl overflow-hidden flex flex-col bg-white dark:bg-slate-950">
+      <SheetContent side="bottom" className="h-[85vh] p-0 rounded-t-3xl overflow-hidden flex flex-col bg-background">
         <SheetTitle className="sr-only">{item.name} Details</SheetTitle>
 
         {/* --- 1. Image Carousel --- */}
-        <div className="relative w-full h-64 shrink-0 bg-slate-100 dark:bg-slate-900">
+        <div className="relative w-full h-64 shrink-0 bg-muted">
           <div
             className="flex w-full h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide"
             onScroll={(e) => {
@@ -65,7 +65,7 @@ export function DetailDrawer({ item, isOpen, onClose }: FoodDetailDrawerProps) {
             }}
           >
             {images.map((src, idx) => (
-              <div key={idx} className="w-full h-full shrink-0 snap-center relative flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-400">
+              <div key={idx} className="w-full h-full shrink-0 snap-center relative flex items-center justify-center bg-accent text-muted-foreground">
                  {/* Replace with <Image> when you have real URLs */}
                  <span className="text-xs">No Photo Available</span>
               </div>
@@ -91,7 +91,7 @@ export function DetailDrawer({ item, isOpen, onClose }: FoodDetailDrawerProps) {
 
           <div className="mb-6">
             <div className="flex justify-between items-start gap-4 mb-2">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50 leading-tight">
+              <h2 className="text-2xl font-bold text-foreground leading-tight">
                 {item.name}
               </h2>
               <div className="shrink-0 relative z-20" onClick={(e) => e.stopPropagation()}>
@@ -104,7 +104,7 @@ export function DetailDrawer({ item, isOpen, onClose }: FoodDetailDrawerProps) {
                 <>
                   <div className="flex items-center gap-1 bg-maize/20 px-2 py-1 rounded-md">
                     <Star className="w-4 h-4 fill-maize text-maize" />
-                    <span className="font-bold text-slate-900 dark:text-slate-100">{item.avg_rating.toFixed(1)}</span>
+                    <span className="font-bold text-foreground">{item.avg_rating.toFixed(1)}</span>
                   </div>
                   <Link href={`/reviews?item_id=${item.id}`} className="text-sm text-blue-600 hover:underline">
                     See reviews
@@ -112,8 +112,8 @@ export function DetailDrawer({ item, isOpen, onClose }: FoodDetailDrawerProps) {
                 </>
               ) : (
                 <Link href={`/review/new?item_id=${item.id}`}>
-                    <Button variant="outline" size="sm" className="h-8 gap-2 text-xs border-dashed border-slate-300 dark:border-slate-700">
-                        <Star className="w-3.5 h-3.5 text-slate-400" />
+                    <Button variant="outline" size="sm" className="h-8 gap-2 text-xs border-dashed border-border">
+                        <Star className="w-3.5 h-3.5 text-muted-foreground" />
                         Be the first to review
                     </Button>
                 </Link>
@@ -130,20 +130,20 @@ export function DetailDrawer({ item, isOpen, onClose }: FoodDetailDrawerProps) {
             </div>
           </div>
 
-          <hr className="border-slate-100 dark:border-slate-800 mb-6" />
+          <hr className="border-border mb-6" />
 
           {/* --- Nutrition Facts Label --- */}
-          <div className="border-2 border-slate-900 dark:border-slate-200 p-4 rounded-sm max-w-sm mx-auto bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm">
-            <h3 className="text-3xl font-black border-b-[10px] border-slate-900 dark:border-slate-200 pb-1 mb-1 leading-none">
+          <div className="border-2 border-foreground p-4 rounded-sm max-w-sm mx-auto bg-card text-card-foreground shadow-sm">
+            <h3 className="text-3xl font-black border-b-[10px] border-foreground pb-1 mb-1 leading-none">
               Nutrition Facts
             </h3>
 
-            <div className="flex justify-between items-baseline border-b-4 border-slate-900 dark:border-slate-200 pb-2 mb-2">
+            <div className="flex justify-between items-baseline border-b-4 border-foreground pb-2 mb-2">
               <span className="font-bold text-lg">Serving Size</span>
               <span className="font-bold text-lg">{item.serving_size || "1 portion"}</span>
             </div>
 
-            <div className="flex justify-between items-baseline border-b-[4px] border-slate-900 dark:border-slate-200 pb-2 mb-2">
+            <div className="flex justify-between items-baseline border-b-[4px] border-foreground pb-2 mb-2">
               <div>
                 <div className="font-bold text-sm">Amount per serving</div>
                 <div className="font-black text-4xl">Calories</div>
@@ -152,7 +152,7 @@ export function DetailDrawer({ item, isOpen, onClose }: FoodDetailDrawerProps) {
             </div>
 
             <div className="space-y-0 text-sm">
-              <div className="flex justify-end text-xs font-bold border-b border-slate-900 pb-1 mb-1">
+              <div className="flex justify-end text-xs font-bold border-b border-foreground pb-1 mb-1">
                  % Daily Value*
               </div>
 
@@ -165,14 +165,14 @@ export function DetailDrawer({ item, isOpen, onClose }: FoodDetailDrawerProps) {
               <MacroRow label="Protein" amount={protein} unit="g" bold largeBorder />
             </div>
 
-             <div className="mt-2 text-[10px] leading-tight text-slate-500">
+             <div className="mt-2 text-[10px] leading-tight text-muted-foreground">
                * The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.
              </div>
           </div>
 
           <div className="mt-8 mb-20 text-center">
              <Link href={`/review/new?item_id=${item.id}`} className="inline-block w-full">
-                <Button size="lg" className="w-full gap-2 bg-umich-blue hover:bg-umich-blue/90 text-white shadow-lg shadow-umich-blue/20">
+                <Button size="lg" className="w-full gap-2 shadow-lg">
                     <Camera className="w-5 h-5" />
                     I ate this (Review)
                 </Button>
@@ -186,7 +186,7 @@ export function DetailDrawer({ item, isOpen, onClose }: FoodDetailDrawerProps) {
 
 function MacroRow({ label, amount, unit, bold, indent, largeBorder }: { label: string, amount: any, unit: string, bold?: boolean, indent?: boolean, largeBorder?: boolean }) {
     return (
-        <div className={`flex justify-between items-center py-1 ${largeBorder ? "border-b-[8px] border-slate-900 dark:border-slate-200" : "border-b border-slate-300 dark:border-slate-700"}`}>
+        <div className={`flex justify-between items-center py-1 ${largeBorder ? "border-b-[8px] border-foreground" : "border-b border-border"}`}>
             <span className={`${bold ? "font-bold" : ""} ${indent ? "pl-4" : ""}`}>
                 {label} <span className="font-normal">{amount}{unit}</span>
             </span>

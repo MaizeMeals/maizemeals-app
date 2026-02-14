@@ -78,11 +78,11 @@ const ScaleBreakdown = () => {
 
             <div className="flex-1">
               <h4 className={`text-sm font-bold ${level.color} mb-1`}>{level.label}</h4>
-              <p className="text-xs text-slate-600 dark:text-slate-300 mb-2 font-medium">{level.desc}</p>
+              <p className="text-xs text-muted-foreground mb-2 font-medium">{level.desc}</p>
               <ul className="grid grid-cols-1 gap-1">
                 {level.details.map((detail, d) => (
-                  <li key={d} className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                    {level.slices > 3 ? <Check className="w-3 h-3 text-green-500" /> : <div className="w-1 h-1 rounded-full bg-slate-400" />}
+                  <li key={d} className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                    {level.slices > 3 ? <Check className="w-3 h-3 text-green-500" /> : <div className="w-1 h-1 rounded-full bg-muted-foreground" />}
                     {detail}
                   </li>
                 ))}
@@ -104,7 +104,7 @@ const NutritionInfoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           onClick={(e) => e.stopPropagation()}
         />
                 <Dialog.Content 
-                  className="fixed z-[9999] bg-white dark:bg-slate-900 shadow-lg duration-200 w-full h-full top-0 left-0 md:top-[50%] md:left-[50%] md:w-full md:max-w-lg md:h-auto md:max-h-[90vh] md:translate-x-[-50%] md:translate-y-[-50%] md:rounded-xl md:border border-slate-200 dark:border-slate-800 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 grid overflow-y-auto"
+                  className="fixed z-[9999] bg-background shadow-lg duration-200 w-full h-full top-0 left-0 md:top-[50%] md:left-[50%] md:w-full md:max-w-lg md:h-auto md:max-h-[90vh] md:translate-x-[-50%] md:translate-y-[-50%] md:rounded-xl md:border border-border data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 grid overflow-y-auto"
                   onClick={(e) => e.stopPropagation()}
                   onPointerDownOutside={(e) => {             // Optional: Prevent closing if interacting with specific outside elements,
              // but usually strictly modal behavior is desired.
@@ -114,24 +114,24 @@ const NutritionInfoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           <Dialog.Description className="sr-only">Explanation of the nutrient density scale.</Dialog.Description>
 
           {/* Header */}
-          <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 p-4 flex items-center justify-between">
+          <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
                 <Leaf className="w-4 h-4" />
               </span>
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-none">
+                <h3 className="text-lg font-bold text-foreground leading-none">
                   MHealthy Guidelines
                 </h3>
-                <span className="text-xs text-slate-500 font-medium">University of Michigan</span>
+                <span className="text-xs text-muted-foreground font-medium">University of Michigan</span>
               </div>
             </div>
             <Dialog.Close asChild>
               <button
-                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 rounded-full hover:bg-muted transition-colors"
                 aria-label="Close"
               >
-                <X className="w-5 h-5 text-slate-500" />
+                <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </Dialog.Close>
           </div>
@@ -140,11 +140,11 @@ const NutritionInfoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
 
             {/* Intro Section */}
             <div className="flex gap-4 items-start">
-              <div className="text-md text-slate-600 dark:text-slate-300 leading-relaxed">
+              <div className="text-md text-muted-foreground leading-relaxed">
                 <p className="mb-2">
                   The <strong>Citrus Circle</strong> helps you identify nutrient-dense foods at a glance.
                 </p>
-                <p className="text-sm bg-slate-50 dark:bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700 italic">
+                <p className="text-sm bg-muted p-2 rounded border border-border italic">
                   "The more slices filled, the more nutrient dense the food!"
                 </p>
               </div>
@@ -152,7 +152,7 @@ const NutritionInfoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
 
             {/* Breakdown of Levels */}
             <div>
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">How it works</h4>
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">How it works</h4>
               <ScaleBreakdown />
             </div>
 
@@ -162,7 +162,7 @@ const NutritionInfoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                   <h5 className="text-xs font-bold text-green-700 dark:text-green-400 mb-1 flex items-center gap-1">
                     <Check className="w-3 h-3" /> More of:
                   </h5>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+                  <p className="text-[11px] text-muted-foreground leading-snug">
                     Fruits, vegetables, healthy fats, whole grains, and fiber.
                   </p>
               </div>
@@ -170,26 +170,26 @@ const NutritionInfoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                   <h5 className="text-xs font-bold text-red-700 dark:text-red-400 mb-1 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" /> Less of:
                   </h5>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+                  <p className="text-[11px] text-muted-foreground leading-snug">
                     Saturated fats, added sugars, sodium, and artificial sweeteners.
                   </p>
               </div>
             </div>
 
             {/* Footer Link */}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="pt-2 border-t border-border">
               <a
                 href="https://hr.umich.edu/sites/default/files/nutrition-guidelines-v2_1.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex items-center justify-between w-full p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                className="group flex items-center justify-between w-full p-2 rounded-lg hover:bg-muted transition-colors"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-center gap-2 text-xs text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   <Info className="w-4 h-4" />
                   <span>View official PDF documentation</span>
                 </div>
-                <span className="text-[10px] text-slate-400">Opens in new tab</span>
+                <span className="text-[10px] text-muted-foreground">Opens in new tab</span>
               </a>
             </div>
           </div>
@@ -261,18 +261,18 @@ export const MScaleIndicator = ({ score, size = 'md', showLabel = false }: MScal
                   transform={`rotate(${slice.rotation} 16 16)`}
                   stroke="white"
                   strokeWidth="1"
-                  className={`transition-colors duration-300 dark:stroke-slate-900 ${isActive ? slice.color : "fill-slate-100 dark:fill-slate-800"}`}
+                  className={`transition-colors duration-300 dark:stroke-slate-900 ${isActive ? slice.color : "fill-muted"}`}
                 />
               );
             })}
           </svg>
-          <div className={`absolute ${iconPos[size]} bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center`}>
-            <Info className={`text-slate-400 ${iconSizes[size]}`} />
+          <div className={`absolute ${iconPos[size]} bg-card rounded-full shadow-sm border border-border flex items-center justify-center`}>
+            <Info className={`text-muted-foreground ${iconSizes[size]}`} />
           </div>
         </div>
 
         {showLabel && (
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 Level {score}
             </span>
         )}

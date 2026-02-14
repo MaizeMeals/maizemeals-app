@@ -12,6 +12,7 @@ interface SliderProps {
   onValueChange: (value: number[]) => void
   className?: string
   formatLabel?: (value: number) => string
+  minimal?: boolean
 }
 
 export function DualRangeSlider({
@@ -21,12 +22,13 @@ export function DualRangeSlider({
   value,
   onValueChange,
   className,
-  formatLabel
+  formatLabel,
+  minimal = false
 }: SliderProps) {
   return (
     <div className={cn("relative w-full py-4", className)}>
       <SliderPrimitive.Root
-        className="relative flex w-full touch-none select-none items-center"
+        className="relative flex w-full touch-none select-none items-end"
         min={min}
         max={max}
         step={step}
@@ -34,8 +36,11 @@ export function DualRangeSlider({
         onValueChange={onValueChange}
         minStepsBetweenThumbs={1}
       >
-        <SliderPrimitive.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-          <SliderPrimitive.Range className="absolute h-full bg-maize" />
+        <SliderPrimitive.Track className={cn(
+            "relative h-1.5 w-full grow overflow-hidden rounded-full transition-all",
+            minimal ? "bg-transparent h-12" : "bg-slate-200 dark:bg-slate-800"
+        )}>
+          <SliderPrimitive.Range className={cn("absolute h-full", minimal ? "bg-transparent" : "bg-maize")} />
         </SliderPrimitive.Track>
         
         {value.map((_, i) => (

@@ -33,6 +33,5 @@ function deg2rad(deg: number): number {
  * Formats distance nicely (e.g., "0.2 mi" or "1.5 mi")
  */
 export function formatDistance(distance: number): string {
-  if (distance < 0.1) return "Nearby";
-  return `${distance.toFixed(1)} mi`;
+    return `${distance.toFixed(1)} mi`;
 }

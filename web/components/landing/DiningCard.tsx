@@ -3,21 +3,7 @@ import { Clock, Users } from "lucide-react"
 import Link from "next/link"
 import { ProcessedHall } from "@/hooks/use-dining-status"
 import { Skeleton } from "@/components/ui/skeleton"
-
-// 1. Define strict mappings so Tailwind can "see" the classes
-const STATUS_COLORS: Record<string, string> = {
-  green: "bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300 border-green-200 dark:border-green-800",
-  red: "bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300 border-red-200 dark:border-red-800",
-  orange: "bg-orange-100 text-orange-700 dark:bg-orange-900/60 dark:text-orange-300 border-orange-200 dark:border-orange-800",
-  gray: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700",
-}
-
-const CAPACITY_COLORS: Record<string, string> = {
-  green: "text-green-600 dark:text-green-400",
-  red: "text-red-600 dark:text-red-400",
-  orange: "text-orange-600 dark:text-orange-400",
-  slate: "text-slate-500 dark:text-slate-400",
-}
+import { STATUS_COLORS, CAPACITY_COLORS } from "@/lib/dining-utils"
 
 interface DiningCardProps {
   hall: ProcessedHall

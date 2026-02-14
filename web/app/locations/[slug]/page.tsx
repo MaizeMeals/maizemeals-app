@@ -12,6 +12,7 @@ import { Item } from "@/types/dining"
 import { LocationSkeleton } from "@/components/locations/slug/LocationSkeleton"
 import { DiningFilters, FilterState, INITIAL_FILTERS } from "@/components/locations/slug/DiningFilters"
 import { getMacroTags } from "@/lib/dining-utils"
+import { filterItems } from "@/lib/filter-utils"
 import { useParams } from "next/navigation"
 
 export default function LocationPage() {
@@ -39,7 +40,7 @@ export default function LocationPage() {
 
   if (error || !data || !data.hall) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500">
+      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
         <div className="text-center">
            <h2 className="text-xl font-bold mb-2">Location Not Found</h2>
            <p>{error || "We couldn't load this dining hall."}</p>
@@ -55,38 +56,7 @@ export default function LocationPage() {
 
   // --- Filtering Logic ---
   const filteredGroups = currentStationGroups.map(group => {
-    const filteredItems = group.items.filter(item => {
-      // 1. Search
-      if (filters.search && !item.name.toLowerCase().includes(filters.search.toLowerCase())) return false;
-
-      // 2. Dietary & Macro Tags
-      if (filters.dietary.length > 0) {
-         // Combine DB tags + Macro tags
-         const itemTags = [...(item.dietary_tags || []), ...getMacroTags(item)].map(t => t.toLowerCase().replace(/[^a-z]/g, ''))
-         const hasAll = filters.dietary.every(tag => itemTags.includes(tag))
-         if (!hasAll) return false
-      }
-
-      // 3. Rating
-      if (filters.minRating > 0 && (item.avg_rating || 0) < filters.minRating) return false
-
-      // 4. M-Scale
-      if (filters.minMScale > 1 && (item.nutrition_score || 0) < filters.minMScale) return false
-
-      // 5. Macro Ranges
-      const macros = (item.macronutrients as Record<string, number>) || {}
-      const cal = Number(macros["Calories"] || 0)
-      const prot = Number(macros["Protein"] || 0)
-      const carbs = Number(macros["Total Carbohydrate"] || 0)
-      const fat = Number(macros["Total Fat"] || 0)
-
-      if (cal < filters.macros.calories[0] || cal > filters.macros.calories[1]) return false
-      if (prot < filters.macros.protein[0] || prot > filters.macros.protein[1]) return false
-      if (carbs < filters.macros.carbs[0] || carbs > filters.macros.carbs[1]) return false
-      if (fat < filters.macros.fat[0] || fat > filters.macros.fat[1]) return false
-
-      return true
-    })
+    const filteredItems = filterItems(group.items, filters)
     return { ...group, items: filteredItems }
   }).filter(group => group.items.length > 0)
 
@@ -124,7 +94,7 @@ export default function LocationPage() {
   })
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 pb-20">
+    <div className="min-h-screen bg-background pb-20">
 
             {/* 1. Hero */}
             <LocationHero
@@ -159,7 +129,7 @@ export default function LocationPage() {
             />
           ))
         ) : (
-          <div className="text-center py-20 text-slate-500">
+          <div className="text-center py-20 text-muted-foreground">
             <Utensils className="w-12 h-12 mx-auto mb-4 opacity-20" />
             <p>No menu items matching your filters.</p>
             <button

@@ -9,6 +9,21 @@ export type DiningStatus = {
   label?: string // Compatibility with useDiningStatus
 }
 
+// Shared Color Mappings
+export const STATUS_COLORS: Record<string, string> = {
+  green: "bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300 border-green-200 dark:border-green-800",
+  red: "bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300 border-red-200 dark:border-red-800",
+  orange: "bg-orange-100 text-orange-700 dark:bg-orange-900/60 dark:text-orange-300 border-orange-200 dark:border-orange-800",
+  gray: "bg-muted text-muted-foreground border-border",
+}
+
+export const CAPACITY_COLORS: Record<string, string> = {
+  green: "text-green-600 dark:text-green-400",
+  red: "text-red-600 dark:text-red-400",
+  orange: "text-orange-600 dark:text-orange-400",
+  slate: "text-muted-foreground",
+}
+
 export const getMacroTags = (item: Item): string[] => {
   const tags: string[] = []
 
