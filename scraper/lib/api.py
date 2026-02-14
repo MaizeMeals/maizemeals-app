@@ -77,6 +77,7 @@ def fetch_locations():
 
     return parsed_locations
 
+
 def fetch_meal_hours(location_name: str, date_str: str):
     """
     Fetches the opening/closing times for a specific hall and date.
@@ -107,21 +108,17 @@ def fetch_meal_hours(location_name: str, date_str: str):
         print(f"Error fetching hours: {e}")
         return []
 
-    # The 'hours' array contains the specific timestamps for open slots
     raw_hours = data.get('hours', [])
     schedule = []
 
     for event in raw_hours:
-        # 1. Get the meal name (e.g., "Breakfast")
         meal_name = event.get('event_title', '').strip()
-
-        # 2. Get the ISO timestamps (e.g., "2026-02-09T07:00:00-05:00")
         start_iso = event.get('event_time_start')
         end_iso = event.get('event_time_end')
 
         if meal_name and start_iso and end_iso:
             schedule.append({
-                "meal": meal_name.upper(), # Normalize to uppercase like 'BREAKFAST'
+                "meal": meal_name.upper(),
                 "start_time": start_iso,
                 "end_time": end_iso
             })

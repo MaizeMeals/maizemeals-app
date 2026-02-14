@@ -11,11 +11,14 @@ def get_supabase_client() -> Client:
 
 def get_hall_id_map(client):
     """
-    Returns a dictionary mapping official_id (int) -> internal uuid (str).
-    Example: { 1000555: "d3cfa560-..." }
+    Returns a dictionary mapping (official_id, type) -> internal uuid.
+    Example: { (1000555, 'B'): "d3cfa560-...", (1000555, 'C'): "a1b2c3d4-..." }
     """
-    res = client.table("dining_halls").select("id, official_id").execute()
-    return {row['official_id']: row['id'] for row in res.data}
+    # FIX: Select 'type' so we can distinguish between Dining Hall (B) and Market (C)
+    res = client.table("dining_halls").select("id, official_id, type").execute()
+
+    # Return a dict with a TUPLE as the key
+    return {(row['official_id'], row['type']): row['id'] for row in res.data}
 
 def delete_events_for_date(client, hall_uuid, date_str):
     """
@@ -50,7 +53,7 @@ def upsert_dining_hall(client, loc_data):
                 "phone": loc_data['phone'],
                 "email": loc_data['email']
             },
-            on_conflict="official_id"
+            on_conflict="official_id, type"
         ).execute()
         return data
     except Exception as e:
