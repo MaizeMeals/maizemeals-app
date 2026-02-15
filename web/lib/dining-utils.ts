@@ -12,10 +12,10 @@ export type DiningStatus = {
 
 // Shared Color Mappings
 export const STATUS_COLORS: Record<string, string> = {
-  green: "bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300 border-green-200 dark:border-green-800",
-  red: "bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300 border-red-200 dark:border-red-800",
-  orange: "bg-orange-100 text-orange-700 dark:bg-orange-900/60 dark:text-orange-300 border-orange-200 dark:border-orange-800",
-  gray: "bg-muted text-muted-foreground border-border",
+  green: "bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-200 dark:border-green-800",
+  red: "bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-200 dark:border-red-800",
+  orange: "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950 dark:text-orange-200 dark:border-orange-800",
+  gray: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-950 dark:text-slate-200 dark:border-slate-800",
 }
 
 export const CAPACITY_COLORS: Record<string, string> = {
@@ -46,9 +46,28 @@ export const getPriority = (eventName: string) => {
   return 10; // Kiosks, Cafes, etc.
 };
 
-export function determineHallStatus(shifts: OperatingHour[]): DiningStatus {
+export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): DiningStatus {
   const now = new Date();
-  const estNow = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  let estNow = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+
+  let isToday = true;
+  if (dateStr) {
+      // Parse YYYY-MM-DD
+      const [y, m, d] = dateStr.split('-').map(Number);
+      // Create date at 12:00 AM EST of that day
+      // We construct it carefully to avoid timezone shifts
+      const targetDate = new Date(estNow);
+      targetDate.setFullYear(y);
+      targetDate.setMonth(m - 1);
+      targetDate.setDate(d);
+      targetDate.setHours(0, 0, 0, 0);
+
+      const todayStr = estNow.toLocaleDateString('en-CA');
+      if (dateStr !== todayStr) {
+          isToday = false;
+          estNow = targetDate;
+      }
+  }
 
   let bestShift: OperatingHour | null = null;
   // Helper to parse priority (assuming lower number = higher priority, e.g. Dinner=1, Breakfast=3)
@@ -188,6 +207,17 @@ export function determineHallStatus(shifts: OperatingHour[]): DiningStatus {
               };
           }
       }
+  }
+
+  // OVERRIDE FOR NON-TODAY DATES
+  if (!isToday) {
+      // Determine if it's past or future
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: "America/New_York" });
+      const isFuture = dateStr! > today;
+      
+      status.text = isFuture ? "Future" : "Past";
+      status.color = "gray"; // Neutral color for non-today
+      status.isOpen = false; // Technically not "open now"
   }
 
   return status;

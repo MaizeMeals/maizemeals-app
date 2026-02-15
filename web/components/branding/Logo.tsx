@@ -10,7 +10,7 @@ const Logo = ({ forceWhite = false }: LogoProps) => {
   return (
     <Link href="/" className="flex items-center gap-1.5">
       <MaizeIcon forceWhite={forceWhite} className="w-7 h-7 shrink-0" />
-      <div className="text-lg font-bold font-poppins">
+      <div className="text-lg font-heading font-bold">
         <span className="text-maize">Maize</span>
         <span className={cn(
             "transition-colors",

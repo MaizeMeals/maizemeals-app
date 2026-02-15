@@ -6,9 +6,9 @@ export function Features() {
     <section className="py-24 bg-card">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-foreground mb-4">Built for Wolverines</h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              We scraped the data so you don't have to guess what's for dinner.
+            <h2 className="text-3xl font-bold text-foreground mb-4 font-heading">Built for Wolverines</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Less searching. More eating. Because you have enough deadlines to worry about already.
             </p>
           </div>
 
