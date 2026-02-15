@@ -68,15 +68,6 @@ export function LocationHero({ name, imageUrl, address, latitude, longitude, sta
 
   return (
     <header className="relative h-[40vh] min-h-[300px] w-full group">
-      <div className="fixed top-4 left-4 z-50">
-         <button
-           onClick={() => router.back()}
-           className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/30 transition-colors"
-         >
-           <ChevronLeft className="w-6 h-6" />
-         </button>
-      </div>
-
       {/* Immersive Image */}
       <div className="absolute inset-0">
         <img
@@ -103,7 +94,7 @@ export function LocationHero({ name, imageUrl, address, latitude, longitude, sta
                 Dining Hall
               </span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 leading-tight shadow-sm drop-shadow-md">
+            <h1 className="text-3xl md:text-5xl font-heading font-bold text-white mb-2 leading-tight shadow-sm drop-shadow-md">
               {name.replace(' Dining Hall', '')}
             </h1>
             <div className="flex items-center gap-4 text-slate-200 text-sm font-medium">
@@ -119,7 +110,7 @@ export function LocationHero({ name, imageUrl, address, latitude, longitude, sta
           </div>
 
           {/* Action Buttons (Vertical on Mobile, Horizontal on Desktop) */}
-          <div className="absolute right-4 bottom-20 flex flex-col gap-3 md:static md:flex-row md:gap-3 animate-in zoom-in slide-in-from-bottom-4 duration-700">
+          <div className="absolute right-4 bottom-20 flex flex-col gap-3 md:static md:flex-row md:gap-3">
              <button
                onClick={handleShare}
                className="md:hidden p-2 md:p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 active:scale-95 transition-all shadow-lg"

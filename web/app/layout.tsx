@@ -1,15 +1,32 @@
 import type { Metadata } from "next";
-import { Inter, Poppins } from "next/font/google";
+import { Roboto, Poppins, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { cn } from "@/lib/utils";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+// 2. Configure Roboto (Body Default)
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+// 3. Configure Poppins (Standard Headings)
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-poppins",
+  variable: "--font-heading",
+  display: "swap",
+});
+
+// 4. Configure Playfair (Special/Hero Headings)
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-serif",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -24,7 +41,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${poppins.variable} flex flex-col min-h-screen bg-background text-foreground font-sans`}>
+      <body
+        className={cn(
+          roboto.variable,
+          poppins.variable,
+          playfair.variable,
+          "min-h-screen bg-background text-foreground font-sans antialiased",
+
+        )}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

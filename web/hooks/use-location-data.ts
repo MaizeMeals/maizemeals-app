@@ -15,17 +15,25 @@ export type LocationData = {
   status: { isOpen: boolean; text: string; closesAt: string | null; color: "green" | "red" | "orange"; details: string }
   menu: MenuData
   hours: OperatingHour[]
+  availableDates: string[]
 }
 
-export function useLocationData(slug: string) {
+export function useLocationData(slug: string, dateStr?: string) {
   const [data, setData] = useState<LocationData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
+      setLoading(true)
       const supabase = createClient()
-      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+      const targetDate = dateStr || new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+      const today = new Date()
+      const startRange = new Date(today); startRange.setDate(today.getDate() - 7)
+      const endRange = new Date(today); endRange.setDate(today.getDate() + 14)
+
+      const startStr = startRange.toLocaleDateString('en-CA')
+      const endStr = endRange.toLocaleDateString('en-CA')
 
       // 1. Fetch Hall Details
       const { data: hall, error: hallError } = await supabase
@@ -45,18 +53,28 @@ export function useLocationData(slug: string) {
         .from('operating_hours')
         .select('*')
         .eq('dining_hall_id', hall.id)
-        .eq('date', today)
+        .eq('date', targetDate)
         .order('start_time')
+
+      // 2b. Fetch Availability Range
+      const { data: availability } = await supabase
+        .from('operating_hours')
+        .select('date')
+        .eq('dining_hall_id', hall.id)
+        .gte('date', startStr)
+        .lte('date', endStr)
+
+      const availableDates = Array.from(new Set(availability?.map(a => a.date) || []))
 
       // 3. Fetch Menu (Parallel)
       const { data: events } = await supabase
         .from('menu_events')
         .select('*, items(*)')
         .eq('dining_hall_id', hall.id)
-        .eq('date', today)
+        .eq('date', targetDate)
 
       // --- Process Status (Using Shared Logic) ---
-      const status = determineHallStatus(hours || []);
+      const status = determineHallStatus(hours || [], targetDate);
 
       // --- Process Menu ---
       const menu: MenuData = {}
@@ -81,12 +99,12 @@ export function useLocationData(slug: string) {
           menu[meal].sort((a, b) => a.station.localeCompare(b.station))
       })
 
-      setData({ hall, status, menu, hours: hours || [] })
+      setData({ hall, status, menu, hours: hours || [], availableDates })
       setLoading(false)
     }
 
     load()
-  }, [slug])
+  }, [slug, dateStr])
 
   return { data, loading, error }
 }

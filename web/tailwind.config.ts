@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss"
+const { fontFamily } = require("tailwindcss/defaultTheme")
 
 const config = {
   darkMode: "class",
@@ -19,8 +20,17 @@ const config = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui"],
-        poppins: ["var(--font-poppins)", "sans-serif"],
+        // 1. DEFAULT BODY: Roboto
+        // By overriding 'sans', this applies to almost everything automatically.
+        sans: ["var(--font-sans)", ...fontFamily.sans],
+
+        // 2. STANDARD HEADERS: Poppins
+        // Use with class="font-heading"
+        heading: ["var(--font-heading)", ...fontFamily.sans],
+
+        // 3. SPECIAL HERO: Playfair
+        // Use with class="font-serif"
+        serif: ["var(--font-serif)", ...fontFamily.serif],
       },
       colors: {
         border: "hsl(var(--border))",

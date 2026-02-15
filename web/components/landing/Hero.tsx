@@ -41,20 +41,20 @@ export function Hero() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-maize/20 dark:bg-umich-blue/30 blur-[100px] rounded-full -z-10 mix-blend-multiply dark:mix-blend-screen" />
         </div>
 
+
         {/* Hero Content (Title & Buttons) */}
         <div className="relative h-[600px] flex flex-col justify-center items-center text-center z-10 px-4 pt-16 md:absolute md:inset-0 md:h-full 2xl:pb-0">
-          <div className="container mx-auto">
-            <h1 className="text-4xl md:text-7xl font-extrabold tracking-tight text-white mb-6 drop-shadow-sm">
-              Dining at Michigan, <br className="hidden md:block" />
-              <span className="text-maize">Decoded.</span>
+        <div className="container mx-auto">
+            <h1 className="font-serif text-4xl md:text-7xl tracking-tight text-white mb-6 drop-shadow-sm">
+              Dine like a <span className="text-maize font-bold">Victor.</span>
             </h1>
 
-            <p className="max-w-2xl mx-auto text-lg md:text-xl text-slate-300 mb-10 leading-relaxed font-medium">
+            <p className="max-w-2xl mx-auto text-lg md:text-xl text-slate-300 mb-10 leading-relaxed">
               The unofficial <span className="font-semibold text-maize">companion</span> for U-M dining. View real-time menus, track nutrition, and rate food items.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-24">
-              <Button asChild size="lg" className="w-full sm:w-auto shadow-lg shadow-maize/20 bg-maize text-umich-blue hover:bg-maize/80 font-bold">
+              <Button asChild size="lg" className="w-full sm:w-auto bg-maize text-umich-blue hover:bg-maize/80 font-bold">
                 <Link href="/menus" onClick={handleFindFoodClick} className="flex items-center gap-2">
                   <span className="w-4" />
                   Find Food Now
