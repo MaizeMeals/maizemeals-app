@@ -17,7 +17,7 @@ interface LocationHeroProps {
     isOpen: boolean
     text: string
     closesAt: string | null
-    color: "green" | "red" | "orange"
+    color: "green" | "red" | "orange" | "gray"
     details: string
   }
 }

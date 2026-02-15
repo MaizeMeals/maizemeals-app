@@ -5,7 +5,7 @@ export type DiningStatus = {
   isOpen: boolean
   text: string
   closesAt: string | null
-  color: "green" | "red" | "orange"
+  color: "green" | "red" | "orange" | "gray"
   details: string
   label?: string // Compatibility with useDiningStatus
 }
@@ -214,7 +214,7 @@ export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): 
       // Determine if it's past or future
       const today = new Date().toLocaleDateString('en-CA', { timeZone: "America/New_York" });
       const isFuture = dateStr! > today;
-      
+
       status.text = isFuture ? "Future" : "Past";
       status.color = "gray"; // Neutral color for non-today
       status.isOpen = false; // Technically not "open now"

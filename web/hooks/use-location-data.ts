@@ -12,7 +12,7 @@ export type MenuData = Record<string, StationGroup[]> // Keyed by Meal (Lunch, D
 
 export type LocationData = {
   hall: DiningHall | null
-  status: { isOpen: boolean; text: string; closesAt: string | null; color: "green" | "red" | "orange"; details: string }
+  status: { isOpen: boolean; text: string; closesAt: string | null; color: "green" | "red" | "orange" | "gray"; details: string }
   menu: MenuData
   hours: OperatingHour[]
   availableDates: string[]
