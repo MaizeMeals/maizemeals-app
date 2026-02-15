@@ -10,7 +10,7 @@ import { SocialProof } from "@/components/locations/slug/SocialProof"
 import { Utensils, Camera } from "lucide-react"
 import { Item } from "@/types/dining"
 import { LocationSkeleton } from "@/components/locations/slug/LocationSkeleton"
-import { DiningFilters } from "@/components/locations/slug/DiningFilters"
+import { StickyHeader } from "@/components/locations/slug/StickyHeader"
 import { FilterState, INITIAL_FILTERS } from "@/components/locations/slug/filters/types"
 import { filterItems } from "@/lib/filter-utils"
 import { useParams } from "next/navigation"
@@ -19,10 +19,22 @@ export default function LocationPage() {
   const params = useParams()
   const slug = params.slug as string
 
-  const { data, loading, error } = useLocationData(slug)
+  const [selectedDate, setSelectedDate] = useState<string>(() =>
+    new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+  )
+
+  const { data, loading, error } = useLocationData(slug, selectedDate)
   const [activeTab, setActiveTab] = useState<string>("Lunch")
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS)
+
+  const handleDateChange = (date: string) => {
+    setSelectedDate(date)
+    setFilters({
+      ...INITIAL_FILTERS,
+      dietary: filters.dietary
+    })
+  }
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
@@ -35,7 +47,7 @@ export default function LocationPage() {
   const currentStationGroups = data?.menu?.[activeTab] || []
   const allItems = useMemo(() => currentStationGroups.flatMap(g => g.items), [currentStationGroups])
 
-  if (loading) {
+  if (loading && !data) {
     return <LocationSkeleton />
   }
 
@@ -50,7 +62,7 @@ export default function LocationPage() {
     )
   }
 
-  const { hall, status, menu } = data
+  const { hall, status, menu, availableDates } = data
   const meals = Object.keys(menu)
   // currentStationGroups and allItems are already defined above
 
@@ -96,18 +108,26 @@ export default function LocationPage() {
   return (
     <div className="min-h-screen bg-background pb-20">
 
-            {/* 1. Hero */}
-            <LocationHero
-              name={hall.name}
-              imageUrl={hall.image_url}
-              address={hall.address}
-              latitude={hall.latitude}
-              longitude={hall.longitude}
-              status={status}
-            />
+      {/* 1. Hero */}
+      <LocationHero
+        name={hall.name}
+        imageUrl={hall.image_url}
+        address={hall.address}
+        latitude={hall.latitude}
+        longitude={hall.longitude}
+        status={status}
+      />
 
       {/* 2.5 Filters */}
-      <DiningFilters filters={filters} setFilters={setFilters} items={allItems} />
+      <StickyHeader
+        filters={filters}
+        setFilters={setFilters}
+        items={allItems}
+        selectedDate={selectedDate}
+        availableDates={availableDates}
+        onDateChange={handleDateChange}
+        loading={loading}
+      />
 
       {/* 3. Menu Tabs */}
       <MenuTabs
@@ -128,6 +148,11 @@ export default function LocationPage() {
               onItemClick={setSelectedItem}
             />
           ))
+        ) : allItems.length === 0 ? (
+          <div className="text-center py-20 text-muted-foreground">
+            <Utensils className="w-12 h-12 mx-auto mb-4 opacity-20" />
+            <p>It seems like there isnt any menu for today</p>
+          </div>
         ) : (
           <div className="text-center py-20 text-muted-foreground">
             <Utensils className="w-12 h-12 mx-auto mb-4 opacity-20" />
