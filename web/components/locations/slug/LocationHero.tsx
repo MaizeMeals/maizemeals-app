@@ -1,14 +1,15 @@
 "use client"
 
-import { MapPin, Clock, ChevronLeft, Heart, Share2, Info } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { MapPin, Clock, Heart, Share2, Info } from "lucide-react"
 import { useUserLocation } from "@/hooks/use-user-location"
 import { calculateDistance, formatDistance } from "@/lib/distance"
+import { getTypeForDisplay, cleanLocationName } from "@/lib/dining-utils"
 
 import { STATUS_COLORS } from "@/lib/dining-utils"
 
 interface LocationHeroProps {
   name: string
+  type: string
   imageUrl: string | null
   address: string | null
   latitude: number | null
@@ -31,8 +32,7 @@ const Badge = ({ children, color = "gray" }: { children: React.ReactNode; color?
   );
 };
 
-export function LocationHero({ name, imageUrl, address, latitude, longitude, status }: LocationHeroProps) {
-  const router = useRouter()
+export function LocationHero({ name, type, imageUrl, address, latitude, longitude, status }: LocationHeroProps) {
   const { coords } = useUserLocation()
 
   // Calculate distance if coords are available
@@ -66,8 +66,10 @@ export function LocationHero({ name, imageUrl, address, latitude, longitude, sta
       alert(`${name}\n${address || 'Address not available'}\n${status.text}`);
   }
 
+  const locationName = cleanLocationName(name, type);
+
   return (
-    <header className="relative h-[40vh] min-h-[300px] w-full group">
+    <header className="relative h-[40vh] min-h-[300px] w-full group overflow-hidden">
       {/* Immersive Image */}
       <div className="absolute inset-0">
         <img
@@ -91,11 +93,11 @@ export function LocationHero({ name, imageUrl, address, latitude, longitude, sta
                 {status.text}
               </Badge>
               <span className="text-slate-300 text-xs font-medium tracking-wide uppercase">
-                Dining Hall
+                {getTypeForDisplay(type)}
               </span>
             </div>
             <h1 className="text-3xl md:text-5xl font-heading font-bold text-white mb-2 leading-tight shadow-sm drop-shadow-md">
-              {name.replace(' Dining Hall', '')}
+              {locationName}
             </h1>
             <div className="flex items-center gap-4 text-slate-200 text-sm font-medium">
               <div className="flex items-center gap-1">

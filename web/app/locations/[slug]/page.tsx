@@ -111,6 +111,7 @@ export default function LocationPage() {
       {/* 1. Hero */}
       <LocationHero
         name={hall.name}
+        type={data.hall.type ?? "Dining Hall"}
         imageUrl={hall.image_url}
         address={hall.address}
         latitude={hall.latitude}

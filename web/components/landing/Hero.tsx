@@ -45,11 +45,12 @@ export function Hero() {
         {/* Hero Content (Title & Buttons) */}
         <div className="relative h-[600px] flex flex-col justify-center items-center text-center z-10 px-4 pt-16 md:absolute md:inset-0 md:h-full 2xl:pb-0">
         <div className="container mx-auto">
-            <h1 className="font-serif text-4xl md:text-7xl tracking-tight text-white mb-6 drop-shadow-sm">
-              Dine like a <span className="text-maize font-bold">Victor.</span>
-            </h1>
+          <h1 className="font-serif text-5xl md:text-7xl text-white mb-6 drop-shadow-sm">
+            Your <span className="italic">essential</span> guide <br/>
+            to <span className="text-maize">eating</span> on campus.
+          </h1>
 
-            <p className="max-w-2xl mx-auto text-lg md:text-xl text-slate-300 mb-10 leading-relaxed">
+            <p className="max-w-xl mx-auto text-lg md:text-xl text-slate-300 mb-10 leading-relaxed">
               The unofficial <span className="font-semibold text-maize">companion</span> for U-M dining. View real-time menus, track nutrition, and rate food items.
             </p>
 

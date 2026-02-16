@@ -1,5 +1,6 @@
 import { OperatingHour, Item } from "@/types/dining"
 import { getDynamicTags } from "./filter-utils"
+import { CLIENT_PUBLIC_FILES_PATH } from "next/dist/shared/lib/constants"
 
 export type DiningStatus = {
   isOpen: boolean
@@ -45,6 +46,33 @@ export const getPriority = (eventName: string) => {
   if (name.includes('standard')) return 4;
   return 10; // Kiosks, Cafes, etc.
 };
+
+export const getTypeForDisplay = (type: string) => {
+  switch (type.toLowerCase()) {
+    case 'dining halls':
+      return 'Dining Hall';
+    case 'cafes':
+      return 'Café';
+    case 'markets':
+      return 'Market';
+    case 'grills':
+      return 'Grill';
+    default:
+      return 'Unknown';
+  }
+}
+
+export function cleanLocationName(name: string, type: string) {
+  if (!name || !type) return name;
+  if (type === "CAFES" || type === "MARKETS" || type === "GRILLS  ") return name;
+  const singularType = type.replace(/s$/i, "");
+  const regex = new RegExp(singularType, "gi");
+
+  return name
+    .replace(regex, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): DiningStatus {
   const now = new Date();
