@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Roboto, Poppins, Playfair_Display } from "next/font/google";
+import { Roboto, Poppins, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -23,8 +23,9 @@ const poppins = Poppins({
 });
 
 // 4. Configure Playfair (Special/Hero Headings)
-const playfair = Playfair_Display({
+const instrument = Instrument_Serif({
   subsets: ["latin"],
+  weight: ["400"],
   variable: "--font-serif",
   display: "swap",
 });
@@ -45,7 +46,7 @@ export default function RootLayout({
         className={cn(
           roboto.variable,
           poppins.variable,
-          playfair.variable,
+          instrument.variable,
           "min-h-screen bg-background text-foreground font-sans antialiased",
 
         )}
