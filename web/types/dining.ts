@@ -25,3 +25,38 @@ export type CapacityData = {
   total_capacity: number
   is_error: boolean
 }
+
+// Location detail / menu data (useLocationData)
+export type StationGroup = {
+  station: string
+  items: Item[]
+}
+
+export type MenuData = Record<string, StationGroup[]>
+
+export type ItemMetadata = {
+  photos: string[]
+  avgRating: number
+  reviewCount: number
+}
+
+export type LocationData = {
+  hall: DiningHall | null
+  status: {
+    isOpen: boolean
+    text: string
+    closesAt: string | null
+    color: "green" | "red" | "orange" | "gray"
+    details: string
+    label?: string
+  }
+  menu: MenuData
+  itemMetadata: Record<string, ItemMetadata>
+  hours: OperatingHour[]
+  weeklyHours: Record<string, OperatingHour[]>
+  availableDates: string[]
+  /** Average rating across all item ratings at this dining hall (0 if no ratings). */
+  rating: number
+  /** Total number of user ratings for items at this dining hall. */
+  reviewCount: number
+}

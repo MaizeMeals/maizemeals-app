@@ -1,12 +1,14 @@
 "use client"
 
 import Link from "next/link"
-import { useDiningStatus } from "@/hooks/use-dining-status"
+import { useCampusLocations } from "@/hooks/use-campus-locations" // NEW HOOK
+import { DiningHallLocation } from "@/types/location" // NEW TYPE
 import { DiningCard, DiningCardSkeleton } from "./DiningCard"
 import { useAnalytics } from "@/hooks/use-analytics"
 
 export function DiningHallGrid() {
-  const { halls, loading } = useDiningStatus()
+  // 1. Fetch EVERYTHING (Polymorphic)
+  const { locations, loading } = useCampusLocations()
   const { track } = useAnalytics()
 
   if (loading) {
@@ -27,26 +29,30 @@ export function DiningHallGrid() {
     )
   }
 
-  const sortedHalls = [...halls].sort((a, b) => {
-    // 1. Capacity Data Exists
-    const aCap = a.capacity.label !== "No Data"
-    const bCap = b.capacity.label !== "No Data"
-    if (aCap !== bCap) return aCap ? -1 : 1
+  // 2. Filter & Sort
 
-    // 2. Is Open
-    const aOpen = a.status.label === "Open" || a.status.label === "Closing Soon"
-    const bOpen = b.status.label === "Open" || b.status.label === "Closing Soon"
-    if (aOpen !== bOpen) return aOpen ? -1 : 1
+  const sortedHalls = locations
+    // STRICT FILTER: Only show Dining Halls in this grid
+    .filter((loc): loc is DiningHallLocation => loc.type === 'DINING_HALLS')
+    .sort((a, b) => {
+      // Logic A: Capacity Data Exists
+      const aCap = a.capacity.label !== "No Data"
+      const bCap = b.capacity.label !== "No Data"
+      if (aCap !== bCap) return aCap ? -1 : 1
 
-    // 3. Popularity Bias
-    const popular = ["Bursley", "East Quad", "Mosher-Jordan", "South Quad"]
-    const aPop = popular.some(p => a.name.includes(p))
-    const bPop = popular.some(p => b.name.includes(p))
-    if (aPop !== bPop) return aPop ? -1 : 1
+      // Logic B: Is Open
+      const aOpen = a.status.isOpen
+      const bOpen = b.status.isOpen
+      if (aOpen !== bOpen) return aOpen ? -1 : 1
 
-    return 0
-  }).slice(0, 3)
+      // Logic C: Popularity Bias
+      const popular = ["Bursley", "East Quad", "Mosher-Jordan", "South Quad"]
+      const aPop = popular.some(p => a.name.includes(p))
+      const bPop = popular.some(p => b.name.includes(p))
+      if (aPop !== bPop) return aPop ? -1 : 1
 
+      return 0
+    }).slice(0, 3)
   return (
     <div className="mx-auto max-w-5xl">
       <div className="flex justify-between mb-6 px-2">

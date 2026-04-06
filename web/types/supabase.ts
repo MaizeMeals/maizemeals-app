@@ -49,6 +49,7 @@ export type Database = {
       dining_halls: {
         Row: {
           address: string | null
+          avg_rating: number | null
           display_name: string | null
           email: string | null
           id: string
@@ -59,11 +60,13 @@ export type Database = {
           name: string
           official_id: number | null
           phone: string | null
+          review_count: number | null
           slug: string
           type: string | null
         }
         Insert: {
           address?: string | null
+          avg_rating?: number | null
           display_name?: string | null
           email?: string | null
           id?: string
@@ -74,11 +77,13 @@ export type Database = {
           name: string
           official_id?: number | null
           phone?: string | null
+          review_count?: number | null
           slug: string
           type?: string | null
         }
         Update: {
           address?: string | null
+          avg_rating?: number | null
           display_name?: string | null
           email?: string | null
           id?: string
@@ -89,6 +94,7 @@ export type Database = {
           name?: string
           official_id?: number | null
           phone?: string | null
+          review_count?: number | null
           slug?: string
           type?: string | null
         }
@@ -273,30 +279,48 @@ export type Database = {
       }
       user_profiles: {
         Row: {
-          created_at: string | null
-          health_focus: number | null
-          protein_priority: number | null
-          rating_sensitivity: number | null
-          restrictions: string[] | null
-          updated_at: string | null
+          created_at: string
+          default_campus: string | null
+          dietary_filters: Json
+          favorite_location_ids: string[] | null
+          health_focus: number
+          last_played_at: string | null
+          onboarding_completed: boolean
+          protein_priority: number
+          rating_sensitivity: number
+          streak_current: number
+          streak_max: number
+          updated_at: string
           user_id: string
         }
         Insert: {
-          created_at?: string | null
-          health_focus?: number | null
-          protein_priority?: number | null
-          rating_sensitivity?: number | null
-          restrictions?: string[] | null
-          updated_at?: string | null
+          created_at?: string
+          default_campus?: string | null
+          dietary_filters?: Json
+          favorite_location_ids?: string[] | null
+          health_focus?: number
+          last_played_at?: string | null
+          onboarding_completed?: boolean
+          protein_priority?: number
+          rating_sensitivity?: number
+          streak_current?: number
+          streak_max?: number
+          updated_at?: string
           user_id: string
         }
         Update: {
-          created_at?: string | null
-          health_focus?: number | null
-          protein_priority?: number | null
-          rating_sensitivity?: number | null
-          restrictions?: string[] | null
-          updated_at?: string | null
+          created_at?: string
+          default_campus?: string | null
+          dietary_filters?: Json
+          favorite_location_ids?: string[] | null
+          health_focus?: number
+          last_played_at?: string | null
+          onboarding_completed?: boolean
+          protein_priority?: number
+          rating_sensitivity?: number
+          streak_current?: number
+          streak_max?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
