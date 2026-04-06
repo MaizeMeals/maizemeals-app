@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/use-analytics";
 
 import Logo from "@/components/branding/Logo";
+import { HEADER_HEIGHT, HEADER_HEIGHT_PX } from "@/components/layout/constants";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserNav } from "@/components/layout/UserNav";
 import { Button } from "@/components/ui/button";
@@ -59,7 +60,7 @@ export function HeaderContent({ user, signOut }: HeaderContentProps) {
         ? Math.max(window.innerHeight * 0.4, 300) 
         : window.innerHeight;
 
-      const threshold = heroHeight - 64;
+      const threshold = heroHeight - HEADER_HEIGHT_PX;
       
       setIsScrolled(window.scrollY > threshold);
     };
@@ -97,7 +98,10 @@ export function HeaderContent({ user, signOut }: HeaderContentProps) {
             : "bg-black/30 backdrop-blur-xl backdrop-saturate-150 border-white/10",
       )}
     >
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
+      <div
+        className="container mx-auto flex items-center justify-between px-4 md:px-6"
+        style={{ height: HEADER_HEIGHT }}
+      >
         <div className="flex items-center gap-6">
           <Logo forceWhite={isTransparent} />
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">

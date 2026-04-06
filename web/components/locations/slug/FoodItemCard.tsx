@@ -4,13 +4,16 @@ import { getDynamicTags } from "@/lib/filter-utils"
 import { MScaleIndicator } from "./MScaleIndicator"
 import { CarbonFootprint } from "./CarbonFootprint"
 import { DietaryTag } from "./DietaryTags"
+import { cn } from "@/lib/utils"
 
 interface FoodItemCardProps {
   item: Item
   onClick?: () => void
+  /** Brief highlight after deep-link scroll (e.g. `?item=id`). */
+  highlight?: boolean
 }
 
-export function FoodItemCard({ item, onClick }: FoodItemCardProps) {
+export function FoodItemCard({ item, onClick, highlight }: FoodItemCardProps) {
   const carbonTag = item.dietary_tags?.find(t => t.toLowerCase().startsWith('carbon'))
   const dynamicTags = getDynamicTags(item)
   const otherTags = Array.from(new Set([
@@ -20,8 +23,12 @@ export function FoodItemCard({ item, onClick }: FoodItemCardProps) {
 
   return (
     <div
+      id={`menu-item-${item.id}`}
       onClick={onClick}
-      className="flex items-start justify-between p-4 bg-card border-b border-border active:bg-accent transition-colors cursor-pointer last:border-0"
+      className={cn(
+        "flex cursor-pointer items-start justify-between border-b border-border bg-card p-4 transition-colors last:border-0 active:bg-accent",
+        highlight && "ring-2 ring-inset ring-maize bg-maize/10",
+      )}
     >
       <div className="flex-1 pr-4">
         <div className="flex items-center gap-2 mb-1 flex-wrap">

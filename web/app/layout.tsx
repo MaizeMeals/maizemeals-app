@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Roboto, Poppins, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+import { ConditionalFooter } from "@/components/layout/ConditionalFooter";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { cn } from "@/lib/utils";
 
@@ -59,7 +59,7 @@ export default function RootLayout({
         >
           <Header />
           <main className="grow">{children}</main>
-          <Footer />
+          <ConditionalFooter />
         </ThemeProvider>
       </body>
     </html>

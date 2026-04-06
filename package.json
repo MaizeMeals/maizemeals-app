@@ -8,7 +8,8 @@
     "scrape": "cd scraper && python3 main.py",
     "db:start": "npx supabase start",
     "db:stop": "npx supabase stop",
-    "db:pull-prod": "npx dotenv -e .env -- sh -c 'npx supabase db dump --db-url \"$PROD_DB_URL\" -f supabase/schema.sql && npx supabase db reset'"
+    "db:pull-prod": "npx dotenv -e .env -- sh -c 'npx supabase db dump --db-url \"$PROD_DB_URL\" -f supabase/schema.sql && npx supabase db reset'",
+    "gen:types": "npx dotenv -e .env -- sh -c 'mkdir -p web/types && npx supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" --schema public > web/types/supabase.ts'"
   },
   "repository": {
     "type": "git",

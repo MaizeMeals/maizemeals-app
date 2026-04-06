@@ -215,7 +215,13 @@ export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): 
           const minutesLeft = (eDate.getTime() - estNow.getTime()) / 60000;
           const closesAtText = formatTime(targetShift.end_time);
 
-          if (minutesLeft < 30) {
+          // Don't show "Closing Soon" if the next shift starts when this one ends (e.g. Breakfast → Brunch)
+          const nextShiftStartsImmediately = shifts.some(
+              (s) => s !== targetShift && s.start_time === targetShift.end_time
+          );
+          const showClosingSoon = minutesLeft < 30 && !nextShiftStartsImmediately;
+
+          if (showClosingSoon) {
               status = {
                   isOpen: true,
                   text: "Closing Soon",

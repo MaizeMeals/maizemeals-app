@@ -12,13 +12,15 @@ import Link from "next/link"
 import Image from "next/image"
 import { useState } from "react"
 
-interface FoodDetailDrawerProps {
+export interface FoodDetailDrawerProps {
   item: ItemWithPhotos | null
   isOpen: boolean
   onClose: (open: boolean) => void
+  /** When provided, "I ate this" / "Be the first to review" open the review modal for this item instead of navigating. */
+  onStartReview?: (item: ItemWithPhotos) => void
 }
 
-export function DetailDrawer({ item, isOpen, onClose }: FoodDetailDrawerProps) {
+export function DetailDrawer({ item, isOpen, onClose, onStartReview }: FoodDetailDrawerProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0)
 
   if (!item) return null
@@ -111,12 +113,24 @@ export function DetailDrawer({ item, isOpen, onClose }: FoodDetailDrawerProps) {
                   </Link>
                 </>
               ) : (
-                <Link href={`/review/new?item_id=${item.id}`}>
+                onStartReview ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-2 text-xs border-dashed border-border"
+                    onClick={() => onStartReview(item)}
+                  >
+                    <Star className="w-3.5 h-3.5 text-muted-foreground" />
+                    Be the first to review
+                  </Button>
+                ) : (
+                  <Link href={`/review/new?item_id=${item.id}`}>
                     <Button variant="outline" size="sm" className="h-8 gap-2 text-xs border-dashed border-border">
-                        <Star className="w-3.5 h-3.5 text-muted-foreground" />
-                        Be the first to review
+                      <Star className="w-3.5 h-3.5 text-muted-foreground" />
+                      Be the first to review
                     </Button>
-                </Link>
+                  </Link>
+                )
               )}
             </div>
 
@@ -171,12 +185,23 @@ export function DetailDrawer({ item, isOpen, onClose }: FoodDetailDrawerProps) {
           </div>
 
           <div className="mt-8 mb-20 text-center">
-             <Link href={`/review/new?item_id=${item.id}`} className="inline-block w-full">
-                <Button size="lg" className="w-full gap-2 shadow-lg">
-                    <Camera className="w-5 h-5" />
-                    I ate this (Review)
-                </Button>
-            </Link>
+             {onStartReview ? (
+               <Button
+                 size="lg"
+                 className="w-full gap-2 shadow-lg"
+                 onClick={() => onStartReview(item)}
+               >
+                 <Camera className="w-5 h-5" />
+                 I ate this (Review)
+               </Button>
+             ) : (
+               <Link href={`/review/new?item_id=${item.id}`} className="inline-block w-full">
+                 <Button size="lg" className="w-full gap-2 shadow-lg">
+                   <Camera className="w-5 h-5" />
+                   I ate this (Review)
+                 </Button>
+               </Link>
+             )}
           </div>
         </div>
       </SheetContent>
