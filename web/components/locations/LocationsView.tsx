@@ -9,6 +9,7 @@ import { LocationListCard } from "@/components/locations/LocationListCard";
 import { LocationDetailPanel } from "@/components/locations/detail-panel/LocationDetailPanel";
 import { Search, Loader2, X, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { appGhostIconButtonClassName } from "@/lib/button-styles";
 import { HEADER_HEIGHT } from "@/components/layout/constants";
 import type { LocationSummary } from "@/types/location-summary";
 
@@ -399,7 +400,7 @@ export default function LocationsView() {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 shrink-0 rounded-full"
+                    className={appGhostIconButtonClassName}
                     onClick={handleBackFromMobileList}
                     aria-label="Show map"
                     data-no-drawer-swipe

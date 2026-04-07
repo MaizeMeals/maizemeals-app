@@ -1,4 +1,5 @@
 import { WheatOff, Vegan, Carrot, Dumbbell, Sprout } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { FoodHalalIcon } from "@/components/icons/mdi-food-halal"
 import { FoodKosherIcon } from "@/components/icons/mdi-food-kosher"
 import { ChiliMildIcon } from "@/components/icons/mdi-chili-mild"
@@ -32,7 +33,14 @@ export const getDietaryConfig = (tag: string) => {
   }
 }
 
-export const DietaryTag = ({ tag }: { tag: string }) => {
+export const DietaryTag = ({
+  tag,
+  /** When true, label is visible at all breakpoints (e.g. item detail). Default: icon-only until md (list cards). */
+  alwaysShowLabel = false,
+}: {
+  tag: string
+  alwaysShowLabel?: boolean
+}) => {
   const config = getDietaryConfig(tag)
   if (!config) return null
   const Icon = config.icon
@@ -43,7 +51,13 @@ export const DietaryTag = ({ tag }: { tag: string }) => {
       title={config.label}
     >
       <Icon className={`w-3.5 h-3.5 ${config.color}`} />
-      <span className={`hidden md:inline text-[10px] font-bold ${config.color} uppercase tracking-wider`}>
+      <span
+        className={cn(
+          "text-[10px] font-bold uppercase tracking-wider",
+          config.color,
+          alwaysShowLabel ? "inline" : "hidden md:inline",
+        )}
+      >
         {config.label}
       </span>
     </div>

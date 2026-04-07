@@ -23,6 +23,11 @@ export const UserPreferencesSchema = z.object({
 
   // METADATA
   onboarding_completed: z.boolean().default(false),
+
+  // Synced from OAuth (user_profiles); optional for older rows / guests
+  uniqname: z.string().nullable().optional(),
+  avatar_url: z.string().nullable().optional(),
+  display_name: z.string().nullable().optional(),
 });
 
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;

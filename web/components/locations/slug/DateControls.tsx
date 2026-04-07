@@ -11,6 +11,11 @@ import { Popover } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { DateSelector } from "./DateSelector";
 import { cn } from "@/lib/utils";
+import {
+  appPrimaryButtonClassName,
+  appToolbarControlClassName,
+  appToolbarIconControlClassName,
+} from "@/lib/button-styles";
 
 interface DateControlsProps {
   selectedDate: string;
@@ -87,7 +92,9 @@ export function DateControls({
             <Button
               variant="outline"
               size="icon"
-              className={`h-10 w-10 shrink-0 rounded-full border ${(isDateDialogOpen || !isToday) ? "bg-maize/30 border-maize text-foreground" : ""}`}
+              className={appToolbarIconControlClassName(
+                isDateDialogOpen || !isToday,
+              )}
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin text-primary" />
@@ -117,7 +124,11 @@ export function DateControls({
                   availableDates={availableDates}
                 />
 
-                <Button className="w-full" onClick={handleDone} disabled={loading}>
+                <Button
+                  className={cn("w-full", appPrimaryButtonClassName)}
+                  onClick={handleDone}
+                  disabled={loading}
+                >
                   Done
                 </Button>
               </div>
@@ -142,9 +153,7 @@ export function DateControls({
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className={cn(
-                "relative h-10 w-10 md:w-auto p-0 md:px-4 shrink-0 rounded-full border gap-2"
-              )}
+              className={appToolbarControlClassName(false)}
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

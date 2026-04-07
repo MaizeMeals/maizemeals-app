@@ -4,6 +4,8 @@ import "./globals.css";
 import Header from "@/components/layout/Header";
 import { ConditionalFooter } from "@/components/layout/ConditionalFooter";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
+import { SignInSuccessToast } from "@/components/auth/sign-in-success-toast";
 import { cn } from "@/lib/utils";
 
 // 2. Configure Roboto (Body Default)
@@ -60,6 +62,8 @@ export default function RootLayout({
           <Header />
           <main className="grow">{children}</main>
           <ConditionalFooter />
+          <Toaster />
+          <SignInSuccessToast />
         </ThemeProvider>
       </body>
     </html>

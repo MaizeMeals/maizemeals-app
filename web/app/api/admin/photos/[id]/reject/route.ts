@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient, isAdminUserId } from "@/lib/supabase/admin";
 
-const ITEM_PHOTOS_BUCKET = "item-photos";
+import { ITEM_PHOTOS_BUCKET } from "@/lib/item-photos";
 
 export async function POST(
   _request: Request,

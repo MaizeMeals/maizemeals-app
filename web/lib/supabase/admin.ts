@@ -17,10 +17,18 @@ export function createAdminClient() {
 
 const ADMIN_USER_IDS_KEY = "ADMIN_USER_IDS";
 
+function parseAdminUserIds(): string[] {
+  const raw = process.env[ADMIN_USER_IDS_KEY];
+  if (!raw?.trim()) return [];
+  return raw.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
 /** Comma-separated list of user UUIDs allowed to access admin routes. */
 export function isAdminUserId(userId: string): boolean {
-  const raw = process.env[ADMIN_USER_IDS_KEY];
-  if (!raw?.trim()) return false;
-  const ids = raw.split(",").map((s) => s.trim()).filter(Boolean);
-  return ids.includes(userId);
+  return parseAdminUserIds().includes(userId);
+}
+
+/** UUIDs from `ADMIN_USER_IDS` (e.g. for server jobs that notify admins). */
+export function getAdminUserIds(): string[] {
+  return parseAdminUserIds();
 }

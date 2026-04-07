@@ -5,16 +5,18 @@ import { useLocationData } from "@/hooks/use-location-data"
 import { LocationHero } from "@/components/locations/slug/LocationHero"
 import { MenuTabs } from "@/components/locations/slug/MenuTabs"
 import { StationGroup } from "@/components/locations/slug/StationGroup"
-import { DetailDrawer } from "@/components/locations/slug/DetailDrawer"
+import { DetailDrawer, ItemDetailSidebar } from "@/components/locations/slug/DetailDrawer"
 import { SocialProof } from "@/components/locations/slug/SocialProof"
 import { ReviewItemPickerModal } from "@/components/locations/slug/ReviewItemPickerModal"
 import { ReviewModal } from "@/components/locations/detail-panel/ReviewModal"
 import { Utensils, Camera } from "lucide-react"
-import type { Item, MenuData, StationGroup as StationGroupData } from "@/types/dining"
+import type { Item, ItemWithPhotos, MenuData, StationGroup as StationGroupData } from "@/types/dining"
 import { LocationSkeleton } from "@/components/locations/slug/LocationSkeleton"
 import { StickyHeader } from "@/components/locations/slug/StickyHeader"
 import { FilterState, INITIAL_FILTERS } from "@/components/locations/slug/filters/types"
 import { filterItems } from "@/lib/filter-utils"
+import { cn } from "@/lib/utils"
+import Link from "next/link"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 
 const STATION_HIGH_PRIORITY = ["24 carrots", "wild fire maize", "signature maize", "halal", "kosher"]
@@ -53,17 +55,19 @@ export default function LocationPage() {
   const searchParams = useSearchParams()
   const slug = params.slug as string
   const itemParam = searchParams.get("item")
+  const reviewParam = searchParams.get("review")
 
   const [selectedDate, setSelectedDate] = useState<string>(() =>
     new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
   )
 
-  const { data, loading, error } = useLocationData(slug, selectedDate)
+  const { data, loading, error, refetch } = useLocationData(slug, selectedDate)
   const [activeTab, setActiveTab] = useState<string>("Lunch")
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS)
   const [flashItemId, setFlashItemId] = useState<string | null>(null)
   const deepLinkConsumedRef = useRef<string | null>(null)
+  const reviewDeepLinkConsumedRef = useRef<string | null>(null)
 
   // Review flow: FAB opens item picker → user picks item → ReviewModal. "I ate this" in drawer opens ReviewModal directly.
   const [reviewPickerOpen, setReviewPickerOpen] = useState(false)
@@ -120,6 +124,20 @@ export default function LocationPage() {
       })
   }, [data?.menu])
 
+  const detailDrawerItem = useMemo((): ItemWithPhotos | null => {
+    if (!selectedItem) return null
+    const meta = data?.itemMetadata?.[selectedItem.id]
+    if (!meta) return selectedItem
+    const photos = meta.photos.map((storage_path) => ({ storage_path }))
+    return {
+      ...selectedItem,
+      avg_rating:
+        (meta.avgRating ?? 0) > 0 ? meta.avgRating : selectedItem.avg_rating,
+      photos: photos.length > 0 ? photos : undefined,
+      review_count: meta.reviewCount,
+    }
+  }, [selectedItem, data?.itemMetadata])
+
   // Deep link: /locations/[slug]?item=<id> — switch meal tab, reset filters so the item can appear, then scroll + highlight
   useEffect(() => {
     if (!itemParam) {
@@ -154,16 +172,57 @@ export default function LocationPage() {
     return () => clearTimeout(timer)
   }, [itemParam, sortedGroups, data?.menu, slug, router])
 
+  // After OAuth from review CTA: /locations/[slug]?review=<itemId> opens ReviewModal for that item
+  useEffect(() => {
+    if (!reviewParam) {
+      reviewDeepLinkConsumedRef.current = null
+      return
+    }
+    if (!data?.menu) return
+    if (reviewDeepLinkConsumedRef.current === reviewParam) return
+
+    let found: Item | null = null
+    for (const groups of Object.values(data.menu)) {
+      for (const group of groups) {
+        const item = group.items.find((i) => i.id === reviewParam)
+        if (item) {
+          found = item
+          break
+        }
+      }
+      if (found) break
+    }
+    if (!found) return
+
+    const meal = findMealForItem(data.menu, reviewParam)
+    if (meal) setActiveTab(meal)
+    setFilters((prev) => ({ ...INITIAL_FILTERS, dietary: prev.dietary }))
+    setReviewItemFromPicker(found)
+    reviewDeepLinkConsumedRef.current = reviewParam
+
+    const timer = window.setTimeout(() => {
+      router.replace(`/locations/${slug}`, { scroll: false })
+    }, 0)
+
+    return () => clearTimeout(timer)
+  }, [reviewParam, data?.menu, slug, router])
+
   if (loading && !data) {
     return <LocationSkeleton />
   }
 
   if (error || !data || !data.hall) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+      <div className="min-h-screen flex items-center justify-center text-muted-foreground px-4">
         <div className="text-center">
-           <h2 className="text-xl font-bold mb-2">Location Not Found</h2>
-           <p>{error || "We couldn't load this dining hall."}</p>
+          <h2 className="text-xl font-bold mb-2 text-foreground">Location Not Found</h2>
+          <p className="mb-6">{error || "We couldn't load this dining hall."}</p>
+          <Link
+            href="/locations"
+            className="text-maize hover:underline text-sm font-bold"
+          >
+            See all locations
+          </Link>
         </div>
       </div>
     )
@@ -186,70 +245,82 @@ export default function LocationPage() {
         status={status}
       />
 
-      {/* 2.5 Filters */}
-      <StickyHeader
-        filters={filters}
-        setFilters={setFilters}
-        items={allItems}
-        selectedDate={selectedDate}
-        availableDates={availableDates}
-        onDateChange={handleDateChange}
-        loading={loading}
-      />
+      <div className="lg:flex lg:w-full lg:items-start">
+        <div className="min-w-0 flex-1 lg:min-w-0">
+          {/* 2.5 Filters */}
+          <StickyHeader
+            filters={filters}
+            setFilters={setFilters}
+            items={allItems}
+            selectedDate={selectedDate}
+            availableDates={availableDates}
+            onDateChange={handleDateChange}
+            loading={loading}
+          />
 
-      {/* 3. Menu Tabs */}
-      <MenuTabs
-        meals={meals}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        hours={data?.hours}
-      />
+          {/* 3. Menu Tabs */}
+          <MenuTabs
+            meals={meals}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            hours={data?.hours}
+          />
 
-      {/* 4. Menu Content */}
-      <main className="container mx-auto px-4 py-6 min-h-[500px]">
-        {sortedGroups.length > 0 ? (
-          sortedGroups.map((group) => (
-            <StationGroup
-              key={activeTab + group.station}
-              station={group.station}
-              items={group.items}
-              highlightedItemId={flashItemId}
-              onItemClick={setSelectedItem}
-            />
-          ))
-        ) : allItems.length === 0 ? (
-          <div className="text-center py-20 text-muted-foreground">
-            <Utensils className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p>It seems like there isnt any menu for today</p>
-          </div>
-        ) : (
-          <div className="text-center py-20 text-muted-foreground">
-            <Utensils className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p>No menu items matching your filters.</p>
-            <button
-                onClick={() => setFilters(INITIAL_FILTERS)}
-                className="text-maize hover:underline text-sm mt-2 font-bold"
-            >
-                Clear Filters
-            </button>
-          </div>
-        )}
-      </main>
+          {/* 4. Menu Content */}
+          <main className="container mx-auto px-4 py-6 min-h-[500px]">
+            {sortedGroups.length > 0 ? (
+              sortedGroups.map((group) => (
+                <StationGroup
+                  key={activeTab + group.station}
+                  station={group.station}
+                  items={group.items}
+                  highlightedItemId={flashItemId}
+                  onItemClick={setSelectedItem}
+                />
+              ))
+            ) : allItems.length === 0 ? (
+              <div className="text-center py-20 text-muted-foreground">
+                <Utensils className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                <p>It seems like there isnt any menu for today</p>
+              </div>
+            ) : (
+              <div className="text-center py-20 text-muted-foreground">
+                <Utensils className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                <p>No menu items matching your filters.</p>
+                <button
+                  onClick={() => setFilters(INITIAL_FILTERS)}
+                  className="text-maize hover:underline text-sm mt-2 font-bold"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            )}
+          </main>
+        </div>
+
+        <aside
+          className={cn(
+            "hidden lg:sticky lg:top-16 lg:z-10 lg:shrink-0 lg:overflow-hidden lg:bg-background lg:transition-[width,min-width] lg:duration-300 lg:ease-out motion-reduce:lg:transition-none",
+            detailDrawerItem
+              ? "lg:flex lg:w-[min(420px,38vw)] lg:min-w-[280px] lg:border-l lg:border-border lg:shadow-md"
+              : "lg:w-0 lg:min-w-0 lg:border-l lg:border-transparent",
+          )}
+          aria-hidden={!detailDrawerItem}
+        >
+          {detailDrawerItem ? (
+            <div className="flex h-[calc(100vh-4rem)] min-h-[28rem] w-[min(420px,38vw)] min-w-[280px] flex-col">
+              <ItemDetailSidebar
+                item={detailDrawerItem}
+                onClose={() => setSelectedItem(null)}
+                onStartReview={setReviewItemFromDrawer}
+              />
+            </div>
+          ) : null}
+        </aside>
+      </div>
 
       {/* 5. Social Proof */}
       <SocialProof />
-
-      {/* Camera FAB: show at modal breakpoints (md and up); opens item picker then review modal */}
-      <div className="hidden md:flex fixed bottom-6 right-6 z-40">
-        <button
-          type="button"
-          onClick={() => setReviewPickerOpen(true)}
-          className="bg-maize text-primary p-4 rounded-full shadow-xl hover:scale-110 active:scale-95 transition-all border-2 border-secondary"
-          aria-label="Add a review"
-        >
-          <Camera className="w-6 h-6" />
-        </button>
-      </div>
 
       <ReviewItemPickerModal
         open={reviewPickerOpen}
@@ -267,13 +338,14 @@ export default function LocationPage() {
           itemName={reviewItem.name}
           open={!!reviewItem}
           onOpenChange={(open) => !open && closeReviewModal()}
+          onPosted={() => refetch()}
         />
       )}
 
       {/* Detail Drawer */}
       <DetailDrawer
-        item={selectedItem}
-        isOpen={!!selectedItem}
+        item={detailDrawerItem}
+        isOpen={!!detailDrawerItem}
         onClose={() => setSelectedItem(null)}
         onStartReview={setReviewItemFromDrawer}
       />

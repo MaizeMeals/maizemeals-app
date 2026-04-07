@@ -3,6 +3,12 @@
 import { useState } from "react";
 import { RefreshCcw, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import {
+  appDialogMutedOutlineButtonClassName,
+  appPrimaryButtonClassName,
+  appToolbarControlClassName,
+} from "@/lib/button-styles";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useMacroStats } from "./filters/useMacroStats";
 import { DietarySection } from "./filters/DietarySection";
@@ -63,7 +69,7 @@ export function FilterDialog({
       <Dialog.Trigger asChild onClick={handleOpen}>
         <Button
           variant="outline"
-          className={`relative h-10 w-10 md:w-auto p-0 md:px-4 shrink-0 rounded-full border gap-2 ${activeCount > 0 ? "bg-maize/30 border-maize text-foreground" : ""}`}
+          className={appToolbarControlClassName(activeCount > 0)}
         >
           <SlidersHorizontal className="w-4 h-4" />
           <span className="hidden md:inline">Filters</span>
@@ -126,11 +132,14 @@ export function FilterDialog({
                 setTempFilters(reset);
                 setFilters(reset);
               }}
-              className="text-muted-foreground hover:text-foreground"
+              className={cn("gap-2", appDialogMutedOutlineButtonClassName)}
             >
               Reset <RefreshCcw />{" "}
             </Button>
-            <Button onClick={applyFilters} className="font-bold px-8">
+            <Button
+              onClick={applyFilters}
+              className={cn("gap-2 px-8", appPrimaryButtonClassName)}
+            >
               Show {resultCount} items
             </Button>
           </div>

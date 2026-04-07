@@ -1,6 +1,7 @@
 "use client"
 
-import { MapPin, Clock, Heart, Share2, Info } from "lucide-react"
+import Link from "next/link"
+import { MapPin, Clock, Heart, Share2, Info, ChevronLeft } from "lucide-react"
 import { useUserLocation } from "@/hooks/use-user-location"
 import { calculateDistance, formatDistance } from "@/lib/distance"
 import { getTypeForDisplay, cleanLocationName } from "@/lib/dining-utils"
@@ -84,10 +85,17 @@ export function LocationHero({ name, type, imageUrl, address, latitude, longitud
         <div className="absolute inset-0 bg-gradient-to-t from-[hsl(240_0%_5%)] via-[hsl(240_0%_5%)]/20 to-transparent" />
       </div>
 
-      {/* Content Bottom-Left */}
+      {/* Content over bottom gradient (dark area for readable type) */}
       <div className="absolute bottom-0 left-0 w-full p-4 md:p-6 z-10">
         <div className="flex justify-between items-end">
-          <div>
+          <div className="min-w-0 pr-2">
+            <Link
+              href="/locations"
+              className="inline-flex items-center gap-0.5 mb-3 text-sm font-semibold text-slate-100 drop-shadow-md transition-colors hover:text-maize focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
+            >
+              <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
+              See all locations
+            </Link>
             <div className="flex items-center gap-2 mb-2">
               <Badge color={status.color}>
                 {status.text}

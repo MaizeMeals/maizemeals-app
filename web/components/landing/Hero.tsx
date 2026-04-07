@@ -4,6 +4,11 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ChevronRight } from "lucide-react"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { cn } from "@/lib/utils"
+import {
+  landingHeroOutlineButtonClassName,
+  landingPrimaryButtonClassName,
+} from "@/lib/button-styles"
 
 export function Hero() {
   const { track } = useAnalytics()
@@ -55,14 +60,23 @@ export function Hero() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-24">
-              <Button asChild size="lg" className="w-full sm:w-auto bg-maize text-umich-blue hover:bg-maize/80 font-bold">
+              <Button
+                asChild
+                size="lg"
+                className={cn("w-full sm:w-auto", landingPrimaryButtonClassName)}
+              >
                 <Link href="/menus" onClick={handleFindFoodClick} className="flex items-center gap-2">
                   <span className="w-4" />
                   Find Food Now
                   <ChevronRight className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="w-full sm:w-auto bg-white/80 dark:bg-black/50 backdrop-blur-sm border-input transform-gpu">
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className={cn("w-full sm:w-auto", landingHeroOutlineButtonClassName)}
+              >
                 <Link href="/locations" onClick={handleBrowseHallsClick}>Browse Dining Halls</Link>
               </Button>
             </div>

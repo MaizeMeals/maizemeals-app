@@ -113,6 +113,7 @@ export type Database = {
           name: string
           normalized_name: string | null
           nutrition_score: number | null
+          review_count: number
           serving_size: string | null
           station: string | null
           updated_at: string | null
@@ -129,6 +130,7 @@ export type Database = {
           name: string
           normalized_name?: string | null
           nutrition_score?: number | null
+          review_count?: number
           serving_size?: string | null
           station?: string | null
           updated_at?: string | null
@@ -145,6 +147,7 @@ export type Database = {
           name?: string
           normalized_name?: string | null
           nutrition_score?: number | null
+          review_count?: number
           serving_size?: string | null
           station?: string | null
           updated_at?: string | null
@@ -250,6 +253,7 @@ export type Database = {
           item_id: string
           storage_path: string
           user_id: string
+          user_rating_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -258,6 +262,7 @@ export type Database = {
           item_id: string
           storage_path: string
           user_id: string
+          user_rating_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -266,6 +271,7 @@ export type Database = {
           item_id?: string
           storage_path?: string
           user_id?: string
+          user_rating_id?: string | null
         }
         Relationships: [
           {
@@ -275,13 +281,22 @@ export type Database = {
             referencedRelation: "items"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "photos_user_rating_id_fkey"
+            columns: ["user_rating_id"]
+            isOneToOne: false
+            referencedRelation: "user_ratings"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           default_campus: string | null
           dietary_filters: Json
+          display_name: string | null
           favorite_location_ids: string[] | null
           health_focus: number
           last_played_at: string | null
@@ -290,13 +305,16 @@ export type Database = {
           rating_sensitivity: number
           streak_current: number
           streak_max: number
+          uniqname: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           default_campus?: string | null
           dietary_filters?: Json
+          display_name?: string | null
           favorite_location_ids?: string[] | null
           health_focus?: number
           last_played_at?: string | null
@@ -305,13 +323,16 @@ export type Database = {
           rating_sensitivity?: number
           streak_current?: number
           streak_max?: number
+          uniqname?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           default_campus?: string | null
           dietary_filters?: Json
+          display_name?: string | null
           favorite_location_ids?: string[] | null
           health_focus?: number
           last_played_at?: string | null
@@ -320,6 +341,7 @@ export type Database = {
           rating_sensitivity?: number
           streak_current?: number
           streak_max?: number
+          uniqname?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -329,6 +351,7 @@ export type Database = {
         Row: {
           comment: string | null
           created_at: string | null
+          edited_at: string | null
           id: string
           item_id: string
           rating: number
@@ -337,6 +360,7 @@ export type Database = {
         Insert: {
           comment?: string | null
           created_at?: string | null
+          edited_at?: string | null
           id?: string
           item_id: string
           rating: number
@@ -345,6 +369,7 @@ export type Database = {
         Update: {
           comment?: string | null
           created_at?: string | null
+          edited_at?: string | null
           id?: string
           item_id?: string
           rating?: number
@@ -357,6 +382,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "items"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_ratings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }

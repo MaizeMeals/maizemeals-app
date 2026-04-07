@@ -14,9 +14,7 @@ export const ExternalApiResponseSchema = z.object({
 
 export const CleanCapacityDataSchema = z.object({
   name: z.string(),
-  current_capacity: z.number(),
-  total_capacity: z.number(),
-  patron_flow: z.number(),
+  capacity_count: z.number(),
   is_error: z.boolean(),
 });
 

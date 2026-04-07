@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { User as UserIcon, Settings, LogOut, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/use-analytics";
+import {
+  appGhostTextButtonClassName,
+  appPrimaryButtonClassName,
+} from "@/lib/button-styles";
 
 interface UserNavProps {
   user: User | null;
@@ -47,15 +51,12 @@ export function UserNav({ user, signOut, forceWhite = false }: UserNavProps) {
             "hidden sm:inline-flex",
             forceWhite
               ? "text-white/90 hover:bg-white/10 hover:text-white"
-              : "hover:bg-muted hover:text-foreground",
+              : appGhostTextButtonClassName,
           )}
         >
           <Link href="/login">Log in</Link>
         </Button>
-        <Button
-          asChild
-          className="bg-maize text-umich-blue"
-        >
+        <Button asChild className={appPrimaryButtonClassName}>
           <Link href="/signup">Sign up</Link>
         </Button>
       </div>

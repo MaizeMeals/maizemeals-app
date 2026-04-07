@@ -1,14 +1,44 @@
 import { Item } from "@/types/dining";
 import { FilterState } from "@/components/locations/slug/filters/types";
 
+/** Lowercase a-z only, for comparing DB labels to filter ids. */
+export function normalizeDietaryTag(tag: string): string {
+  return tag.toLowerCase().replace(/[^a-z]/g, "");
+}
+
+/**
+ * For each selected filter id, item tags that satisfy it (OR within the list).
+ * Heuristic: halal/kosher searches include veg/vegan as no meat; vegetarian includes vegan.
+ */
+const DIETARY_FILTER_SATISFIED_BY: Record<string, readonly string[]> = {
+  halal: ["halal", "vegetarian", "vegan"],
+  kosher: ["kosher", "vegetarian", "vegan"],
+  vegetarian: ["vegetarian", "vegan"],
+  vegan: ["vegan"],
+  glutenfree: ["glutenfree"],
+  spicy: ["spicy"],
+  highprotein: ["highprotein"],
+  highfiber: ["highfiber"],
+};
+
+function itemSatisfiesDietaryFilter(
+  itemTags: Set<string>,
+  normalizedFilter: string,
+): boolean {
+  const satisfying = DIETARY_FILTER_SATISFIED_BY[normalizedFilter];
+  if (satisfying) {
+    return satisfying.some((t) => itemTags.has(t));
+  }
+  return itemTags.has(normalizedFilter);
+}
+
 export const getDynamicTags = (item: Item): string[] => {
   const tags: string[] = [];
 
   // Get static tags from DB (e.g. "Vegan", "Halal")
   if (item.dietary_tags) {
     item.dietary_tags.forEach((tag) => {
-      // Normalize to lowercase alphanumeric for comparison
-      tags.push(tag.toLowerCase().replace(/[^a-z]/g, ""));
+      tags.push(normalizeDietaryTag(tag));
     });
   }
 
@@ -45,10 +75,9 @@ export function filterItems(items: Item[], filters: FilterState): Item[] {
     if (filters.dietary.length > 0) {
       const itemTags = new Set(getDynamicTags(item));
 
-      const hasAll = filters.dietary.every((tag) => {
-        const normalizedFilter = tag.toLowerCase().replace(/[^a-z]/g, "");
-        return itemTags.has(normalizedFilter);
-      });
+      const hasAll = filters.dietary.every((tag) =>
+        itemSatisfiesDietaryFilter(itemTags, normalizeDietaryTag(tag)),
+      );
 
       if (!hasAll) return false;
     }
