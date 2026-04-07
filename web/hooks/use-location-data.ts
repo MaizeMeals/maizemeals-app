@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Item, ItemMetadata, LocationData, MenuData, OperatingHour } from "@/types/dining";
 import { determineHallStatus } from "@/lib/dining";
@@ -7,8 +7,15 @@ export function useLocationData(slug: string, dateStr?: string) {
   const [data, setData] = useState<LocationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const refetch = useCallback(() => {
+    setReloadKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       setLoading(true);
       const supabase = createClient();
@@ -41,8 +48,10 @@ export function useLocationData(slug: string, dateStr?: string) {
         .single();
 
       if (hallError || !hall) {
-        setError("Location not found");
-        setLoading(false);
+        if (!cancelled) {
+          setError("Location not found");
+          setLoading(false);
+        }
         return;
       }
 
@@ -136,8 +145,7 @@ export function useLocationData(slug: string, dateStr?: string) {
           itemMetadata[item.id] = {
             photos: approvedPhotos,
             avgRating: item.avg_rating || 0,
-            // Fallback gracefully if you haven't run 'supabase gen types' for review_count yet
-            reviewCount: 'review_count' in item ? Number((item as Record<string, unknown>).review_count) : 0, 
+            reviewCount: item.review_count ?? 0,
           };
 
           // Strip relational metadata out to keep the pure Item type clean
@@ -151,22 +159,28 @@ export function useLocationData(slug: string, dateStr?: string) {
         menu[meal].sort((a, b) => a.station.localeCompare(b.station));
       });
 
-      setData({
-        hall,
-        status,
-        menu,
-        itemMetadata,
-        hours: targetHours || [],
-        weeklyHours,
-        availableDates,
-        rating,
-        reviewCount,
-      });
-      setLoading(false);
+      if (!cancelled) {
+        setData({
+          hall,
+          status,
+          menu,
+          itemMetadata,
+          hours: targetHours || [],
+          weeklyHours,
+          availableDates,
+          rating,
+          reviewCount,
+        });
+        setError(null);
+        setLoading(false);
+      }
     }
 
     load();
-  }, [slug, dateStr]);
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, dateStr, reloadKey]);
 
-  return { data, loading, error };
+  return { data, loading, error, refetch };
 }

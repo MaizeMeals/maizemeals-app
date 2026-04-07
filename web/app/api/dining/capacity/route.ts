@@ -30,9 +30,7 @@ export async function GET() {
 
     const cleanData = result.data.capacity.map((hall) => ({
       name: hall.name,
-      current_capacity: hall.capacity_count,
-      total_capacity: hall.total,
-      patron_flow: hall.patronflow,
+      capacity_count: hall.capacity_count,
       is_error: hall.error !== "no errors" && hall.error !== undefined
     }));
 

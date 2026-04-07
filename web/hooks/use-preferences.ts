@@ -8,7 +8,7 @@ import {
   DEFAULT_PREFERENCES,
   UserPreferencesSchema
 } from "@/types/preferences";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 export function usePreferences() {
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);

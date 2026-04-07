@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { landingPrimaryButtonClassName } from "@/lib/button-styles"
 
 export function CTA() {
   const { track } = useAnalytics()
@@ -46,7 +47,7 @@ export function CTA() {
               Log in with your <span className="text-maize font-mono">@umich.edu</span> account to start rating.
             </p>
             <div className="relative z-10 flex flex-col sm:flex-row justify-center gap-4">
-              <Button asChild size="lg" className="bg-maize text-umich-blue hover:bg-maize/90 font-bold">
+              <Button asChild size="lg" className={landingPrimaryButtonClassName}>
                 <Link href="/login" onClick={handleGetStartedClick}>Get Started</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-white/20 bg-transparent text-white hover:bg-white/10 dark:hover:bg-white/10">

@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
 import imageCompression from "browser-image-compression";
 import { X, Loader2, Camera, LogIn } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
+import { appPrimaryButtonClassName } from "@/lib/button-styles";
 import { StarRatingInput } from "./StarRatingInput";
 import { submitReview, type SubmitReviewResult } from "@/app/actions/submit-review";
 import { createClient } from "@/lib/supabase/client";
@@ -22,10 +23,21 @@ type Props = {
   itemName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called after a successful post so the parent can refetch location/menu data. */
+  onPosted?: () => void;
 };
 
-export function ReviewModal({ itemId, itemName, open, onOpenChange }: Props) {
+function locationSlugFromPathname(pathname: string): string | null {
+  const parts = pathname.split("/").filter(Boolean);
+  const i = parts.indexOf("locations");
+  if (i === -1 || !parts[i + 1]) return null;
+  return parts[i + 1];
+}
+
+export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
+  const postLoginPath = `${pathname}?review=${encodeURIComponent(itemId)}`;
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -75,10 +87,14 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange }: Props) {
         formData.set("rating", String(rating));
         if (comment.trim()) formData.set("comment", comment.trim());
         if (photoFile) formData.set("photo", photoFile);
+        const slug = locationSlugFromPathname(pathname);
+        if (slug) formData.set("revalidate_location_slug", slug);
 
         const result: SubmitReviewResult = await submitReview(formData);
 
         if (result.success) {
+          onPosted?.();
+          router.refresh();
           handleOpenChange(false);
           if (photoFile) {
             toast.success(
@@ -91,7 +107,9 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange }: Props) {
         }
 
         if (result.status === 401) {
-          router.push("/login");
+          router.push(
+            `/login?next=${encodeURIComponent(postLoginPath)}`
+          );
           return;
         }
         toast.error(result.error);
@@ -99,7 +117,7 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange }: Props) {
         setIsSubmitting(false);
       }
     },
-    [itemId, rating, comment, photoFile, handleOpenChange, router]
+    [itemId, rating, comment, photoFile, handleOpenChange, router, postLoginPath, pathname, onPosted]
   );
 
   const [isCompressing, setIsCompressing] = useState(false);
@@ -181,7 +199,11 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange }: Props) {
                   Sign in with your @umich.edu email to rate items and share your experience.
                 </p>
                 <form action="/auth/login" method="post">
-                  <Button type="submit" className="w-full gap-2">
+                  <input type="hidden" name="next" value={postLoginPath} />
+                  <Button
+                    type="submit"
+                    className={cn("w-full gap-2", appPrimaryButtonClassName)}
+                  >
                     <LogIn className="h-4 w-4" />
                     Sign in with @umich.edu
                   </Button>
@@ -270,7 +292,7 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange }: Props) {
               <Button
                 type="submit"
                 disabled={isSubmitting || rating < 1}
-                className="mt-2"
+                className={cn("mt-2 w-full gap-2", appPrimaryButtonClassName)}
               >
                 {isSubmitting ? (
                   <>

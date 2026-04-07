@@ -7,6 +7,7 @@ import { Loader2, Star, Flame, Camera, UtensilsCrossed } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MenuData, ItemMetadata } from "@/types/dining";
 import { getStoragePhotoUrl } from "./PhotosDialog";
+import { FOOD_ITEM_PLACEHOLDER_IMAGE } from "@/lib/food-placeholder-image";
 
 type Props = {
   loading: boolean;
@@ -15,8 +16,6 @@ type Props = {
   /** Active venue slug for full menu / item deep links to `/locations/[slug]`. */
   venueSlug: string;
 }
-
-const PLACEHOLDER_IMAGE = "/images/food-placeholder.jpg";
 
 export function MenuTab({ loading, menu, itemMetadata, venueSlug }: Props) {
   const router = useRouter();
@@ -28,10 +27,10 @@ export function MenuTab({ loading, menu, itemMetadata, venueSlug }: Props) {
 
   // Resolve first photo to a display URL (storage path → Supabase URL, or keep local path)
   const getDisplayImageUrl = useCallback((photoPath: string | undefined): string => {
-    if (!photoPath) return PLACEHOLDER_IMAGE;
+    if (!photoPath) return FOOD_ITEM_PLACEHOLDER_IMAGE;
     if (photoPath.startsWith("/")) return photoPath;
     const url = getStoragePhotoUrl(photoPath);
-    return url || PLACEHOLDER_IMAGE;
+    return url || FOOD_ITEM_PLACEHOLDER_IMAGE;
   }, []);
 
   // Extract and sort real highlights using the decoupled metadata

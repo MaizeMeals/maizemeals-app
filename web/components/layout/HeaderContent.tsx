@@ -19,9 +19,11 @@ import { Button } from "@/components/ui/button";
 interface HeaderContentProps {
   user: User | null;
   signOut: () => Promise<void>;
+  /** From server: `ADMIN_USER_IDS` includes this user. */
+  isAdmin?: boolean;
 }
 
-export function HeaderContent({ user, signOut }: HeaderContentProps) {
+export function HeaderContent({ user, signOut, isAdmin = false }: HeaderContentProps) {
   const { track } = useAnalytics();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -79,6 +81,7 @@ export function HeaderContent({ user, signOut }: HeaderContentProps) {
     { name: "Menus", href: "/menus" },
     { name: "Locations", href: "/locations" },
     { name: "Nutrition", href: "/nutrition" },
+    ...(isAdmin ? [{ name: "Admin", href: "/admin" } as const] : []),
   ];
 
   // Header is transparent on Landing OR Location page when at top

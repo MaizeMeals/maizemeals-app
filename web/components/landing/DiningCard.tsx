@@ -1,9 +1,12 @@
 import { Card } from "@/components/ui/card"
-import { Clock, Users } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { ChevronRight, Clock, Users } from "lucide-react"
 import Link from "next/link"
 import { CampusLocation } from "@/types/location"
 import { Skeleton } from "@/components/ui/skeleton"
 import { STATUS_COLORS, CAPACITY_COLORS } from "@/lib/dining-utils"
+import { cn } from "@/lib/utils"
+import { landingSurfaceOutlineButtonClassName } from "@/lib/button-styles"
 
 interface DiningCardProps {
   hall: CampusLocation // Accepts both DiningHall and Retail types
@@ -21,7 +24,7 @@ export function DiningCard({ hall, onClick, href }: DiningCardProps) {
 
   return (
     <Link href={href} onClick={onClick} className="block h-full">
-      <Card className="group cursor-pointer hover:border-maize transition-all duration-300 flex flex-col h-full border-border bg-card overflow-hidden">
+      <Card className="group cursor-pointer border-border bg-card transition-all duration-300 hover:border-muted-foreground/50 hover:shadow-lg flex flex-col h-full overflow-hidden">
         {/* Image Area */}
         <div className="h-32 w-full bg-muted relative overflow-hidden shrink-0">
           <img
@@ -63,9 +66,20 @@ export function DiningCard({ hall, onClick, href }: DiningCardProps) {
           </div>
 
           <div className="pt-3 border-t border-border mt-auto">
-               <span className="text-xs text-umich-blue hover:underline">
-                 View Full Menu →
-               </span>
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className={cn(
+                "w-full pointer-events-none",
+                landingSurfaceOutlineButtonClassName,
+              )}
+            >
+              <span className="inline-flex items-center justify-center gap-1.5">
+                View Full Menu
+                <ChevronRight className="h-3.5 w-3.5 opacity-80" aria-hidden />
+              </span>
+            </Button>
           </div>
         </div>
       </Card>

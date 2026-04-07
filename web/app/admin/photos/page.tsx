@@ -6,14 +6,8 @@ import Image from "next/image";
 import { Loader2, Check, X, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
-
-const ITEM_PHOTOS_BUCKET = "item-photos";
-
-function getPhotoUrl(storagePath: string): string {
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!base) return "";
-  return `${base}/storage/v1/object/public/${ITEM_PHOTOS_BUCKET}/${storagePath}`;
-}
+import { getItemPhotoPublicUrl } from "@/lib/item-photos";
+import { HEADER_HEIGHT } from "@/components/layout/constants";
 
 type PhotoRow = {
   id: string;
@@ -97,14 +91,20 @@ export default function AdminPhotosPage() {
 
   if (loading && photos.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div
+        className="flex min-h-screen items-center justify-center bg-background"
+        style={{ paddingTop: HEADER_HEIGHT }}
+      >
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div
+      className="min-h-screen bg-background p-6"
+      style={{ paddingTop: HEADER_HEIGHT }}
+    >
       <div className="max-w-6xl mx-auto">
         <h1 className="text-2xl font-bold mb-2">Photo moderation</h1>
         <p className="text-muted-foreground text-sm mb-6">
@@ -125,7 +125,7 @@ export default function AdminPhotosPage() {
         {!error && photos.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {photos.map((photo) => {
-              const url = getPhotoUrl(photo.storage_path);
+              const url = getItemPhotoPublicUrl(photo.storage_path);
               const busy = actionId === photo.id;
               return (
                 <div

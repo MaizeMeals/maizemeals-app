@@ -1,6 +1,6 @@
-import { Star } from "lucide-react"
 import { Item } from "@/types/dining"
 import { getDynamicTags } from "@/lib/filter-utils"
+import { Stars } from "@/components/locations/detail-panel/Stars"
 import { MScaleIndicator } from "./MScaleIndicator"
 import { CarbonFootprint } from "./CarbonFootprint"
 import { DietaryTag } from "./DietaryTags"
@@ -37,12 +37,20 @@ export function FoodItemCard({ item, onClick, highlight }: FoodItemCardProps) {
 
         <div className="flex items-center gap-3 text-sm mb-2">
           {item.avg_rating ? (
-             <div className="flex items-center gap-1 text-maize">
-                <Star className="w-3.5 h-3.5 fill-current" />
-                <span className="font-semibold text-foreground">{item.avg_rating.toFixed(1)}</span>
-             </div>
+            <div className="flex items-center gap-2">
+              <Stars rating={item.avg_rating} />
+              <span className="font-semibold tabular-nums text-foreground">
+                {item.avg_rating.toFixed(1)}
+                {(item.review_count ?? 0) > 0 ? (
+                  <span className="font-normal text-muted-foreground">
+                    {" "}
+                    ({item.review_count})
+                  </span>
+                ) : null}
+              </span>
+            </div>
           ) : (
-             <span className="text-xs text-muted-foreground">No ratings</span>
+            <span className="text-xs text-muted-foreground">No ratings</span>
           )}
         </div>
 

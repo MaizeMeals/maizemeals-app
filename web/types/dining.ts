@@ -16,6 +16,8 @@ export type MenuEventWithItem = MenuEvent & {
 
 export type ItemWithPhotos = Item & {
   photos?: { storage_path: string }[]
+  /** From menu metadata (user_ratings count) when available. */
+  review_count?: number
 }
 
 // API Response Types

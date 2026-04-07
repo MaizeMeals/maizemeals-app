@@ -1,31 +1,328 @@
 "use client"
 
-import { Star, X, Camera, ChevronRight, MessageSquarePlus } from "lucide-react"
+import { Star, X, Camera } from "lucide-react"
 import { ItemWithPhotos } from "@/types/dining"
 import { getDynamicTags } from "@/lib/filter-utils"
 import { MScaleIndicator } from "./MScaleIndicator"
 import { CarbonFootprint } from "./CarbonFootprint"
 import { DietaryTag } from "./DietaryTags"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetHeader, SheetClose, SheetTitle } from "@/components/ui/sheet"
+import {
+  appDashedSecondaryButtonClassName,
+  appPrimaryButtonClassName,
+} from "@/lib/button-styles"
+import { cn } from "@/lib/utils"
+import { Sheet, SheetContent, SheetClose, SheetTitle } from "@/components/ui/sheet"
 import Link from "next/link"
 import Image from "next/image"
-import { useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { getItemPhotoPublicUrl } from "@/lib/item-photos"
+import { FOOD_ITEM_PLACEHOLDER_IMAGE } from "@/lib/food-placeholder-image"
+import { useLgUp } from "@/hooks/use-lg-up"
 
-export interface FoodDetailDrawerProps {
-  item: ItemWithPhotos | null
-  isOpen: boolean
-  onClose: (open: boolean) => void
-  /** When provided, "I ate this" / "Be the first to review" open the review modal for this item instead of navigating. */
-  onStartReview?: (item: ItemWithPhotos) => void
+const AXIS_LOCK_PX = 10
+
+function closeThresholdPx() {
+  if (typeof window === "undefined") return 120
+  return Math.max(100, Math.round(window.innerHeight * 0.18))
 }
 
-export function DetailDrawer({ item, isOpen, onClose, onStartReview }: FoodDetailDrawerProps) {
+function useSwipeToCloseSheet(onDismiss: () => void, enabled: boolean) {
+  const [dragY, setDragY] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const [isExitAnimating, setIsExitAnimating] = useState(false)
+
+  const dragYRef = useRef(0)
+  const startYRef = useRef(0)
+  const startXRef = useRef(0)
+  const phaseRef = useRef<"idle" | "pending" | "handle" | "dragging">("idle")
+  const windowCleanupRef = useRef<(() => void) | null>(null)
+  const dismissAfterTransitionRef = useRef(false)
+  const dismissFallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const completeDismiss = useCallback(() => {
+    if (dismissFallbackTimerRef.current) {
+      clearTimeout(dismissFallbackTimerRef.current)
+      dismissFallbackTimerRef.current = null
+    }
+    dismissAfterTransitionRef.current = false
+    setIsExitAnimating(false)
+    setDragY(0)
+    dragYRef.current = 0
+    onDismiss()
+  }, [onDismiss])
+
+  const clearWindowListeners = useCallback(() => {
+    windowCleanupRef.current?.()
+    windowCleanupRef.current = null
+  }, [])
+
+  useEffect(() => {
+    if (!enabled) {
+      if (dismissFallbackTimerRef.current) {
+        clearTimeout(dismissFallbackTimerRef.current)
+        dismissFallbackTimerRef.current = null
+      }
+      setDragY(0)
+      dragYRef.current = 0
+      setIsDragging(false)
+      setIsExitAnimating(false)
+      dismissAfterTransitionRef.current = false
+      phaseRef.current = "idle"
+      clearWindowListeners()
+    }
+  }, [enabled, clearWindowListeners])
+
+  useEffect(
+    () => () => {
+      clearWindowListeners()
+      if (dismissFallbackTimerRef.current) {
+        clearTimeout(dismissFallbackTimerRef.current)
+        dismissFallbackTimerRef.current = null
+      }
+    },
+    [clearWindowListeners],
+  )
+
+  const setOffset = useCallback((y: number) => {
+    const next = Math.max(0, y)
+    dragYRef.current = next
+    setDragY(next)
+  }, [])
+
+  const flushDismissAnimation = useCallback(() => {
+    dismissAfterTransitionRef.current = true
+    setIsDragging(false)
+    setIsExitAnimating(true)
+    const h = typeof window !== "undefined" ? window.innerHeight : 720
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        dragYRef.current = h
+        setDragY(h)
+      })
+    })
+    if (dismissFallbackTimerRef.current) clearTimeout(dismissFallbackTimerRef.current)
+    dismissFallbackTimerRef.current = setTimeout(() => {
+      dismissFallbackTimerRef.current = null
+      if (!dismissAfterTransitionRef.current) return
+      completeDismiss()
+    }, 450)
+  }, [completeDismiss])
+
+  const onSheetTransitionEnd = useCallback(
+    (e: React.TransitionEvent<HTMLDivElement>) => {
+      if (e.propertyName !== "transform" || e.target !== e.currentTarget) return
+      if (!dismissAfterTransitionRef.current) return
+      completeDismiss()
+    },
+    [completeDismiss],
+  )
+
+  const endDrag = useCallback(() => {
+    const y = dragYRef.current
+    phaseRef.current = "idle"
+    setIsDragging(false)
+    if (y >= closeThresholdPx()) {
+      flushDismissAnimation()
+      return
+    }
+    setDragY(0)
+    dragYRef.current = 0
+  }, [flushDismissAnimation])
+
+  const handleHandlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLElement>) => {
+      if (!enabled) return
+      if (e.button !== 0 && e.pointerType === "mouse") return
+      phaseRef.current = "handle"
+      setIsDragging(true)
+      startYRef.current = e.clientY
+      startXRef.current = e.clientX
+      setOffset(0)
+      e.currentTarget.setPointerCapture(e.pointerId)
+    },
+    [enabled, setOffset],
+  )
+
+  const handleCapturedPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLElement>) => {
+      if (!enabled) return
+      if (phaseRef.current !== "handle" && phaseRef.current !== "dragging") return
+      if (phaseRef.current === "handle") {
+        phaseRef.current = "dragging"
+      }
+      const dy = e.clientY - startYRef.current
+      if (dy > 0) {
+        setOffset(dy)
+        e.preventDefault()
+      } else {
+        setOffset(0)
+      }
+    },
+    [enabled, setOffset],
+  )
+
+  const handleCapturedPointerUp = useCallback(
+    (e: React.PointerEvent<HTMLElement>) => {
+      if (!enabled) return
+      if (phaseRef.current !== "handle" && phaseRef.current !== "dragging") return
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId)
+      } catch {
+        /* ignore */
+      }
+      endDrag()
+    },
+    [enabled, endDrag],
+  )
+
+  const startPendingSwipe = useCallback(
+    (e: React.PointerEvent<HTMLElement>, scrollTopAtDown = 0) => {
+      if (!enabled) return
+      if (e.button !== 0 && e.pointerType === "mouse") return
+      if (scrollTopAtDown > 0) return
+
+      const el = e.currentTarget
+      const pointerId = e.pointerId
+      phaseRef.current = "pending"
+      startYRef.current = e.clientY
+      startXRef.current = e.clientX
+      setOffset(0)
+
+      const onMove = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return
+
+        if (phaseRef.current === "pending") {
+          const dy = ev.clientY - startYRef.current
+          const dx = ev.clientX - startXRef.current
+          if (Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return
+
+          if (Math.abs(dx) >= Math.abs(dy)) {
+            phaseRef.current = "idle"
+            clearWindowListeners()
+            return
+          }
+
+          if (dy <= 0) {
+            phaseRef.current = "idle"
+            clearWindowListeners()
+            return
+          }
+
+          try {
+            el.setPointerCapture(pointerId)
+          } catch {
+            phaseRef.current = "idle"
+            clearWindowListeners()
+            return
+          }
+
+          phaseRef.current = "dragging"
+          setIsDragging(true)
+          setOffset(dy)
+          ev.preventDefault()
+          return
+        }
+
+        if (phaseRef.current === "dragging") {
+          const dy = ev.clientY - startYRef.current
+          if (dy > 0) {
+            setOffset(dy)
+            ev.preventDefault()
+          } else {
+            setOffset(0)
+          }
+        }
+      }
+
+      const onUp = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return
+        window.removeEventListener("pointermove", onMove)
+        window.removeEventListener("pointerup", onUp)
+        window.removeEventListener("pointercancel", onUp)
+        windowCleanupRef.current = null
+
+        if (phaseRef.current === "pending") {
+          phaseRef.current = "idle"
+          return
+        }
+
+        if (phaseRef.current === "dragging") {
+          try {
+            el.releasePointerCapture(pointerId)
+          } catch {
+            /* ignore */
+          }
+          const y = dragYRef.current
+          phaseRef.current = "idle"
+          setIsDragging(false)
+          if (y >= closeThresholdPx()) {
+            flushDismissAnimation()
+          } else {
+            setDragY(0)
+            dragYRef.current = 0
+          }
+        }
+      }
+
+      window.addEventListener("pointermove", onMove, { passive: false })
+      window.addEventListener("pointerup", onUp)
+      window.addEventListener("pointercancel", onUp)
+      windowCleanupRef.current = () => {
+        window.removeEventListener("pointermove", onMove)
+        window.removeEventListener("pointerup", onUp)
+        window.removeEventListener("pointercancel", onUp)
+      }
+    },
+    [clearWindowListeners, enabled, flushDismissAnimation, setOffset],
+  )
+
+  const sheetTransition =
+    isDragging || isExitAnimating
+      ? isDragging
+        ? "none"
+        : "transform 0.38s cubic-bezier(0.32, 0.72, 0, 1)"
+      : "transform 0.28s cubic-bezier(0.32, 0.72, 0, 1)"
+
+  return {
+    dragY,
+    isDragging,
+    sheetTransition,
+    onSheetTransitionEnd,
+    handleHandlePointerDown,
+    handleCapturedPointerMove,
+    handleCapturedPointerUp,
+    startPendingSwipe,
+  }
+}
+
+export type ItemDetailSwipeApi = ReturnType<typeof useSwipeToCloseSheet>
+
+export interface ItemDetailPanelProps {
+  item: ItemWithPhotos
+  onClose: () => void
+  onStartReview?: (item: ItemWithPhotos) => void
+  variant: "sheet" | "sidebar"
+  swipe?: ItemDetailSwipeApi
+  className?: string
+}
+
+export function ItemDetailPanel({
+  item,
+  onClose,
+  onStartReview,
+  variant,
+  swipe,
+  className,
+}: ItemDetailPanelProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const scrollBodyRef = useRef<HTMLDivElement>(null)
+  const isSheet = variant === "sheet"
 
-  if (!item) return null
+  useEffect(() => {
+    setActiveImageIndex(0)
+  }, [item.id])
 
-  // --- Data Parsing ---
   const carbonTag = item.dietary_tags?.find(t => t.toLowerCase().startsWith('carbon'))
   const dynamicTags = getDynamicTags(item)
   const otherTags = Array.from(new Set([
@@ -47,35 +344,82 @@ export function DetailDrawer({ item, isOpen, onClose, onStartReview }: FoodDetai
   const sodium = macros["Sodium"] || 0
   const satFat = macros["Saturated Fat"] || 0
 
-  const images = item.photos?.length
-    ? item.photos.map(p => p.storage_path)
-    : ["/images/food-placeholder-1.jpg"]
+  const imagePaths = item.photos?.length
+    ? item.photos.map((p) => p.storage_path)
+    : [FOOD_ITEM_PLACEHOLDER_IMAGE]
+
+  const hasReviews =
+    (item.avg_rating ?? 0) > 0 || (item.review_count ?? 0) > 0
+
+  const imageSizes = isSheet ? "100vw" : "(max-width: 1023px) 0px, min(420px, 38vw)"
 
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="bottom" className="h-[85vh] p-0 rounded-t-3xl overflow-hidden flex flex-col bg-background">
-        <SheetTitle className="sr-only">{item.name} Details</SheetTitle>
+    <>
+      {isSheet && <SheetTitle className="sr-only">{item.name} Details</SheetTitle>}
 
-        {/* --- 1. Image Carousel --- */}
-        <div className="relative w-full h-64 shrink-0 bg-muted">
+      <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
+        {isSheet && swipe && (
           <div
-            className="flex w-full h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-            onScroll={(e) => {
-              const scrollLeft = e.currentTarget.scrollLeft
-              const width = e.currentTarget.offsetWidth
-              setActiveImageIndex(Math.round(scrollLeft / width))
-            }}
+            className="z-30 flex shrink-0 cursor-grab touch-none flex-col items-center justify-center gap-2 bg-background pb-2 pt-3 active:cursor-grabbing"
+            onPointerDown={swipe.handleHandlePointerDown}
+            onPointerMove={swipe.handleCapturedPointerMove}
+            onPointerUp={swipe.handleCapturedPointerUp}
+            onPointerCancel={swipe.handleCapturedPointerUp}
           >
-            {images.map((src, idx) => (
-              <div key={idx} className="w-full h-full shrink-0 snap-center relative flex items-center justify-center bg-accent text-muted-foreground">
-                 {/* Replace with <Image> when you have real URLs */}
-                 <span className="text-xs">No Photo Available</span>
-              </div>
-            ))}
+            <span className="sr-only">Drag down to close</span>
+            <span className="h-1.5 w-10 rounded-full bg-muted-foreground/30" aria-hidden />
+          </div>
+        )}
+
+        <div
+          className={cn(
+            "relative min-h-0 w-full shrink-0 bg-muted",
+            isSheet ? "h-64" : "h-52",
+          )}
+        >
+          <div
+            className="flex h-full w-full snap-x snap-mandatory overflow-x-auto scrollbar-hide"
+            onPointerDown={
+              isSheet && swipe ? (e) => swipe.startPendingSwipe(e) : undefined
+            }
+            onScroll={(e) => {
+                const scrollLeft = e.currentTarget.scrollLeft
+                const width = e.currentTarget.offsetWidth
+                setActiveImageIndex(Math.round(scrollLeft / width))
+              }}
+            >
+            {imagePaths.map((path, idx) => {
+              const isLocal = path.startsWith("/")
+              const src = isLocal ? path : getItemPhotoPublicUrl(path)
+              const supabaseBase = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
+              const remoteUnoptimized =
+                !isLocal &&
+                supabaseBase.length > 0 &&
+                src.startsWith(supabaseBase)
+              return (
+                <div
+                  key={`${path}-${idx}`}
+                  className="relative flex h-full w-full shrink-0 snap-center items-center justify-center bg-muted"
+                >
+                  {src ? (
+                    <Image
+                      src={src}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes={imageSizes}
+                      unoptimized={remoteUnoptimized}
+                    />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No photo</span>
+                  )}
+                </div>
+              )
+            })}
           </div>
 
           <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-            {images.map((_, i) => (
+            {imagePaths.map((_, i) => (
               <div
                 key={i}
                 className={`w-2 h-2 rounded-full transition-all ${i === activeImageIndex ? "bg-white w-4" : "bg-white/50"}`}
@@ -83,31 +427,71 @@ export function DetailDrawer({ item, isOpen, onClose, onStartReview }: FoodDetai
             ))}
           </div>
 
-          <SheetClose className="absolute top-4 right-4 p-2 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-black/70 transition-colors">
-            <X className="w-5 h-5" />
-          </SheetClose>
+          {isSheet ? (
+            <SheetClose className="absolute top-4 right-4 p-2 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-black/70 transition-colors">
+              <X className="h-5 w-5" />
+            </SheetClose>
+          ) : (
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute right-3 top-3 z-20 rounded-full bg-black/50 p-2 text-white backdrop-blur-md transition-colors hover:bg-black/70"
+              aria-label="Close details"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
         </div>
 
-        {/* --- Scrollable Content Body --- */}
-        <div className="flex-1 overflow-y-auto p-6">
+          {/* --- Scrollable Content Body --- */}
+          <div
+            ref={scrollBodyRef}
+            className="min-h-0 flex-1 overflow-y-auto p-6"
+            onPointerDown={
+              isSheet && swipe
+                ? (e) => {
+                    const t = e.target as HTMLElement
+                    if (
+                      t.closest(
+                        "button, a, input, textarea, select, [role='button'], [data-sheet-swipe-ignore]",
+                      )
+                    ) {
+                      return
+                    }
+                    swipe.startPendingSwipe(e, scrollBodyRef.current?.scrollTop ?? 0)
+                  }
+                : undefined
+            }
+          >
 
           <div className="mb-6">
             <div className="flex justify-between items-start gap-4 mb-2">
               <h2 className="text-2xl font-bold text-foreground leading-tight">
                 {item.name}
               </h2>
-              <div className="shrink-0 relative z-20" onClick={(e) => e.stopPropagation()}>
+              <div
+                className="relative z-20 shrink-0"
+                data-sheet-swipe-ignore
+                onClick={(e) => e.stopPropagation()}
+              >
                 <MScaleIndicator score={item.nutrition_score} size="lg" showLabel />
               </div>
             </div>
 
             <div className="flex items-center gap-2 mb-4">
-              {item.avg_rating ? (
+              {hasReviews ? (
                 <>
                   <div className="flex items-center gap-1 bg-maize/20 px-2 py-1 rounded-md">
                     <Star className="w-4 h-4 fill-maize text-maize" />
-                    <span className="font-bold text-foreground">{item.avg_rating.toFixed(1)}</span>
+                    <span className="font-bold text-foreground">
+                      {(item.avg_rating ?? 0).toFixed(1)}
+                    </span>
                   </div>
+                  {(item.review_count ?? 0) > 0 ? (
+                    <span className="text-xs text-muted-foreground">
+                      ({item.review_count} review{(item.review_count ?? 0) === 1 ? "" : "s"})
+                    </span>
+                  ) : null}
                   <Link href={`/reviews?item_id=${item.id}`} className="text-sm text-blue-600 hover:underline">
                     See reviews
                   </Link>
@@ -117,7 +501,10 @@ export function DetailDrawer({ item, isOpen, onClose, onStartReview }: FoodDetai
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 gap-2 text-xs border-dashed border-border"
+                    className={cn(
+                      appDashedSecondaryButtonClassName,
+                      "h-8 gap-2 text-xs",
+                    )}
                     onClick={() => onStartReview(item)}
                   >
                     <Star className="w-3.5 h-3.5 text-muted-foreground" />
@@ -125,7 +512,14 @@ export function DetailDrawer({ item, isOpen, onClose, onStartReview }: FoodDetai
                   </Button>
                 ) : (
                   <Link href={`/review/new?item_id=${item.id}`}>
-                    <Button variant="outline" size="sm" className="h-8 gap-2 text-xs border-dashed border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        appDashedSecondaryButtonClassName,
+                        "h-8 gap-2 text-xs",
+                      )}
+                    >
                       <Star className="w-3.5 h-3.5 text-muted-foreground" />
                       Be the first to review
                     </Button>
@@ -139,7 +533,7 @@ export function DetailDrawer({ item, isOpen, onClose, onStartReview }: FoodDetai
                 <CarbonFootprint level={carbonTag.toLowerCase().replace('carbon', '') as any} />
               )}
               {otherTags.map(tag => (
-                <DietaryTag key={tag} tag={tag} />
+                <DietaryTag key={tag} tag={tag} alwaysShowLabel />
               ))}
             </div>
           </div>
@@ -188,7 +582,10 @@ export function DetailDrawer({ item, isOpen, onClose, onStartReview }: FoodDetai
              {onStartReview ? (
                <Button
                  size="lg"
-                 className="w-full gap-2 shadow-lg"
+                 className={cn(
+                   "w-full gap-2 shadow-lg",
+                   appPrimaryButtonClassName,
+                 )}
                  onClick={() => onStartReview(item)}
                >
                  <Camera className="w-5 h-5" />
@@ -196,7 +593,13 @@ export function DetailDrawer({ item, isOpen, onClose, onStartReview }: FoodDetai
                </Button>
              ) : (
                <Link href={`/review/new?item_id=${item.id}`} className="inline-block w-full">
-                 <Button size="lg" className="w-full gap-2 shadow-lg">
+                 <Button
+                   size="lg"
+                   className={cn(
+                     "w-full gap-2 shadow-lg",
+                     appPrimaryButtonClassName,
+                   )}
+                 >
                    <Camera className="w-5 h-5" />
                    I ate this (Review)
                  </Button>
@@ -204,8 +607,74 @@ export function DetailDrawer({ item, isOpen, onClose, onStartReview }: FoodDetai
              )}
           </div>
         </div>
+      </div>
+    </>
+  )
+}
+
+export interface FoodDetailDrawerProps {
+  item: ItemWithPhotos | null
+  isOpen: boolean
+  onClose: (open: boolean) => void
+  /** When provided, "I ate this" / "Be the first to review" open the review modal for this item instead of navigating. */
+  onStartReview?: (item: ItemWithPhotos) => void
+}
+
+export function DetailDrawer({ item, isOpen, onClose, onStartReview }: FoodDetailDrawerProps) {
+  const dismiss = useCallback(() => onClose(false), [onClose])
+  const lgUp = useLgUp()
+  // Radix Sheet portals to document.body — a CSS-hidden parent does not hide it; skip mounting on lg+.
+  const swipe = useSwipeToCloseSheet(dismiss, isOpen && !!item && !lgUp)
+
+  if (!item) return null
+  if (lgUp) return null
+
+  return (
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent
+        side="bottom"
+        hideClose
+        onTransitionEnd={swipe.onSheetTransitionEnd}
+        className={cn(
+          "flex h-[85vh] max-h-[85vh] flex-col overflow-hidden rounded-t-3xl bg-background p-0 will-change-transform",
+          swipe.isDragging && "touch-none",
+          "data-[state=closed]:animate-none data-[state=closed]:duration-0",
+        )}
+        style={{
+          transform: `translateY(${swipe.dragY}px)`,
+          transition: swipe.sheetTransition,
+        }}
+      >
+        <ItemDetailPanel
+          item={item}
+          variant="sheet"
+          onClose={() => onClose(false)}
+          onStartReview={onStartReview}
+          swipe={swipe}
+        />
       </SheetContent>
     </Sheet>
+  )
+}
+
+/** Desktop (lg+): inline panel on the right of the menu — no overlay, no swipe. */
+export function ItemDetailSidebar({
+  item,
+  onClose,
+  onStartReview,
+}: {
+  item: ItemWithPhotos
+  onClose: () => void
+  onStartReview?: (item: ItemWithPhotos) => void
+}) {
+  return (
+    <ItemDetailPanel
+      item={item}
+      variant="sidebar"
+      onClose={onClose}
+      onStartReview={onStartReview}
+      className="h-full min-h-0"
+    />
   )
 }
 

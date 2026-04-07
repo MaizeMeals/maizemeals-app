@@ -49,7 +49,7 @@ export function useCampusLocations() {
           if (capRes.ok) {
             const json: CapacityApiResponse = await capRes.json();
             json.data.forEach(c => {
-               capMap[c.name] = { current: c.current_capacity, total: c.total_capacity };
+               capMap[c.name] = c.capacity_count;
             });
           }
         } catch (e) {
@@ -95,16 +95,15 @@ export function useCampusLocations() {
 
         // A. Handle Dining Halls
         if (loc.type === 'DINING HALLS' || loc.type === 'DINING_HALLS') {
-           const cap = capMap[loc.name];
+           const capacity_count = capMap[loc.name];
            let capacity = { label: "Quiet", color: "green", percentage: 0 };
 
            if (!base.status.isOpen) {
               capacity = { label: "Closed", color: "gray", percentage: 0 };
-           } else if (cap && cap.total > 0) {
-              const pct = Math.round((cap.current / cap.total) * 100);
-              let label = pct > 70 ? "Busy" : pct > 40 ? "Moderate" : "Quiet";
-              let color = pct > 70 ? "red" : pct > 40 ? "orange" : "green";
-              capacity = { label, color, percentage: pct };
+           } else if (capacity_count && capacity_count > 0) {
+              let label = capacity_count > 70 ? "Busy" : capacity_count > 40 ? "Moderate" : "Quiet";
+              let color = capacity_count > 70 ? "red" : capacity_count > 40 ? "orange" : "green";
+              capacity = { label, color, percentage: capacity_count };
            }
 
            return { ...base, type: 'DINING_HALLS', capacity } as DiningHallLocation;

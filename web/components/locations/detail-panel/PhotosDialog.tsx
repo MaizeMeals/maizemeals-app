@@ -4,14 +4,11 @@ import Image from "next/image";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getItemPhotoPublicUrl } from "@/lib/item-photos";
 
-/** Supabase Storage bucket for item/review photos. */
-const PHOTOS_BUCKET = "photos";
-
+/** Public URL for an approved item photo in Storage (bucket: item-photos). */
 export function getStoragePhotoUrl(storagePath: string): string {
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!base) return "";
-  return `${base}/storage/v1/object/public/${PHOTOS_BUCKET}/${storagePath}`;
+  return getItemPhotoPublicUrl(storagePath);
 }
 
 export type PhotosDialogProps = {
