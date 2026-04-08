@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { usePreferences } from "@/hooks/usePreferences";
+import { DietaryEssentialsSheet } from "@/components/preferences/DietaryEssentialsSheet";
 import { useLocationsList } from "@/hooks/use-locations-list";
 import { useMdUp } from "@/hooks/use-md-up";
 import { useMobileLocationsDrawerSwipe } from "@/hooks/use-mobile-locations-drawer-swipe";
@@ -50,6 +52,12 @@ function replaceLocationsHash(slug: string | null) {
 
 export default function LocationsView() {
   const mdUp = useMdUp();
+  const {
+    preferences,
+    updatePreferences,
+    loading: prefsLoading,
+    needsTier1Onboarding,
+  } = usePreferences();
   const { locations, isLoading, userLocation } = useLocationsList();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeVenueId, setActiveVenueId] = useState<string | null>(null);
@@ -261,6 +269,17 @@ export default function LocationsView() {
       className="relative box-border flex h-dvh max-h-dvh w-full flex-col overflow-hidden md:flex-row"
       style={{ paddingTop: HEADER_HEIGHT }}
     >
+      <DietaryEssentialsSheet
+        open={!prefsLoading && needsTier1Onboarding}
+        onOpenChange={() => {}}
+        dietaryFilters={preferences.dietary_filters}
+        onSave={async (filters) => {
+          await updatePreferences({
+            dietary_filters: filters,
+            onboarding_completed: true,
+          });
+        }}
+      />
       {/* Desktop: sidebar */}
       <aside
         className={`

@@ -17,7 +17,6 @@ import Link from "next/link"
 import Image from "next/image"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { getItemPhotoPublicUrl } from "@/lib/item-photos"
-import { FOOD_ITEM_PLACEHOLDER_IMAGE } from "@/lib/food-placeholder-image"
 import { useLgUp } from "@/hooks/use-lg-up"
 
 const AXIS_LOCK_PX = 10
@@ -296,12 +295,33 @@ function useSwipeToCloseSheet(onDismiss: () => void, enabled: boolean) {
   }
 }
 
+/** Same patterned empty state as `LocationDetailPanel` hero when there is no photo. */
+function ItemNoPhotoPattern() {
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6">
+      <div
+        className="absolute inset-0 bg-muted [background-image:radial-gradient(hsl(var(--foreground)/0.08)_1px,transparent_0)] [background-size:18px_18px]"
+        aria-hidden
+      />
+      <div
+        className="absolute inset-0 opacity-[0.35] [background-image:repeating-linear-gradient(135deg,hsl(var(--border))_0,hsl(var(--border))_1px,transparent_1px,transparent_11px)]"
+        aria-hidden
+      />
+      <p className="relative z-[1] text-center text-sm font-medium text-muted-foreground">
+        Add a photo with a review
+      </p>
+    </div>
+  )
+}
+
 export type ItemDetailSwipeApi = ReturnType<typeof useSwipeToCloseSheet>
 
 export interface ItemDetailPanelProps {
   item: ItemWithPhotos
   onClose: () => void
   onStartReview?: (item: ItemWithPhotos) => void
+  /** When set, "See reviews" includes this path so the reviews page can link back to the menu. */
+  reviewsReturnPath?: string
   variant: "sheet" | "sidebar"
   swipe?: ItemDetailSwipeApi
   className?: string
@@ -311,6 +331,7 @@ export function ItemDetailPanel({
   item,
   onClose,
   onStartReview,
+  reviewsReturnPath,
   variant,
   swipe,
   className,
@@ -344,12 +365,18 @@ export function ItemDetailPanel({
   const sodium = macros["Sodium"] || 0
   const satFat = macros["Saturated Fat"] || 0
 
-  const imagePaths = item.photos?.length
-    ? item.photos.map((p) => p.storage_path)
-    : [FOOD_ITEM_PLACEHOLDER_IMAGE]
+  const hasPhotos = (item.photos?.length ?? 0) > 0
+  const imagePaths = hasPhotos
+    ? item.photos!.map((p) => p.storage_path)
+    : []
 
   const hasReviews =
     (item.avg_rating ?? 0) > 0 || (item.review_count ?? 0) > 0
+
+  const reviewsHref =
+    reviewsReturnPath && reviewsReturnPath.length > 0
+      ? `/reviews?item_id=${encodeURIComponent(item.id)}&return=${encodeURIComponent(reviewsReturnPath)}`
+      : `/reviews?item_id=${encodeURIComponent(item.id)}`
 
   const imageSizes = isSheet ? "100vw" : "(max-width: 1023px) 0px, min(420px, 38vw)"
 
@@ -388,44 +415,52 @@ export function ItemDetailPanel({
                 setActiveImageIndex(Math.round(scrollLeft / width))
               }}
             >
-            {imagePaths.map((path, idx) => {
-              const isLocal = path.startsWith("/")
-              const src = isLocal ? path : getItemPhotoPublicUrl(path)
-              const supabaseBase = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-              const remoteUnoptimized =
-                !isLocal &&
-                supabaseBase.length > 0 &&
-                src.startsWith(supabaseBase)
-              return (
-                <div
-                  key={`${path}-${idx}`}
-                  className="relative flex h-full w-full shrink-0 snap-center items-center justify-center bg-muted"
-                >
-                  {src ? (
-                    <Image
-                      src={src}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes={imageSizes}
-                      unoptimized={remoteUnoptimized}
-                    />
-                  ) : (
-                    <span className="text-xs text-muted-foreground">No photo</span>
-                  )}
-                </div>
-              )
-            })}
+            {hasPhotos ? (
+              imagePaths.map((path, idx) => {
+                const isLocal = path.startsWith("/")
+                const src = isLocal ? path : getItemPhotoPublicUrl(path)
+                const supabaseBase = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
+                const remoteUnoptimized =
+                  !isLocal &&
+                  supabaseBase.length > 0 &&
+                  src.startsWith(supabaseBase)
+                return (
+                  <div
+                    key={`${path}-${idx}`}
+                    className="relative flex h-full w-full shrink-0 snap-center items-center justify-center bg-muted"
+                  >
+                    {src ? (
+                      <Image
+                        src={src}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes={imageSizes}
+                        unoptimized={remoteUnoptimized}
+                      />
+                    ) : (
+                      <ItemNoPhotoPattern />
+                    )}
+                  </div>
+                )
+              })
+            ) : (
+              <div className="relative flex h-full w-full shrink-0 snap-center items-center justify-center bg-muted">
+                <ItemNoPhotoPattern />
+              </div>
+            )}
           </div>
 
-          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-            {imagePaths.map((_, i) => (
-              <div
-                key={i}
-                className={`w-2 h-2 rounded-full transition-all ${i === activeImageIndex ? "bg-white w-4" : "bg-white/50"}`}
-              />
-            ))}
-          </div>
+          {hasPhotos ? (
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+              {imagePaths.map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-2 h-2 rounded-full transition-all ${i === activeImageIndex ? "bg-white w-4" : "bg-white/50"}`}
+                />
+              ))}
+            </div>
+          ) : null}
 
           {isSheet ? (
             <SheetClose className="absolute top-4 right-4 p-2 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-black/70 transition-colors">
@@ -492,7 +527,7 @@ export function ItemDetailPanel({
                       ({item.review_count} review{(item.review_count ?? 0) === 1 ? "" : "s"})
                     </span>
                   ) : null}
-                  <Link href={`/reviews?item_id=${item.id}`} className="text-sm text-blue-600 hover:underline">
+                  <Link href={reviewsHref} className="text-sm text-blue-600 hover:underline">
                     See reviews
                   </Link>
                 </>
@@ -618,9 +653,17 @@ export interface FoodDetailDrawerProps {
   onClose: (open: boolean) => void
   /** When provided, "I ate this" / "Be the first to review" open the review modal for this item instead of navigating. */
   onStartReview?: (item: ItemWithPhotos) => void
+  /** Path to the current location menu; passed through to reviews for a "return to menu" link. */
+  reviewsReturnPath?: string
 }
 
-export function DetailDrawer({ item, isOpen, onClose, onStartReview }: FoodDetailDrawerProps) {
+export function DetailDrawer({
+  item,
+  isOpen,
+  onClose,
+  onStartReview,
+  reviewsReturnPath,
+}: FoodDetailDrawerProps) {
   const dismiss = useCallback(() => onClose(false), [onClose])
   const lgUp = useLgUp()
   // Radix Sheet portals to document.body — a CSS-hidden parent does not hide it; skip mounting on lg+.
@@ -650,6 +693,7 @@ export function DetailDrawer({ item, isOpen, onClose, onStartReview }: FoodDetai
           variant="sheet"
           onClose={() => onClose(false)}
           onStartReview={onStartReview}
+          reviewsReturnPath={reviewsReturnPath}
           swipe={swipe}
         />
       </SheetContent>
@@ -657,24 +701,66 @@ export function DetailDrawer({ item, isOpen, onClose, onStartReview }: FoodDetai
   )
 }
 
+const DESKTOP_DETAIL_PANEL_MS = 300
+
 /** Desktop (lg+): inline panel on the right of the menu — no overlay, no swipe. */
 export function ItemDetailSidebar({
   item,
   onClose,
   onStartReview,
+  reviewsReturnPath,
 }: {
   item: ItemWithPhotos
   onClose: () => void
   onStartReview?: (item: ItemWithPhotos) => void
+  reviewsReturnPath?: string
 }) {
+  const [exiting, setExiting] = useState(false)
+
+  useEffect(() => {
+    setExiting(false)
+  }, [item.id])
+
+  const handleDismiss = useCallback(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      onClose()
+      return
+    }
+    setExiting(true)
+  }, [onClose])
+
+  const onExitAnimationEnd = useCallback(
+    (e: React.AnimationEvent<HTMLDivElement>) => {
+      if (e.target !== e.currentTarget) return
+      onClose()
+    },
+    [onClose],
+  )
+
   return (
-    <ItemDetailPanel
-      item={item}
-      variant="sidebar"
-      onClose={onClose}
-      onStartReview={onStartReview}
-      className="h-full min-h-0"
-    />
+    <div
+      key={item.id}
+      className={cn(
+        "flex h-full min-h-0 flex-col",
+        exiting
+          ? "motion-reduce:animate-none lg:animate-out lg:slide-out-to-right lg:fade-out lg:fill-mode-forwards lg:duration-300 lg:ease-out"
+          : "motion-reduce:animate-none lg:animate-in lg:slide-in-from-right lg:fade-in lg:duration-300 lg:ease-out",
+      )}
+      style={{ animationDuration: `${DESKTOP_DETAIL_PANEL_MS}ms` }}
+      onAnimationEnd={exiting ? onExitAnimationEnd : undefined}
+    >
+      <ItemDetailPanel
+        item={item}
+        variant="sidebar"
+        onClose={handleDismiss}
+        onStartReview={onStartReview}
+        reviewsReturnPath={reviewsReturnPath}
+        className="h-full min-h-0"
+      />
+    </div>
   )
 }
 

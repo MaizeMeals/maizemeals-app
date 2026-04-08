@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useMemo, useEffect, useRef } from "react"
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react"
+import { usePreferences } from "@/hooks/usePreferences"
 import { useLocationData } from "@/hooks/use-location-data"
 import { LocationHero } from "@/components/locations/slug/LocationHero"
 import { MenuTabs } from "@/components/locations/slug/MenuTabs"
@@ -9,15 +10,22 @@ import { DetailDrawer, ItemDetailSidebar } from "@/components/locations/slug/Det
 import { SocialProof } from "@/components/locations/slug/SocialProof"
 import { ReviewItemPickerModal } from "@/components/locations/slug/ReviewItemPickerModal"
 import { ReviewModal } from "@/components/locations/detail-panel/ReviewModal"
-import { Utensils, Camera } from "lucide-react"
+import { Utensils } from "lucide-react"
 import type { Item, ItemWithPhotos, MenuData, StationGroup as StationGroupData } from "@/types/dining"
 import { LocationSkeleton } from "@/components/locations/slug/LocationSkeleton"
 import { StickyHeader } from "@/components/locations/slug/StickyHeader"
 import { FilterState, INITIAL_FILTERS } from "@/components/locations/slug/filters/types"
 import { filterItems } from "@/lib/filter-utils"
+import { compareItemsBySmartPreferences } from "@/lib/preference-scoring"
+import { RefineRecommendationsBanner, REFINE_BANNER_DISMISSED_KEY } from "@/components/preferences/RefineRecommendationsBanner"
+import {
+  GuestLoginPreferencesBanner,
+  GUEST_LOGIN_CTA_DISMISSED_KEY,
+} from "@/components/preferences/GuestLoginPreferencesBanner"
+import { SmartSlidersDialog } from "@/components/preferences/SmartSlidersDialog"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
-import { useParams, useRouter, useSearchParams } from "next/navigation"
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation"
 
 const STATION_HIGH_PRIORITY = ["24 carrots", "wild fire maize", "signature maize", "halal", "kosher"]
 const STATION_LOW_PRIORITY = ["m-bakery", "mbakery", "pizziti", "soup"]
@@ -40,6 +48,10 @@ function sortStationGroups(filteredGroups: StationGroupData[]): StationGroupData
   })
 }
 
+function dietarySelectionKey(tags: string[]): string {
+  return [...tags].sort().join("\0")
+}
+
 function findMealForItem(menu: MenuData, itemId: string): string | null {
   for (const meal of Object.keys(menu)) {
     if (menu[meal].some((g) => g.items.some((i) => i.id === itemId))) {
@@ -51,6 +63,7 @@ function findMealForItem(menu: MenuData, itemId: string): string | null {
 
 export default function LocationPage() {
   const params = useParams()
+  const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
   const slug = params.slug as string
@@ -62,9 +75,26 @@ export default function LocationPage() {
   )
 
   const { data, loading, error, refetch } = useLocationData(slug, selectedDate)
+  const { preferences, updatePreferences, loading: prefsLoading, isGuest } =
+    usePreferences()
+  const [slidersOpen, setSlidersOpen] = useState(false)
+  const [refineBannerDismissed, setRefineBannerDismissed] = useState(false)
+  const [guestLoginCtaDismissed, setGuestLoginCtaDismissed] = useState(false)
   const [activeTab, setActiveTab] = useState<string>("Lunch")
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS)
+  const setFiltersWithProfileSync = useCallback(
+    (action: React.SetStateAction<FilterState>) => {
+      setFilters((prev) => {
+        const next = typeof action === "function" ? action(prev) : action
+        if (dietarySelectionKey(prev.dietary) !== dietarySelectionKey(next.dietary)) {
+          void updatePreferences({ dietary_filters: next.dietary })
+        }
+        return next
+      })
+    },
+    [updatePreferences],
+  )
   const [flashItemId, setFlashItemId] = useState<string | null>(null)
   const deepLinkConsumedRef = useRef<string | null>(null)
   const reviewDeepLinkConsumedRef = useRef<string | null>(null)
@@ -74,6 +104,30 @@ export default function LocationPage() {
   const [reviewItemFromPicker, setReviewItemFromPicker] = useState<Item | null>(null)
   const [reviewItemFromDrawer, setReviewItemFromDrawer] = useState<Item | null>(null)
   const reviewItem = reviewItemFromDrawer ?? reviewItemFromPicker
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    setRefineBannerDismissed(
+      localStorage.getItem(REFINE_BANNER_DISMISSED_KEY) === "1",
+    )
+    setGuestLoginCtaDismissed(
+      localStorage.getItem(GUEST_LOGIN_CTA_DISMISSED_KEY) === "1",
+    )
+  }, [])
+
+  useEffect(() => {
+    if (prefsLoading) return
+    setFilters((prev) => {
+      const merged = [
+        ...new Set([...preferences.dietary_filters, ...prev.dietary]),
+      ]
+      const prevKey = [...prev.dietary].sort().join("\0")
+      const mergedKey = [...merged].sort().join("\0")
+      if (prevKey === mergedKey) return prev
+      return { ...prev, dietary: merged }
+    })
+  }, [preferences.dietary_filters, prefsLoading])
+
   const closeReviewModal = () => {
     setReviewItemFromDrawer(null)
     setReviewItemFromPicker(null)
@@ -81,7 +135,7 @@ export default function LocationPage() {
 
   const handleDateChange = (date: string) => {
     setSelectedDate(date)
-    setFilters({
+    setFiltersWithProfileSync({
       ...INITIAL_FILTERS,
       dietary: filters.dietary
     })
@@ -89,7 +143,7 @@ export default function LocationPage() {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
-    setFilters({
+    setFiltersWithProfileSync({
       ...INITIAL_FILTERS,
       dietary: filters.dietary // dont reset, its visible
     })
@@ -103,12 +157,15 @@ export default function LocationPage() {
     const groups = data.menu[activeTab] || []
     const filteredGroups = groups
       .map((group) => {
-        const filteredItems = filterItems(group.items, filters)
+        let filteredItems = filterItems(group.items, filters)
+        filteredItems = [...filteredItems].sort((a, b) =>
+          compareItemsBySmartPreferences(a, b, preferences),
+        )
         return { ...group, items: filteredItems }
       })
       .filter((group) => group.items.length > 0)
     return sortStationGroups(filteredGroups)
-  }, [data?.menu, activeTab, filters])
+  }, [data?.menu, activeTab, filters, preferences])
 
   // All menu items across all meals (for review item picker), deduped by id
   const allMenuItems = useMemo(() => {
@@ -138,7 +195,16 @@ export default function LocationPage() {
     }
   }, [selectedItem, data?.itemMetadata])
 
-  // Deep link: /locations/[slug]?item=<id> — switch meal tab, reset filters so the item can appear, then scroll + highlight
+  const reviewsReturnPath = useMemo(() => {
+    const q = new URLSearchParams(searchParams.toString())
+    if (detailDrawerItem) {
+      q.set("item", detailDrawerItem.id)
+    }
+    const qs = q.toString()
+    return qs ? `${pathname}?${qs}` : pathname
+  }, [pathname, searchParams, detailDrawerItem])
+
+  // Deep link: /locations/[slug]?item=<id> — switch meal tab, reset filters, open detail drawer, scroll + highlight, then strip query
   useEffect(() => {
     if (!itemParam) {
       deepLinkConsumedRef.current = null
@@ -148,8 +214,8 @@ export default function LocationPage() {
     const meal = findMealForItem(data.menu, itemParam)
     if (!meal) return
     setActiveTab(meal)
-    setFilters((prev) => ({ ...INITIAL_FILTERS, dietary: prev.dietary }))
-  }, [itemParam, data?.menu])
+    setFiltersWithProfileSync((prev) => ({ ...INITIAL_FILTERS, dietary: prev.dietary }))
+  }, [itemParam, data?.menu, setFiltersWithProfileSync])
 
   useEffect(() => {
     if (!itemParam || !data?.menu) return
@@ -159,11 +225,23 @@ export default function LocationPage() {
     if (!inView) return
     if (deepLinkConsumedRef.current === itemParam) return
 
+    let found: Item | null = null
+    for (const g of sortedGroups) {
+      const it = g.items.find((i: Item) => i.id === itemParam)
+      if (it) {
+        found = it
+        break
+      }
+    }
+    if (!found) return
+
     const timer = window.setTimeout(() => {
-      const el = document.getElementById(`menu-item-${itemParam}`)
-      if (!el) return
       deepLinkConsumedRef.current = itemParam
-      el.scrollIntoView({ behavior: "smooth", block: "center" })
+      setSelectedItem(found)
+      const el = document.getElementById(`menu-item-${itemParam}`)
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" })
+      }
       setFlashItemId(itemParam)
       window.setTimeout(() => setFlashItemId(null), 2200)
       router.replace(`/locations/${slug}`, { scroll: false })
@@ -171,6 +249,24 @@ export default function LocationPage() {
 
     return () => clearTimeout(timer)
   }, [itemParam, sortedGroups, data?.menu, slug, router])
+
+  const loginHref = useMemo(() => {
+    const q = searchParams.toString()
+    const next = q ? `${pathname}?${q}` : pathname
+    return `/login?next=${encodeURIComponent(next)}`
+  }, [pathname, searchParams])
+
+  const showRefineBanner =
+    !prefsLoading &&
+    !isGuest &&
+    preferences.onboarding_completed &&
+    !refineBannerDismissed
+
+  const showGuestLoginBanner =
+    !prefsLoading &&
+    isGuest &&
+    preferences.onboarding_completed &&
+    !guestLoginCtaDismissed
 
   // After OAuth from review CTA: /locations/[slug]?review=<itemId> opens ReviewModal for that item
   useEffect(() => {
@@ -196,7 +292,7 @@ export default function LocationPage() {
 
     const meal = findMealForItem(data.menu, reviewParam)
     if (meal) setActiveTab(meal)
-    setFilters((prev) => ({ ...INITIAL_FILTERS, dietary: prev.dietary }))
+    setFiltersWithProfileSync((prev) => ({ ...INITIAL_FILTERS, dietary: prev.dietary }))
     setReviewItemFromPicker(found)
     reviewDeepLinkConsumedRef.current = reviewParam
 
@@ -205,7 +301,7 @@ export default function LocationPage() {
     }, 0)
 
     return () => clearTimeout(timer)
-  }, [reviewParam, data?.menu, slug, router])
+  }, [reviewParam, data?.menu, slug, router, setFiltersWithProfileSync])
 
   if (loading && !data) {
     return <LocationSkeleton />
@@ -247,10 +343,30 @@ export default function LocationPage() {
 
       <div className="lg:flex lg:w-full lg:items-start">
         <div className="min-w-0 flex-1 lg:min-w-0">
+          <GuestLoginPreferencesBanner
+            visible={showGuestLoginBanner}
+            loginHref={loginHref}
+            onDismiss={() => {
+              if (typeof window !== "undefined") {
+                localStorage.setItem(GUEST_LOGIN_CTA_DISMISSED_KEY, "1")
+              }
+              setGuestLoginCtaDismissed(true)
+            }}
+          />
+          <RefineRecommendationsBanner
+            visible={showRefineBanner}
+            onRefineClick={() => setSlidersOpen(true)}
+            onDismiss={() => {
+              if (typeof window !== "undefined") {
+                localStorage.setItem(REFINE_BANNER_DISMISSED_KEY, "1")
+              }
+              setRefineBannerDismissed(true)
+            }}
+          />
           {/* 2.5 Filters */}
           <StickyHeader
             filters={filters}
-            setFilters={setFilters}
+            setFilters={setFiltersWithProfileSync}
             items={allItems}
             selectedDate={selectedDate}
             availableDates={availableDates}
@@ -288,7 +404,13 @@ export default function LocationPage() {
                 <Utensils className="w-12 h-12 mx-auto mb-4 opacity-20" />
                 <p>No menu items matching your filters.</p>
                 <button
-                  onClick={() => setFilters(INITIAL_FILTERS)}
+                  type="button"
+                  onClick={() =>
+                    setFiltersWithProfileSync({
+                      ...INITIAL_FILTERS,
+                      dietary: filters.dietary,
+                    })
+                  }
                   className="text-maize hover:underline text-sm mt-2 font-bold"
                 >
                   Clear Filters
@@ -313,6 +435,7 @@ export default function LocationPage() {
                 item={detailDrawerItem}
                 onClose={() => setSelectedItem(null)}
                 onStartReview={setReviewItemFromDrawer}
+                reviewsReturnPath={reviewsReturnPath}
               />
             </div>
           ) : null}
@@ -348,7 +471,21 @@ export default function LocationPage() {
         isOpen={!!detailDrawerItem}
         onClose={() => setSelectedItem(null)}
         onStartReview={setReviewItemFromDrawer}
+        reviewsReturnPath={reviewsReturnPath}
       />
+
+      {!isGuest && (
+        <SmartSlidersDialog
+          open={slidersOpen}
+          onOpenChange={setSlidersOpen}
+          healthFocus={preferences.health_focus}
+          proteinPriority={preferences.protein_priority}
+          ratingSensitivity={preferences.rating_sensitivity}
+          onSave={async (values) => {
+            await updatePreferences(values)
+          }}
+        />
+      )}
     </div>
   )
 }

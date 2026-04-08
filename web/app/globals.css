@@ -96,8 +96,8 @@
     --primary: var(--blue);
     --primary-foreground: 0 0% 100%; /* White text on Blue */
 
-    --secondary: var(--maize);
-    --secondary-foreground: var(--blue); /* Blue text on Maize */
+    --secondary: var(--blue);
+    --secondary-foreground: 0 0% 100%; /* White on UMich blue */
   }
 
   .dark {
@@ -123,11 +123,36 @@
     --primary: var(--maize);
     --primary-foreground: var(--blue); /* Blue text on Maize */
 
-    --secondary: var(--blue);
-    --secondary-foreground: 0 0% 100%; /* White text on Blue */
+    /* Lighter than page bg (5%) so secondary buttons read as surfaces, not mud */
+    --secondary: 217 22% 32%;
+    --secondary-foreground: 210 40% 98%;
   }
 }
+@keyframes auth-dining-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
 @layer utilities {
+  .animate-auth-dining-marquee {
+    animation: auth-dining-marquee 180s linear infinite;
+  }
+
+  .animate-auth-dining-marquee-reverse {
+    animation: auth-dining-marquee 180s linear infinite reverse;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-auth-dining-marquee,
+    .animate-auth-dining-marquee-reverse {
+      animation: none;
+    }
+  }
+
   /* Hide scrollbar for Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {
     display: none;

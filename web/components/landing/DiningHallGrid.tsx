@@ -16,7 +16,8 @@ export function DiningHallGrid() {
       <div className="mx-auto max-w-5xl">
         <div className="flex justify-between mb-6 px-2">
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 md:[@media(min-height:800px)]:text-slate-300 2xl:text-muted-foreground transition-colors">
-            <span className="h-2 w-2 rounded-full bg-slate-300 animate-pulse" /> Live Status
+            <span className="h-2 w-2 rounded-full bg-muted-foreground/45 animate-pulse" />{" "}
+            Live Status
             </h3>
             <span className="text-sm font-medium text-muted-foreground opacity-50">Loading...</span>
         </div>

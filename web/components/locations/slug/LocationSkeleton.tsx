@@ -29,7 +29,9 @@ export function LocationSkeleton() {
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="flex flex-col items-center gap-1.5 opacity-70">
                  <Skeleton className="h-4 w-16 bg-muted" />
-                 {i === 1 && <Skeleton className="h-0.5 w-full bg-primary" />}
+                 {i === 1 && (
+                   <Skeleton className="h-0.5 w-full bg-muted-foreground/35" />
+                 )}
               </div>
             ))}
           </div>
@@ -42,7 +44,7 @@ export function LocationSkeleton() {
           <div key={group} className="space-y-4">
             {/* Station Header */}
             <div className="flex items-center gap-3">
-              <Skeleton className="h-6 w-6 rounded bg-maize/20" />
+              <Skeleton className="h-6 w-6 rounded bg-muted" />
               <Skeleton className="h-6 w-48 bg-muted" />
             </div>
 
