@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -11,10 +11,27 @@ import { cn } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/use-analytics";
 
 import Logo from "@/components/branding/Logo";
-import { HEADER_HEIGHT, HEADER_HEIGHT_PX } from "@/components/layout/constants";
+import {
+  HEADER_CHROME_BASE,
+  HEADER_HEIGHT,
+  HEADER_HEIGHT_PX,
+  HEADER_TRANSPARENT_SURFACE,
+} from "@/components/layout/constants";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserNav } from "@/components/layout/UserNav";
 import { Button } from "@/components/ui/button";
+
+const MD_UP_QUERY = "(min-width: 768px)";
+
+function subscribeMdUp(onChange: () => void) {
+  const mq = window.matchMedia(MD_UP_QUERY);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+
+function getMdUpSnapshot() {
+  return window.matchMedia(MD_UP_QUERY).matches;
+}
 
 interface HeaderContentProps {
   user: User | null;
@@ -27,9 +44,13 @@ export function HeaderContent({ user, signOut, isAdmin = false }: HeaderContentP
   const { track } = useAnalytics();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  /** Auth uses the glass/transparent header only at `md+`; mobile uses normal themed chrome. */
+  const isMdUp = useSyncExternalStore(subscribeMdUp, getMdUpSnapshot, () => false);
   const pathname = usePathname();
   const isLandingPage = pathname === "/";
   const isLocationPage = pathname.startsWith("/locations/");
+  const isAuthPage =
+    pathname === "/login" || pathname === "/signup";
 
   const handleMobileMenuToggle = () => {
     const newState = !isMobileMenuOpen;
@@ -56,21 +77,25 @@ export function HeaderContent({ user, signOut, isAdmin = false }: HeaderContentP
 
   useEffect(() => {
     const handleScroll = () => {
+      if (isAuthPage) {
+        setIsScrolled(false);
+        return;
+      }
       // Landing page: Full screen video -> Threshold ~ 100vh
       // Location page: 40vh hero (min 300px) -> Threshold ~ height - header
-      const heroHeight = isLocationPage 
-        ? Math.max(window.innerHeight * 0.4, 300) 
+      const heroHeight = isLocationPage
+        ? Math.max(window.innerHeight * 0.4, 300)
         : window.innerHeight;
 
       const threshold = heroHeight - HEADER_HEIGHT_PX;
-      
+
       setIsScrolled(window.scrollY > threshold);
     };
 
     window.addEventListener("scroll", handleScroll);
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [isLocationPage]);
+  }, [isAuthPage, isLocationPage]);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -84,21 +109,25 @@ export function HeaderContent({ user, signOut, isAdmin = false }: HeaderContentP
     ...(isAdmin ? [{ name: "Admin", href: "/admin" } as const] : []),
   ];
 
-  // Header is transparent on Landing OR Location page when at top
-  const isTransparent = (isLandingPage || isLocationPage) && !isScrolled && !isMobileMenuOpen;
+  // Transparent hero-style bar: landing/location, or auth at `md+` only (mobile auth = themed header)
+  const isTransparent =
+    !isMobileMenuOpen &&
+    ((isAuthPage && isMdUp) ||
+      (!isAuthPage && (isLandingPage || isLocationPage) && !isScrolled));
 
   return (
     <header
       className={cn(
-        "fixed top-0 z-50 w-full transition-all duration-300 transform-gpu",
-        "isolate z-50",
-        "will-change-[backdrop-filter]",
-        "backface-hidden",
         isMobileMenuOpen
-          ? "bg-background border-border border-b"
+          ? "fixed top-0 z-50 w-full bg-background border-border border-b"
           : !isTransparent
-            ? "bg-background border-border border-b shadow-sm" // Opaque + Border
-            : "bg-black/30 backdrop-blur-xl backdrop-saturate-150 border-white/10",
+            ? cn(
+                HEADER_CHROME_BASE,
+                "bg-background border-border border-b shadow-sm",
+              )
+            : isAuthPage
+              ? "fixed top-0 z-50 w-full border-b border-white/10 bg-transparent transition-all duration-300 transform-gpu"
+              : cn(HEADER_CHROME_BASE, HEADER_TRANSPARENT_SURFACE),
       )}
     >
       <div

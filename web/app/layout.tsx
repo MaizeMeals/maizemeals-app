@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Roboto, Poppins, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
+import { ConditionalHeader } from "@/components/layout/ConditionalHeader";
 import { ConditionalFooter } from "@/components/layout/ConditionalFooter";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -59,7 +60,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Header />
+          <ConditionalHeader>
+            <Header />
+          </ConditionalHeader>
           <main className="grow">{children}</main>
           <ConditionalFooter />
           <Toaster />

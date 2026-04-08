@@ -16,7 +16,7 @@ import {
   isValid,
   isYesterday,
 } from "date-fns";
-import { Pencil, Star, User } from "lucide-react";
+import { ChevronLeft, Pencil, Star, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { EditReviewDialog } from "@/components/reviews/EditReviewDialog";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,20 @@ import { appSurfaceOutlineButtonClassName } from "@/lib/button-styles";
 import { getItemPhotoPublicUrl } from "@/lib/item-photos";
 import { cn } from "@/lib/utils";
 import { HEADER_HEIGHT } from "@/components/layout/constants";
+
+/** Same-origin path only; ignores open-redirect values. */
+function safeMenuReturnPath(raw: string | null): string | null {
+  if (!raw) return null;
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+  if (!decoded.startsWith("/") || decoded.startsWith("//")) return null;
+  if (decoded.includes("\0")) return null;
+  return decoded;
+}
 
 type SortMode = "newest" | "highest" | "lowest";
 
@@ -217,6 +231,7 @@ function RatingSummaryBlock({
 function ItemReviewsContent() {
   const searchParams = useSearchParams();
   const itemId = searchParams.get("item_id");
+  const menuReturnPath = safeMenuReturnPath(searchParams.get("return"));
   const [itemSummary, setItemSummary] = useState<ItemSummary | null>(null);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -373,8 +388,11 @@ function ItemReviewsContent() {
       <div className="space-y-3">
         <h1 className="text-xl font-semibold text-foreground">Reviews</h1>
         <p className="text-sm text-destructive">{error}</p>
-        <Link href="/locations" className="text-sm font-medium text-maize hover:underline">
-          Back to locations
+        <Link
+          href={menuReturnPath ?? "/locations"}
+          className="text-sm font-medium text-maize hover:underline"
+        >
+          {menuReturnPath ? "Return to menu" : "Back to locations"}
         </Link>
       </div>
     );
@@ -385,6 +403,15 @@ function ItemReviewsContent() {
 
   return (
     <div className="space-y-6">
+      {menuReturnPath ? (
+        <Link
+          href={menuReturnPath}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-maize hover:underline"
+        >
+          <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
+          Return to menu
+        </Link>
+      ) : null}
       <div>
         <h1 className="text-xl font-semibold text-foreground">{itemName}</h1>
       </div>
@@ -538,8 +565,11 @@ function ItemReviewsContent() {
         })}
       </ul>
 
-      <Link href="/locations" className="inline-block text-sm font-medium text-maize hover:underline">
-        Back to locations
+      <Link
+        href={menuReturnPath ?? "/locations"}
+        className="inline-block text-sm font-medium text-maize hover:underline"
+      >
+        {menuReturnPath ? "Return to menu" : "Back to locations"}
       </Link>
     </div>
   );

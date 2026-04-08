@@ -32,4 +32,25 @@ export const UserPreferencesSchema = z.object({
 
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
 
+/** Fields the client may persist via `usePreferences` / merge (no identity columns). */
+export const UserPreferencesUpdateSchema = UserPreferencesSchema.pick({
+  dietary_filters: true,
+  health_focus: true,
+  protein_priority: true,
+  rating_sensitivity: true,
+  onboarding_completed: true,
+  favorite_location_ids: true,
+  default_campus: true,
+  streak_current: true,
+  last_played_at: true,
+}).partial();
+
+export type UserPreferencesUpdate = z.infer<typeof UserPreferencesUpdateSchema>;
+
 export const DEFAULT_PREFERENCES = UserPreferencesSchema.parse({});
+
+/** Guest full prefs blob (see `use-preferences` + merge). */
+export const GUEST_PREFS_STORAGE_KEY = "maize_guest_prefs";
+
+/** Guest Tier 1 onboarding ack (parallel to `onboarding_completed` in DB). */
+export const GUEST_ONBOARDING_STORAGE_KEY = "maize_onboarding_completed";

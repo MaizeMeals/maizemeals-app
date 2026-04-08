@@ -2,7 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { getURL } from '@/lib/get-url'
-import { sanitizeAuthNextPath } from '@/lib/auth-next-path'
+import {
+  sanitizeAuthEntryPath,
+  sanitizeAuthNextPath,
+} from '@/lib/auth-next-path'
 
 const AUTH_RETURN_COOKIE = 'auth_return_next'
 
@@ -10,6 +13,7 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const formData = await request.formData()
   const next = sanitizeAuthNextPath(formData.get('next') as string | null)
+  const entry = sanitizeAuthEntryPath(formData.get('entry') as string | null)
   const callbackUrl = `${getURL()}/auth/callback`
 
   const cookieStore = await cookies()
@@ -34,7 +38,12 @@ export async function POST(request: Request) {
   })
 
   if (error) {
-    return NextResponse.redirect(new URL('/login?error=Could not authenticate user', request.url))
+    const url = new URL(entry, request.url)
+    url.searchParams.set('error', 'Could not authenticate user')
+    if (next !== '/') {
+      url.searchParams.set('next', next)
+    }
+    return NextResponse.redirect(url, { status: 303 })
   }
 
   return NextResponse.redirect(data.url, { status: 303 })
