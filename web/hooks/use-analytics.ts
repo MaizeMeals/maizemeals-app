@@ -1,11 +1,12 @@
 'use client'
 
+import { useCallback } from 'react'
 import { usePostHog } from 'posthog-js/react'
 
 export function useAnalytics() {
   const posthog = usePostHog()
 
-  const track = (eventName: string, properties?: Record<string, any>) => {
+  const track = useCallback((eventName: string, properties?: Record<string, unknown>) => {
     if (!posthog) return
 
     const allProperties = { ...properties }
@@ -15,17 +16,17 @@ export function useAnalytics() {
     if (process.env.NODE_ENV === 'development') {
       console.log(`[Analytics] ${eventName}`, allProperties)
     }
-  }
+  }, [posthog])
 
-  const identify = (userId: string, traits?: Record<string, any>) => {
+  const identify = useCallback((userId: string, traits?: Record<string, unknown>) => {
     if (!posthog) return
     posthog.identify(userId, traits)
-  }
+  }, [posthog])
 
-  const reset = () => {
+  const reset = useCallback(() => {
     if (!posthog) return
     posthog.reset()
-  }
+  }, [posthog])
 
   return { track, identify, reset }
 }

@@ -126,6 +126,7 @@ export function FilterDialog({
                     calories: [0, maxes.calories] as [number, number],
                     protein: [0, maxes.protein] as [number, number],
                     carbs: [0, maxes.carbs] as [number, number],
+                    fat: [0, maxes.fat] as [number, number],
                   },
                   search: filters.search,
                 };

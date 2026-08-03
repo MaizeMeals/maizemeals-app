@@ -32,6 +32,24 @@ function itemSatisfiesDietaryFilter(
   return itemTags.has(normalizedFilter);
 }
 
+/**
+ * Shared dietary gate for every surface that recommends or displays menu food.
+ * Selected filters use AND semantics; each individual filter may accept related
+ * tags (for example, a vegan item also satisfies vegetarian).
+ */
+export function itemMatchesDietaryFilters(
+  item: Item,
+  selectedFilters: readonly string[],
+): boolean {
+  if (item.item_type === "station_header") return false;
+  if (selectedFilters.length === 0) return true;
+
+  const itemTags = new Set(getDynamicTags(item));
+  return selectedFilters.every((filter) =>
+    itemSatisfiesDietaryFilter(itemTags, normalizeDietaryTag(filter)),
+  );
+}
+
 export const getDynamicTags = (item: Item): string[] => {
   const tags: string[] = [];
 
@@ -64,6 +82,8 @@ export const getDynamicTags = (item: Item): string[] => {
 
 export function filterItems(items: Item[], filters: FilterState): Item[] {
   return items.filter((item) => {
+    if (!itemMatchesDietaryFilters(item, filters.dietary)) return false;
+
     // 1. Search
     if (
       filters.search &&
@@ -71,29 +91,18 @@ export function filterItems(items: Item[], filters: FilterState): Item[] {
     )
       return false;
 
-    // 2. Dietary & Macro Tags (Uses Shared Helper)
-    if (filters.dietary.length > 0) {
-      const itemTags = new Set(getDynamicTags(item));
-
-      const hasAll = filters.dietary.every((tag) =>
-        itemSatisfiesDietaryFilter(itemTags, normalizeDietaryTag(tag)),
-      );
-
-      if (!hasAll) return false;
-    }
-
-    // 3. Rating
+    // 2. Rating
     if (filters.minRating > 0 && (item.avg_rating || 0) < filters.minRating)
       return false;
 
-    // 4. M-Scale
+    // 3. M-Scale
     if (
       filters.minMScale > 1 &&
       (item.nutrition_score || 0) < filters.minMScale
     )
       return false;
 
-    // 5. Macro Ranges
+    // 4. Macro Ranges
     const macros = (item.macronutrients as Record<string, number>) || {};
     const cal = Number(macros["Calories"] || 0);
     const prot = Number(macros["Protein"] || 0);

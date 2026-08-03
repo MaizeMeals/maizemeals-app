@@ -100,6 +100,71 @@ export type Database = {
         }
         Relationships: []
       }
+      food_logs: {
+        Row: {
+          calories_per_serving: number
+          carbs_g_per_serving: number
+          consumed_on: string
+          created_at: string
+          fat_g_per_serving: number
+          id: string
+          item_id: string | null
+          item_name: string
+          logged_at: string
+          meal_type: string
+          nutrition_snapshot: Json
+          protein_g_per_serving: number
+          serving_size: string | null
+          servings: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calories_per_serving?: number
+          carbs_g_per_serving?: number
+          consumed_on?: string
+          created_at?: string
+          fat_g_per_serving?: number
+          id?: string
+          item_id?: string | null
+          item_name: string
+          logged_at?: string
+          meal_type?: string
+          nutrition_snapshot?: Json
+          protein_g_per_serving?: number
+          serving_size?: string | null
+          servings?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calories_per_serving?: number
+          carbs_g_per_serving?: number
+          consumed_on?: string
+          created_at?: string
+          fat_g_per_serving?: number
+          id?: string
+          item_id?: string | null
+          item_name?: string
+          logged_at?: string
+          meal_type?: string
+          nutrition_snapshot?: Json
+          protein_g_per_serving?: number
+          serving_size?: string | null
+          servings?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "food_logs_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       items: {
         Row: {
           avg_rating: number | null
@@ -207,6 +272,42 @@ export type Database = {
           },
         ]
       }
+      user_macro_goals: {
+        Row: {
+          created_at: string
+          goal_type: string
+          setup_completed: boolean
+          target_calories: number
+          target_carbs_g: number
+          target_fat_g: number
+          target_protein_g: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          goal_type: string
+          setup_completed?: boolean
+          target_calories: number
+          target_carbs_g: number
+          target_fat_g: number
+          target_protein_g: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          goal_type?: string
+          setup_completed?: boolean
+          target_calories?: number
+          target_carbs_g?: number
+          target_fat_g?: number
+          target_protein_g?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       operating_hours: {
         Row: {
           created_at: string | null
@@ -299,6 +400,7 @@ export type Database = {
           display_name: string | null
           favorite_location_ids: string[] | null
           health_focus: number
+          implicit_traits: Json
           last_played_at: string | null
           onboarding_completed: boolean
           protein_priority: number
@@ -317,6 +419,7 @@ export type Database = {
           display_name?: string | null
           favorite_location_ids?: string[] | null
           health_focus?: number
+          implicit_traits?: Json
           last_played_at?: string | null
           onboarding_completed?: boolean
           protein_priority?: number
@@ -335,6 +438,7 @@ export type Database = {
           display_name?: string | null
           favorite_location_ids?: string[] | null
           health_focus?: number
+          implicit_traits?: Json
           last_played_at?: string | null
           onboarding_completed?: boolean
           protein_priority?: number

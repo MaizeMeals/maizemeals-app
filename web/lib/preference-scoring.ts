@@ -1,10 +1,12 @@
 import type { Item } from "@/types/dining";
 import type { UserPreferences } from "@/types/preferences";
-import { getDynamicTags } from "@/lib/filter-utils";
 
 type PrefsSlice = Pick<
   UserPreferences,
-  "health_focus" | "protein_priority" | "rating_sensitivity"
+  | "health_focus"
+  | "protein_priority"
+  | "rating_sensitivity"
+  | "implicit_traits"
 >;
 
 /**
@@ -12,28 +14,20 @@ type PrefsSlice = Pick<
  * (not hard filtering): low = weak rating influence, high = strongly favor better-rated items.
  */
 export function itemPreferenceScore(item: Item, prefs: PrefsSlice): number {
-  const hf = prefs.health_focus / 100;
-  const pp = prefs.protein_priority / 100;
-  const rs = Math.min(100, Math.max(0, prefs.rating_sensitivity)) / 100;
-
-  const mNorm = (item.nutrition_score ?? 0) / 6;
-  const tags = getDynamicTags(item);
-  const hasHighProtein = tags.includes("highprotein");
-
+  let score = 50;
   const macros = (item.macronutrients as Record<string, number>) || {};
-  const cal = Number(macros["Calories"] || 0);
   const protein = Number(macros["Protein"] || 0);
-  const proteinRatio = cal > 0 ? Math.min(protein / cal / 0.12, 1) : 0;
 
-  const nutritionPart = hf * mNorm * 100;
-  const proteinPart =
-    pp * (hasHighProtein ? 40 : 0) + pp * proteinRatio * 60;
+  if (prefs.protein_priority > 70 && protein > 20) score += 15;
+  if (prefs.health_focus > 70 && (item.nutrition_score ?? 0) > 4) score += 15;
 
-  const rating = item.avg_rating ?? 0;
-  const ratingWeight = 2 + 68 * rs;
-  const ratingPart = rating * ratingWeight;
+  // Unrated food is neutral. Sensitivity 100 means ten score points per star
+  // above/below 3, matching the approved example (4.5 stars => +15).
+  const rating = (item.review_count ?? 0) > 0 ? (item.avg_rating ?? 3) : 3;
+  score += (rating - 3) * (Math.min(100, Math.max(0, prefs.rating_sensitivity)) / 10);
 
-  return nutritionPart + proteinPart + ratingPart;
+  score += prefs.implicit_traits.boosted_item_ids[item.id] ?? 0;
+  return score;
 }
 
 export function compareItemsBySmartPreferences(

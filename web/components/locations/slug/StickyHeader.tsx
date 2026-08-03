@@ -45,6 +45,7 @@ export function StickyHeader({ filters, setFilters, items, selectedDate, availab
     if (filters.macros.calories[0] > 0 || filters.macros.calories[1] < maxes.calories) count++;
     if (filters.macros.protein[0] > 0 || filters.macros.protein[1] < maxes.protein) count++;
     if (filters.macros.carbs[0] > 0 || filters.macros.carbs[1] < maxes.carbs) count++;
+    if (filters.macros.fat[0] > 0 || filters.macros.fat[1] < maxes.fat) count++;
 
     return count;
   }, [filters, maxes])

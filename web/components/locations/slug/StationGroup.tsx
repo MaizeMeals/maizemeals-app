@@ -10,9 +10,10 @@ interface StationGroupProps {
   items: Item[]
   onItemClick: (item: Item) => void
   highlightedItemId?: string | null
+  mealType?: string
 }
 
-export function StationGroup({ station, items, onItemClick, highlightedItemId }: StationGroupProps) {
+export function StationGroup({ station, items, onItemClick, highlightedItemId, mealType }: StationGroupProps) {
   const [isOpen, setIsOpen] = useState(true)
 
   return (
@@ -34,6 +35,7 @@ export function StationGroup({ station, items, onItemClick, highlightedItemId }:
               <FoodItemCard
                 key={item.id}
                 item={item}
+                mealType={mealType}
                 highlight={highlightedItemId === item.id}
                 onClick={() => onItemClick(item)}
               />
