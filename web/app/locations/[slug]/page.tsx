@@ -390,6 +390,7 @@ export default function LocationPage() {
                   key={activeTab + group.station}
                   station={group.station}
                   items={group.items}
+                  mealType={activeTab}
                   highlightedItemId={flashItemId}
                   onItemClick={setSelectedItem}
                 />

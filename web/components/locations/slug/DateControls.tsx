@@ -20,7 +20,7 @@ import {
 interface DateControlsProps {
   selectedDate: string;
   onDateChange: (date: string) => void;
-  availableDates: string[];
+  availableDates?: string[];
   loading?: boolean;
 }
 

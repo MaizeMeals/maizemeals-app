@@ -182,11 +182,13 @@ def fetch_menu_data(location_name: str, date_str: str, meal_name: str):
             # --- 1. CLEAN DATA ---
             name = item.get('name', '').strip()
 
-            if "no service at this time" in name.lower():
+            if not name or "no service at this time" in name.lower():
                 continue
 
             # Extract Attributes (Dietary Tags + MHealthy)
             raw_attributes = item.get('attribute', [])
+            if isinstance(raw_attributes, str):
+                raw_attributes = [raw_attributes]
             dietary_tags = []
             is_mhealthy = False
             m_score = None  # <--- New Variable
@@ -202,13 +204,6 @@ def fetch_menu_data(location_name: str, date_str: str, meal_name: str):
                 else:
                     dietary_tags.append(attr)
 
-            for attr in raw_attributes:
-                # Check for M-Healthy flag (mhealthy1, mhealthy2, etc.)
-                if 'mhealthy' in attr.lower():
-                    is_mhealthy = True
-                else:
-                    dietary_tags.append(attr)
-
             # Extract Serving Size
             item_sizes = item.get('itemSizes', {})
             serving_size = item_sizes.get('serving_size', '')
@@ -221,14 +216,21 @@ def fetch_menu_data(location_name: str, date_str: str, meal_name: str):
 
             for nut in nutrition_list:
                 n_name = nut.get('name')
-                n_val_str = nut.get('value', '0')
+                if not n_name:
+                    continue
+                n_val_str = str(nut.get('value') or '0')
 
-                # Regex to extract just the number (remove 'kcal', 'gm', 'mg')
-                # e.g., "15kcal" -> 15, "<1gm" -> 0
+                # Preserve decimals while removing units. For labels such as
+                # "<1gm", use half the threshold as a conservative estimate.
                 numeric_val = 0
-                match = re.search(r'(\d+)', n_val_str)
+                match = re.search(r'(\d+(?:\.\d+)?)', n_val_str)
                 if match:
-                    numeric_val = int(match.group(1))
+                    numeric_val = float(match.group(1))
+                    if '<' in n_val_str:
+                        numeric_val /= 2
+
+                    if numeric_val.is_integer():
+                        numeric_val = int(numeric_val)
 
                 macros[n_name] = numeric_val
 

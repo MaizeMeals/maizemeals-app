@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { SignInSuccessToast } from "@/components/auth/sign-in-success-toast";
 import { cn } from "@/lib/utils";
+import { PostHogProvider } from "@/app/providers";
 
 // 2. Configure Roboto (Body Default)
 const roboto = Roboto({
@@ -54,20 +55,22 @@ export default function RootLayout({
 
         )}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <ConditionalHeader>
-            <Header />
-          </ConditionalHeader>
-          <main className="grow">{children}</main>
-          <ConditionalFooter />
-          <Toaster />
-          <SignInSuccessToast />
-        </ThemeProvider>
+        <PostHogProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <ConditionalHeader>
+              <Header />
+            </ConditionalHeader>
+            <main className="grow">{children}</main>
+            <ConditionalFooter />
+            <Toaster />
+            <SignInSuccessToast />
+          </ThemeProvider>
+        </PostHogProvider>
       </body>
     </html>
   );

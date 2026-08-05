@@ -1,7 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Item, ItemMetadata, LocationData, MenuData, OperatingHour } from "@/types/dining";
+import type { Item, ItemMetadata, LocationData, MenuData, MenuEvent, OperatingHour } from "@/types/dining";
 import { determineHallStatus } from "@/lib/dining";
+
+type RecommendedMenuEvent = MenuEvent & {
+  items: (Item & {
+    photos: Array<{ storage_path: string; is_approved: boolean | null }>;
+  }) | null;
+  recommendation_score?: number;
+};
 
 export function useLocationData(slug: string, dateStr?: string) {
   const [data, setData] = useState<LocationData | null>(null);
@@ -55,12 +62,41 @@ export function useLocationData(slug: string, dateStr?: string) {
         return;
       }
 
+      const recommendationParams = new URLSearchParams({
+        hall_id: hall.id,
+        date: targetDate,
+      });
+      const recommendationsRequest = fetch(`/recommendations?${recommendationParams.toString()}`, {
+        credentials: "same-origin",
+      })
+        .then(async (response) => {
+          if (!response.ok) throw new Error("Recommendation route failed");
+          const payload = (await response.json()) as { events?: RecommendedMenuEvent[] };
+          return payload.events ?? [];
+        })
+        // Preserve menu availability during a partial deployment where the
+        // route or its migration has not reached the server yet.
+        .catch(async () => {
+          const { data: fallbackEvents } = await supabase
+            .from("menu_events")
+            .select(`
+              *,
+              items (
+                *,
+                photos ( storage_path, is_approved )
+              )
+            `)
+            .eq("dining_hall_id", hall.id)
+            .eq("date", targetDate);
+          return (fallbackEvents ?? []) as RecommendedMenuEvent[];
+        });
+
       // 2. Fetch Hours (Target Date + Full Week Parallel)
       const [
         { data: targetHours },
         { data: weeklyHoursData },
         { data: availability },
-        { data: events } // <--- Moved menu fetch here
+        events,
       ] = await Promise.all([
         supabase
           .from("operating_hours")
@@ -82,17 +118,7 @@ export function useLocationData(slug: string, dateStr?: string) {
           .eq("dining_hall_id", hall.id)
           .gte("date", startStr)
           .lte("date", endStr),
-        supabase
-          .from("menu_events")
-          .select(`
-            *,
-            items (
-              *,
-              photos ( storage_path, is_approved )
-            )
-          `)
-          .eq("dining_hall_id", hall.id)
-          .eq("date", targetDate)
+        recommendationsRequest,
       ]);
       const availableDates = Array.from(
         new Set(availability?.map((a) => a.date) || []),

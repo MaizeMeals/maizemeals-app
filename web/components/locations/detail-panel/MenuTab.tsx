@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import type { MenuData, ItemMetadata } from "@/types/dining";
 import { getStoragePhotoUrl } from "./PhotosDialog";
 import { FOOD_ITEM_PLACEHOLDER_IMAGE } from "@/lib/food-placeholder-image";
+import { usePreferences } from "@/hooks/use-preferences";
+import { itemMatchesDietaryFilters } from "@/lib/filter-utils";
 
 type Props = {
   loading: boolean;
@@ -19,6 +21,7 @@ type Props = {
 
 export function MenuTab({ loading, menu, itemMetadata, venueSlug }: Props) {
   const router = useRouter();
+  const { preferences, loading: preferencesLoading } = usePreferences();
   const [failedImageIds, setFailedImageIds] = useState<Set<string>>(new Set());
 
   const handleImageError = useCallback((itemId: string) => {
@@ -33,13 +36,22 @@ export function MenuTab({ loading, menu, itemMetadata, venueSlug }: Props) {
     return url || FOOD_ITEM_PLACEHOLDER_IMAGE;
   }, []);
 
-  // Extract and sort real highlights using the decoupled metadata
-  const getHighlights = () => {
-    if (!menu || ! itemMetadata) return [];
+  // An item may be served at multiple meals. The highlights list represents
+  // food concepts, so dedupe by item id before ranking across the full day.
+  const highlights = useMemo(() => {
+    if (!menu || !itemMetadata) return [];
 
-    return Object.values(menu)
+    const uniqueItems = new Map(
+      Object.values(menu)
       .flat()
       .flatMap(g => g.items)
+      .map((item) => [item.id, item] as const),
+    );
+
+    return Array.from(uniqueItems.values())
+      .filter((item) =>
+        itemMatchesDietaryFilters(item, preferences.dietary_filters),
+      )
       .sort((a, b) => {
          // Safely grab metadata or default to 0
          const metaA = itemMetadata[a.id] || { avgRating: 0, reviewCount: 0, photos: [] };
@@ -52,13 +64,11 @@ export function MenuTab({ loading, menu, itemMetadata, venueSlug }: Props) {
          return metaB.reviewCount - metaA.reviewCount;
       })
       .slice(0, 4);
-  };
-
-  const highlights = getHighlights();
+  }, [menu, itemMetadata, preferences.dietary_filters]);
 
   return (
     <div className="p-5">
-       {loading ? (
+       {loading || preferencesLoading ? (
           <div className="flex items-center justify-center py-10">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
@@ -83,7 +93,7 @@ export function MenuTab({ loading, menu, itemMetadata, venueSlug }: Props) {
 
              <div className="flex flex-col gap-2">
                 {highlights.length > 0 ? (
-                   highlights.map((item, i) => {
+                   highlights.map((item) => {
                       // Grab the metadata for this specific item
                       const meta = (itemMetadata && itemMetadata[item.id]) || { avgRating: 0, reviewCount: 0, photos: [] };
 
@@ -93,7 +103,7 @@ export function MenuTab({ loading, menu, itemMetadata, venueSlug }: Props) {
 
                       return (
                         <div
-                          key={item.id || i}
+                          key={item.id}
                           role="link"
                           tabIndex={0}
                           onClick={() =>
@@ -159,7 +169,9 @@ export function MenuTab({ loading, menu, itemMetadata, venueSlug }: Props) {
                    })
                 ) : (
                    <div className="text-center text-muted-foreground text-sm py-8 border rounded-xl bg-muted/20">
-                      No menu items available today.
+                      {preferences.dietary_filters.length > 0
+                        ? "No menu items match your dietary preferences today."
+                        : "No menu items available today."}
                    </div>
                 )}
              </div>

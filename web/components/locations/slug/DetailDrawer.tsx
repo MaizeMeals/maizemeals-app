@@ -18,6 +18,7 @@ import Image from "next/image"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { getItemPhotoPublicUrl } from "@/lib/item-photos"
 import { useLgUp } from "@/hooks/use-lg-up"
+import { LogFoodDialog } from "@/components/nutrition/LogFoodDialog"
 
 const AXIS_LOCK_PX = 10
 
@@ -613,7 +614,11 @@ export function ItemDetailPanel({
              </div>
           </div>
 
-          <div className="mt-8 mb-20 text-center">
+          <div className="mt-8 mb-3 text-center">
+             <LogFoodDialog item={item} />
+          </div>
+
+          <div className="mb-20 text-center">
              {onStartReview ? (
                <Button
                  size="lg"

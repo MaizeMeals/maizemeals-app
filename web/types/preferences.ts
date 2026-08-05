@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export const ImplicitTraitsSchema = z.object({
+  boosted_item_ids: z.record(z.string(), z.number()).catch({}),
+  avoid_tags: z.array(z.string()).catch([]),
+});
+
 export const UserPreferencesSchema = z.object({
   // CORE PREFERENCES
   // .catch([]) ensures if DB returns null, we get an empty array
@@ -9,6 +14,12 @@ export const UserPreferencesSchema = z.object({
   health_focus: z.number().min(0).max(100).default(50),
   protein_priority: z.number().min(0).max(100).default(50),
   rating_sensitivity: z.number().min(0).max(100).default(50),
+
+  // Derived by the food-log analyst. Clients read this for ranking but do not write it.
+  implicit_traits: ImplicitTraitsSchema.catch({
+    boosted_item_ids: {},
+    avoid_tags: [],
+  }),
 
   // SPATIAL / LOCATION
   // .nullable() allows null from DB, .transform turns it into undefined for React

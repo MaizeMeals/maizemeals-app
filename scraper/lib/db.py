@@ -68,8 +68,8 @@ def upsert_items(client, items, hall_uuid, meal_event_data):
     unique_items_map = {}
 
     for item in items:
-        # Determine type (Food vs Header)
-        i_type = 'station_header' if (not item['macronutrients'] and item['serving_size'] == 'TITLE') else 'food'
+        # Keep the parser's classification so title rows never become loggable foods.
+        i_type = item.get('item_type', 'food')
 
         # --- NEW FIX: Deduplicate Tags Here ---
         # 1. Get tags (default to empty list if missing)

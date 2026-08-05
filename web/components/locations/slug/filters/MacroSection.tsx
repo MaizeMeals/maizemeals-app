@@ -1,4 +1,4 @@
-import { Flame, Dumbbell, Wheat } from "lucide-react";
+import { Droplet, Flame, Dumbbell, Wheat } from "lucide-react";
 import { DualRangeSlider } from "@/components/ui/dual-slider";
 import { MacroHistogram } from "../MacroHistogram";
 
@@ -133,6 +133,20 @@ export function MacroSection({ macros, stats, maxes, onChange }: any) {
           step={5}
           value={macros.carbs}
           onChange={(val) => onChange("carbs", val)}
+        />
+        <MacroSlider
+          label="Fat"
+          icon={Droplet}
+          textColor="text-blue-500"
+          fillColor="fill-blue-500"
+          bgColor="bg-blue-500"
+          unit="g"
+          data={stats.fat}
+          min={0}
+          max={maxes.fat}
+          step={5}
+          value={macros.fat}
+          onChange={(val) => onChange("fat", val)}
         />
       </div>
     </section>
