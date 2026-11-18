@@ -2,12 +2,19 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import * as Dialog from "@radix-ui/react-dialog";
 import imageCompression from "browser-image-compression";
-import { X, Loader2, Camera, LogIn } from "lucide-react";
+import { Loader2, Camera, LogIn } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
+import {
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogContent,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@/components/ui/responsive-dialog";
 import { appPrimaryButtonClassName } from "@/lib/button-styles";
 import { StarRatingInput } from "./StarRatingInput";
 import { submitReview, type SubmitReviewResult } from "@/app/actions/submit-review";
@@ -151,68 +158,51 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
   }, []);
 
   return (
-    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay
-          className={cn(
-            "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
-          )}
-        />
-        <Dialog.Content
-          className={cn(
-            "fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%]",
-            "border bg-background shadow-lg rounded-xl overflow-hidden",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
-          )}
-        >
-          <div className="flex flex-col gap-4 p-5">
-            <div className="flex items-center justify-between">
-              <Dialog.Title className="text-lg font-semibold">
-                {authStatus === "signed-out" ? "Sign in to review" : `Rate: ${itemName}`}
-              </Dialog.Title>
-              <Dialog.Close
-                disabled={isSubmitting}
-                className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
-              >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
-              </Dialog.Close>
+    <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
+      <ResponsiveDialogContent>
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle className="pr-8">
+            {authStatus === "signed-out" ? "Sign in to review" : `Rate: ${itemName}`}
+          </ResponsiveDialogTitle>
+        </ResponsiveDialogHeader>
+
+        {authStatus === "loading" && (
+          <ResponsiveDialogBody>
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+              <Loader2 className="mb-2 h-8 w-8 animate-spin" />
+              <span className="text-sm">Checking sign-in…</span>
             </div>
+          </ResponsiveDialogBody>
+        )}
 
-            {authStatus === "loading" && (
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <Loader2 className="h-8 w-8 animate-spin mb-2" />
-                <span className="text-sm">Checking sign-in…</span>
-              </div>
-            )}
+        {authStatus === "signed-out" && (
+          <>
+            <ResponsiveDialogBody className="flex flex-col gap-4">
+              <p className="text-sm text-foreground">
+                You must be signed in to leave a review.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Sign in with your @umich.edu email to rate items and share your experience.
+              </p>
+            </ResponsiveDialogBody>
+            <ResponsiveDialogFooter>
+              <form action="/auth/login" method="post" className="w-full">
+                <input type="hidden" name="next" value={postLoginPath} />
+                <Button
+                  type="submit"
+                  className={cn("w-full gap-2", appPrimaryButtonClassName)}
+                >
+                  <LogIn className="h-4 w-4" />
+                  Sign in with @umich.edu
+                </Button>
+              </form>
+            </ResponsiveDialogFooter>
+          </>
+        )}
 
-            {authStatus === "signed-out" && (
-              <div className="flex flex-col gap-4 py-2">
-                <p className="text-sm text-foreground">
-                  You must be signed in to leave a review.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Sign in with your @umich.edu email to rate items and share your experience.
-                </p>
-                <form action="/auth/login" method="post">
-                  <input type="hidden" name="next" value={postLoginPath} />
-                  <Button
-                    type="submit"
-                    className={cn("w-full gap-2", appPrimaryButtonClassName)}
-                  >
-                    <LogIn className="h-4 w-4" />
-                    Sign in with @umich.edu
-                  </Button>
-                </form>
-              </div>
-            )}
-
-            {authStatus === "signed-in" && (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {authStatus === "signed-in" && (
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+            <ResponsiveDialogBody className="flex flex-col gap-4">
               <div>
                 <span className="text-sm font-medium text-foreground">
                   Your rating <span className="text-destructive">*</span>
@@ -242,9 +232,9 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
                   rows={3}
                   maxLength={2000}
                   className={cn(
-                    "mt-2 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm",
+                    "mt-2 w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm",
                     "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                    "disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                    "disabled:cursor-not-allowed disabled:opacity-50"
                   )}
                 />
               </div>
@@ -256,10 +246,10 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
                 <div className="mt-2 flex items-center gap-2">
                   <label
                     className={cn(
-                      "inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors",
-                      "hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                      "inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors",
+                      "hover:bg-accent hover:text-accent-foreground",
                       "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
-                      (isCompressing || isSubmitting) && "opacity-70 pointer-events-none"
+                      (isCompressing || isSubmitting) && "pointer-events-none opacity-70"
                     )}
                   >
                     {isCompressing ? (
@@ -288,11 +278,12 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
                   )}
                 </div>
               </div>
-
+            </ResponsiveDialogBody>
+            <ResponsiveDialogFooter>
               <Button
                 type="submit"
                 disabled={isSubmitting || rating < 1}
-                className={cn("mt-2 w-full gap-2", appPrimaryButtonClassName)}
+                className={cn("w-full gap-2", appPrimaryButtonClassName)}
               >
                 {isSubmitting ? (
                   <>
@@ -303,11 +294,10 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
                   "Post review"
                 )}
               </Button>
-            </form>
-            )}
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+            </ResponsiveDialogFooter>
+          </form>
+        )}
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

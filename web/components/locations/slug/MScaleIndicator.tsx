@@ -1,8 +1,15 @@
 "use client"
 
-import { Check, Leaf, AlertCircle, X, Info } from "lucide-react"
+import { Check, Leaf, AlertCircle, Info } from "lucide-react"
 import { useState } from "react"
-import * as Dialog from "@radix-ui/react-dialog"
+import {
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@/components/ui/responsive-dialog"
 
 /**
  * Explains the criteria required to earn slices
@@ -82,46 +89,25 @@ const ScaleBreakdown = () => {
 
 const NutritionInfoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay
-          className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
-          onClick={(e) => e.stopPropagation()}
-        />
-                <Dialog.Content
-                  className="fixed z-[9999] bg-background shadow-lg duration-200 w-full h-full top-0 left-0 md:top-[50%] md:left-[50%] md:w-full md:max-w-lg md:h-auto md:max-h-[90vh] md:translate-x-[-50%] md:translate-y-[-50%] md:rounded-xl md:border border-border data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 grid overflow-y-auto"
-                  onClick={(e) => e.stopPropagation()}
-                  onPointerDownOutside={(e) => {             // Optional: Prevent closing if interacting with specific outside elements,
-             // but usually strictly modal behavior is desired.
-          }}
-        >
-          <Dialog.Title className="sr-only">MHealthy Nutrition Guidelines</Dialog.Title>
-          <Dialog.Description className="sr-only">Explanation of the nutrient density scale.</Dialog.Description>
-
-          {/* Header */}
-          <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border p-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
-                <Leaf className="w-4 h-4" />
-              </span>
-              <div>
-                <h3 className="text-lg font-bold text-foreground leading-none">
-                  MHealthy Guidelines
-                </h3>
-                <span className="text-xs text-muted-foreground font-medium">University of Michigan</span>
-              </div>
+    <ResponsiveDialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <ResponsiveDialogContent>
+        <ResponsiveDialogHeader className="border-b border-border">
+          <ResponsiveDialogTitle className="sr-only">MHealthy Nutrition Guidelines</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription className="sr-only">Explanation of the nutrient density scale.</ResponsiveDialogDescription>
+          <div className="flex items-center gap-2 pr-8">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900/30">
+              <Leaf className="h-4 w-4" />
+            </span>
+            <div>
+              <h3 className="text-lg font-bold leading-none text-foreground">
+                MHealthy Guidelines
+              </h3>
+              <span className="text-xs font-medium text-muted-foreground">University of Michigan</span>
             </div>
-            <Dialog.Close asChild>
-              <button
-                className="p-1.5 rounded-full hover:bg-muted transition-colors"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </Dialog.Close>
           </div>
+        </ResponsiveDialogHeader>
 
-          <div className="p-5 space-y-6">
+        <ResponsiveDialogBody className="space-y-6">
 
             {/* Intro Section */}
             <div className="flex gap-4 items-start">
@@ -177,10 +163,9 @@ const NutritionInfoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                 <span className="text-[10px] text-muted-foreground">Opens in new tab</span>
               </a>
             </div>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </ResponsiveDialogBody>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }
 
