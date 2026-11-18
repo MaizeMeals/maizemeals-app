@@ -103,7 +103,6 @@ export function HeaderContent({ user, signOut, isAdmin = false }: HeaderContentP
   }, [pathname]);
 
   const navLinks = [
-    { name: "Menus", href: "/menus" },
     { name: "Locations", href: "/locations" },
     { name: "Nutrition", href: "/nutrition" },
     ...(isAdmin ? [{ name: "Admin", href: "/admin" } as const] : []),
@@ -159,12 +158,13 @@ export function HeaderContent({ user, signOut, isAdmin = false }: HeaderContentP
           <ThemeToggle forceWhite={isTransparent} />
           <UserNav user={user} signOut={signOut} forceWhite={isTransparent} />
 
-          {/* Mobile Menu Toggle */}
+          {/* Mobile Menu Toggle — the bottom tab bar covers primary nav on phones,
+              so the menu only remains for admins (Admin link). */}
           <Button
             variant="ghost"
             size="icon"
             className={cn(
-              "md:hidden",
+              isAdmin ? "md:hidden" : "hidden",
               isTransparent ? "text-white hover:bg-white/20" : "",
             )}
             onClick={handleMobileMenuToggle}

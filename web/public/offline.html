@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Offline | MaizeMeals</title>
+<!--
+  Served by /sw.js for pages that aren't cached while offline. Deliberately
+  self-contained (no Next.js chunks): it is shown under whatever URL the user
+  opened, so "Try again" can simply reload.
+-->
+<style>
+  :root { --bg:#ffffff; --fg:#0f172a; --muted:#64748b; --card:#f8fafc; --border:#e2e8f0; --accent:#00274C; --accent-fg:#ffffff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d0d0d; --fg:#f1f5f9; --muted:#94a3b8; --card:#171717; --border:#262626; --accent:#FFCB05; --accent-fg:#00274C; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:24px 16px calc(24px + env(safe-area-inset-bottom)); background:var(--bg); color:var(--fg);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; text-align:center; }
+  img { width:64px; height:64px; border-radius:16px; }
+  h1 { margin:20px 0 8px; font-size:1.5rem; }
+  p { margin:0; max-width:22rem; color:var(--muted); line-height:1.5; }
+  ul { list-style:none; margin:24px 0 0; padding:0; width:100%; max-width:22rem; border:1px solid var(--border);
+    border-radius:12px; background:var(--card); text-align:left; overflow:hidden; }
+  li + li { border-top:1px solid var(--border); }
+  a.saved { display:block; padding:12px 16px; color:var(--fg); text-decoration:none; font-weight:500; }
+  a.saved:hover { background:var(--border); }
+  button { margin-top:24px; padding:10px 20px; border:0; border-radius:999px; background:var(--accent);
+    color:var(--accent-fg); font-weight:600; font-size:1rem; cursor:pointer; }
+  [hidden] { display:none; }
+</style>
+</head>
+<body>
+  <img src="/icons/icon-192.png" alt="">
+  <h1>You&rsquo;re offline</h1>
+  <p>This page isn&rsquo;t saved on your device yet. <span id="has-saved" hidden>Menus you&rsquo;ve opened recently are still available:</span></p>
+  <ul id="saved" hidden></ul>
+  <button type="button" id="retry">Try again</button>
+<script>
+(function () {
+  document.getElementById("retry").addEventListener("click", function () { location.reload(); });
+  window.addEventListener("online", function () { location.reload(); });
+
+  function label(path) {
+    if (path === "/locations") return "All dining locations";
+    if (path === "/nutrition") return "MaizeMacros";
+    var m = path.match(/^\/locations\/([^/]+)$/);
+    if (!m) return null;
+    return decodeURIComponent(m[1]).split("-").map(function (w) {
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    }).join(" ");
+  }
+
+  if (!("caches" in window)) return;
+  caches.keys().then(function (names) {
+    return Promise.all(names.filter(function (n) { return n.indexOf("mm-pages-") === 0; })
+      .map(function (n) { return caches.open(n).then(function (c) { return c.keys(); }); }));
+  }).then(function (lists) {
+    var seen = {};
+    var items = [];
+    lists.forEach(function (reqs) {
+      reqs.forEach(function (req) {
+        var url = new URL(req.url);
+        if (url.searchParams.has("_rsc") || url.pathname === location.pathname) return;
+        var text = label(url.pathname);
+        if (text && !seen[url.pathname]) { seen[url.pathname] = 1; items.push({ href: url.pathname, text: text }); }
+      });
+    });
+    if (!items.length) return;
+    items.sort(function (a, b) { return a.text.localeCompare(b.text); });
+    var ul = document.getElementById("saved");
+    items.forEach(function (it) {
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.className = "saved"; a.href = it.href; a.textContent = it.text;
+      li.appendChild(a); ul.appendChild(li);
+    });
+    ul.hidden = false;
+    document.getElementById("has-saved").hidden = false;
+  }).catch(function () {});
+})();
+</script>
+</body>
+</html>

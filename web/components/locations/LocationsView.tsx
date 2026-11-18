@@ -266,8 +266,12 @@ export default function LocationsView() {
 
   return (
     <div
-      className="relative box-border flex h-dvh max-h-dvh w-full flex-col overflow-hidden md:flex-row"
-      style={{ paddingTop: HEADER_HEIGHT }}
+      className="relative box-border flex w-full flex-col overflow-hidden md:flex-row"
+      style={{
+        paddingTop: HEADER_HEIGHT,
+        // Full viewport minus the mobile tab bar (0 at md+).
+        height: "calc(100dvh - var(--bottom-nav-h, 0px))",
+      }}
     >
       <DietaryEssentialsSheet
         open={!prefsLoading && needsTier1Onboarding}
@@ -359,13 +363,13 @@ export default function LocationsView() {
         {!mdUp && (
           <div
             className={`
-              fixed left-0 bottom-0 z-40 flex w-full max-w-full flex-col bg-background shadow-xl touch-pan-y
+              fixed left-0 z-40 flex w-full max-w-full flex-col bg-background shadow-xl touch-pan-y
               ${mobileDrawerOpen ? "" : "pointer-events-none"}
               ${dragX > 0 ? "transition-none" : "transition-transform duration-300 ease-out"}
             `}
             style={{
               top: HEADER_HEIGHT,
-              height: `calc(100vh - ${HEADER_HEIGHT})`,
+              height: `calc(100dvh - ${HEADER_HEIGHT} - var(--bottom-nav-h, 0px))`,
               transform: mobileDrawerOpen
                 ? `translateX(${-dragX}px)`
                 : "translateX(-100%)",

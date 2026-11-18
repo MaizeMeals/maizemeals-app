@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { User as UserIcon, Settings, LogOut, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { clearUserCaches } from "@/lib/pwa";
 import {
   appGhostTextButtonClassName,
   appPrimaryButtonClassName,
@@ -27,6 +28,7 @@ export function UserNav({ user, signOut, forceWhite = false }: UserNavProps) {
   const handleLogout = () => {
     track("logout_clicked");
     reset();
+    clearUserCaches();
   };
 
   useEffect(() => {

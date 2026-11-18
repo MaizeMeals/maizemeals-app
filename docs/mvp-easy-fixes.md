@@ -8,7 +8,7 @@ Small, well-scoped fixes from the November 2026 MVP audit. Each one is independe
 - **Don't touch these files.** Another agent is building the PWA, bottom nav and Hall Match Score in them:
   `web/app/layout.tsx`, `web/next.config.ts`, `web/components/layout/Header*.tsx`, `web/components/layout/constants.ts`,
   `web/components/locations/LocationsView.tsx`, `web/components/locations/LocationListCard.tsx`,
-  `web/hooks/use-locations-list.ts`, `web/app/recommendations/route.ts`, `web/lib/preference-scoring.ts`, `public/` icons/manifest.
+  `web/hooks/use-locations-list.ts`, `web/app/recommendations/route.ts`, `web/lib/preference-scoring.ts`, `web/components/layout/UserNav.tsx`, `web/app/globals.css`, `web/components/pwa/*`, `web/public/{sw.js,offline.html,icons/}`, `web/app/manifest.ts`.
 - Before each commit, `cd web && npx tsc --noEmit && npx next build` must pass. Building with placeholder `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` env vars is fine.
 
 ---
@@ -30,7 +30,7 @@ Small, well-scoped fixes from the November 2026 MVP audit. Each one is independe
    - If compression throws, **don't** fall back to the original file. Show "Couldn't process this photo. Try a JPEG or PNG." HEIC fails to decode outside Safari.
    - Use `accept="image/jpeg,image/png,image/webp"` on the file input.
    - In `web/app/actions/submit-review.ts` and `update-review.ts`, reject files whose `type` isn't `image/jpeg|png|webp|gif`.
-   - (Raising the 1 MB server-action body limit in `next.config.ts` is handled by the PWA agent.)
+   - (Done: the server-action body limit in `next.config.ts` is now 3 MB.)
 
 4. **Duplicate review gives a dead-end error.**
    The database now enforces one review per user per item (error 23505). In `submit-review.ts`, return a distinct result, e.g. `{ success:false, code:"already_reviewed" }`. In `ReviewModal` and `ReviewsTab`, offer "Edit your review" (the edit flow is `components/reviews/EditReviewDialog.tsx`) instead of just showing a toast.
@@ -67,7 +67,7 @@ Small, well-scoped fixes from the November 2026 MVP audit. Each one is independe
 ## Repo hygiene and docs
 
 12. **`.env.example` files and an accurate README.** No `.env.example` exists even though the README references one. The scraper uses the M-Dining JSON API (`MDINING_API_KEY`, `MDINING_BASE_URL`), not BeautifulSoup HTML scraping or Gemini; fix README.md and GEMINI.md. Variables used by the code:
-    - Web: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_KEY` (service role, server only), `ADMIN_USER_IDS`, `CRON_SECRET`, `RESEND_API_KEY`, `RESEND_FROM`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_SITE_URL`, `MDINING_API_KEY`, `MDINING_BASE_URL`.
+    - Web: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_KEY` (service role, server only), `ADMIN_USER_IDS`, `CRON_SECRET`, `RESEND_API_KEY`, `RESEND_FROM`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_MAPTILER_KEY`, `NEXT_PUBLIC_SITE_URL`, `MDINING_API_KEY`, `MDINING_BASE_URL`.
     - Scraper: `SUPABASE_URL`, `SUPABASE_KEY`, `MDINING_API_KEY`, `MDINING_BASE_URL`.
 
 13. **CI and lint.**

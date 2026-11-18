@@ -163,3 +163,21 @@
     scrollbar-width: none;  /* Firefox */
   }
 }
+
+/* --- PWA bottom nav ------------------------------------------------------
+ * The mobile tab bar (components/pwa/BottomNav.tsx, id="mm-bottom-nav") is
+ * only rendered on some routes and only shown below md. When it is present,
+ * --bottom-nav-h holds its height so scrolling pages, full-height layouts and
+ * fixed drawers can stay clear of it.
+ */
+:root {
+  --bottom-nav-h: 0px;
+}
+@media (max-width: 767px) {
+  :root:has(#mm-bottom-nav) {
+    --bottom-nav-h: calc(3.5rem + env(safe-area-inset-bottom));
+  }
+  body {
+    padding-bottom: var(--bottom-nav-h);
+  }
+}

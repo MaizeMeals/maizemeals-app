@@ -6,6 +6,25 @@ const nextConfig: NextConfig = {
     root: __dirname,
   },
 
+  experimental: {
+    // Review photos are compressed client-side (~150 KB) but the default 1 MB
+    // server-action limit rejected uncompressed fallbacks with an opaque error.
+    serverActions: { bodySizeLimit: "3mb" },
+  },
+
+  async headers() {
+    return [
+      {
+        // The service worker must always be revalidated so updates ship promptly.
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+        ],
+      },
+    ];
+  },
+
   async rewrites() {
     return [
       {

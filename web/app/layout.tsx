@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Roboto, Poppins, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
@@ -9,6 +9,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { SignInSuccessToast } from "@/components/auth/sign-in-success-toast";
 import { cn } from "@/lib/utils";
 import { PostHogProvider } from "@/app/providers";
+import { BottomNav } from "@/components/pwa/BottomNav";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
 
 // 2. Configure Roboto (Body Default)
 const roboto = Roboto({
@@ -37,6 +40,31 @@ const instrument = Instrument_Serif({
 export const metadata: Metadata = {
   title: "MaizeMeals",
   description: "U-M Dining Companion App",
+  applicationName: "MaizeMeals",
+  appleWebApp: {
+    capable: true,
+    title: "MaizeMeals",
+    statusBarStyle: "default",
+  },
+  formatDetection: { telephone: false },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icons/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // Lets content use env(safe-area-inset-*) on notched phones (bottom nav).
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0d0d0d" },
+  ],
 };
 
 export default function RootLayout({
@@ -67,6 +95,9 @@ export default function RootLayout({
             </ConditionalHeader>
             <main className="grow">{children}</main>
             <ConditionalFooter />
+            <BottomNav />
+            <InstallPrompt />
+            <ServiceWorkerRegistrar />
             <Toaster />
             <SignInSuccessToast />
           </ThemeProvider>
