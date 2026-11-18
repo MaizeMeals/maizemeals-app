@@ -81,12 +81,16 @@ export function MenuTabs({ meals, activeTab, onTabChange, hours = [] }: MenuTabs
   if (meals.length === 0) return null
 
   const getTimeRange = (mealName: string) => {
-    // Try precise match first, then loose match
-    const shift = hours.find(h => h.event_name?.toLowerCase() === mealName.toLowerCase())
-               || hours.find(h => h.event_name?.toLowerCase().includes(mealName.toLowerCase()))
-
-    if (!shift) return null
-    return `${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}`
+    // Precise match first, then loose. A meal can be split into several
+    // shifts (e.g. Lunch 11–1 and 2–4), so list every one in start order.
+    const name = mealName.toLowerCase()
+    let shifts = hours.filter(h => h.event_name?.toLowerCase() === name)
+    if (shifts.length === 0) shifts = hours.filter(h => h.event_name?.toLowerCase().includes(name))
+    if (shifts.length === 0) return null
+    return [...shifts]
+      .sort((a, b) => a.start_time.localeCompare(b.start_time))
+      .map(h => `${formatTime(h.start_time)} - ${formatTime(h.end_time)}`)
+      .join(", ")
   }
 
   return (

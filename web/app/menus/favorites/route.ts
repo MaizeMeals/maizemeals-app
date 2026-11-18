@@ -1,10 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getDayMenu } from "@/lib/day-menu/server";
-import { mealRank, type UpcomingFavorite } from "@/lib/day-menu/types";
+import { mealRank, type DayMenuHall, type UpcomingFavorite } from "@/lib/day-menu/types";
+import { easternMinutes, mealForShift, shiftRange } from "@/lib/day-menu/scoring";
 
 const MAX_KEYS = 300;
 const DAYS = 7;
 
+/** Today only: is any shift for `meal` at `hall` still running or upcoming? */
+function mealStillAhead(hall: DayMenuHall, meal: string, nowMinutes: number): boolean {
+  const shifts = hall.hours.filter((h) => mealForShift(h.name) === meal);
+  if (shifts.length === 0) return true; // no hours posted: don't hide it
+  return shifts.some((sh) => shiftRange(sh)[1] > nowMinutes);
+}
 
 function easternDate(offset: number): string {
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
@@ -34,6 +41,8 @@ export async function POST(request: NextRequest) {
   const wanted = new Set(keys);
   const found = new Map<string, UpcomingFavorite>();
 
+  const nowMinutes = easternMinutes();
+
   try {
     for (let i = 0; i < DAYS && found.size < wanted.size; i++) {
       const date = easternDate(i);
@@ -46,7 +55,12 @@ export async function POST(request: NextRequest) {
         if (!wanted.has(it.key) || found.has(it.key)) continue;
         const hall = halls.get(it.hallId);
         if (!hall) continue;
-        const meal = [...it.meals].sort((a, b) => mealRank(a) - mealRank(b))[0];
+        // Today, skip meals that already ended (e.g. lunch at 6 PM).
+        const meals = [...it.meals]
+          .filter((m) => i > 0 || mealStillAhead(hall, m, nowMinutes))
+          .sort((a, b) => mealRank(a) - mealRank(b));
+        if (meals.length === 0) continue;
+        const meal = meals[0];
         const hit = hits.get(it.key) ?? { name: it.name, byMeal: new Map<string, UpcomingFavorite["halls"]>() };
         const list = hit.byMeal.get(meal) ?? [];
         if (!list.some((h) => h.slug === hall.slug)) {

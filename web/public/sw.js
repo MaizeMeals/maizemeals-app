@@ -7,7 +7,7 @@
  *
  * Bump VERSION to invalidate every cache on the next deploy.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const PREFIX = "mm-";
 const CACHES = {
   shell: `${PREFIX}shell-${VERSION}`, // offline page + icons (precached)

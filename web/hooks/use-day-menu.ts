@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { DayMenu } from "@/lib/day-menu/types";
+import { fromWire, type DayMenuWire } from "@/lib/day-menu/wire";
 
 type State = { menu: DayMenu | null; loading: boolean; error: string | null };
 
@@ -13,7 +14,7 @@ function fetchDayMenu(date: string): Promise<DayMenu> {
   if (!p) {
     p = fetch(`/menus/offerings?date=${date}`).then(async (res) => {
       if (!res.ok) throw new Error(`Menu request failed (${res.status})`);
-      return (await res.json()) as DayMenu;
+      return fromWire((await res.json()) as DayMenuWire);
     });
     p.catch(() => memo.delete(date));
     memo.set(date, p);
