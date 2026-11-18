@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { SmartSlidersDialog } from "@/components/preferences/SmartSlidersDialog";
+import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
 import { usePreferences } from "@/hooks/use-preferences";
 import { appPrimaryButtonClassName } from "@/lib/button-styles";
 import { cn } from "@/lib/utils";
@@ -174,13 +175,9 @@ export function SettingsPanel({ email }: { email: string | null }) {
         </form>
       </section>
 
-      <section className="mt-10 border-t border-border pt-8">
-        <h2 className="text-lg font-semibold text-foreground">Delete account</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Account deletion is not available in the app yet because it has to be
-          done with a service-role flow the owner is building.
-        </p>
-      </section>
+      <div className="mt-10">
+        <DeleteAccountSection />
+      </div>
 
       <p className="mt-8 text-sm">
         <Link href="/" className="text-primary underline-offset-4 hover:underline">
