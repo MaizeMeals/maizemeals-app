@@ -60,7 +60,8 @@ Small, well-scoped fixes from the November 2026 MVP audit. Each one is independe
     - Recommendation sliders: reuse the `SmartSlidersDialog` controls.
     - MaizeMacros: link to `/nutrition` to edit targets.
     - Sign out button.
-    - **Leave a placeholder section for "Delete account".** The owner is building that, because it needs the service role.
+    - Delete account: render `<DeleteAccountSection />` from `web/components/settings/DeleteAccountSection.tsx` at the bottom. It's already built and wired to the `deleteAccount` server action (needs `SUPABASE_KEY`, the service role key, in Vercel).
+    - Optional: a "Favorite dishes" list using `useFavoriteFoods()` (`favorites` map + `toggle`) so people can un-favorite things in one place.
 
 11. ~~Landing CTAs~~ — no change needed: `/menus` is now the item-based "Find food" view, so the Hero's "Find food" and the CTA's "View today's menu" links are correct as they are.
 
