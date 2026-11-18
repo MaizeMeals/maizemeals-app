@@ -42,7 +42,17 @@ function StatusPill({ offering }: { offering: Offering }) {
   return null;
 }
 
-function OfferingRow({ offering, date, isToday }: { offering: Offering; date: string; isToday: boolean }) {
+function OfferingRow({
+  offering,
+  date,
+  isToday,
+  onSelect,
+}: {
+  offering: Offering;
+  date: string;
+  isToday: boolean;
+  onSelect?: (offering: Offering) => void;
+}) {
   const { item, hall, meal, window } = offering;
   const params = new URLSearchParams({ item: item.id });
   if (!isToday) params.set("date", date);
@@ -52,6 +62,13 @@ function OfferingRow({ offering, date, isToday }: { offering: Offering; date: st
     <li>
       <Link
         href={`/locations/${hall.slug}?${params.toString()}`}
+        // A plain tap opens the item drawer; modified clicks (new tab, etc.)
+        // and no-JS still follow the link to the hall's menu.
+        onClick={(e) => {
+          if (!onSelect || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+          e.preventDefault();
+          onSelect(offering);
+        }}
         className={cn(
           "flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/60",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
@@ -90,11 +107,14 @@ export function DishCard({
   date,
   isToday,
   maxRows = 4,
+  onSelectOffering,
 }: {
   dish: Dish;
   date: string;
   isToday: boolean;
   maxRows?: number;
+  /** Open the item drawer for one location's version of the dish. */
+  onSelectOffering?: (offering: Offering) => void;
 }) {
   const { primary } = dish;
   const tags = itemTags(primary)
@@ -133,7 +153,7 @@ export function DishCard({
       </header>
       <ul className="divide-y divide-border/60 border-t border-border/60">
         {shown.map((o) => (
-          <OfferingRow key={o.item.id} offering={o} date={date} isToday={isToday} />
+          <OfferingRow key={o.item.id} offering={o} date={date} isToday={isToday} onSelect={onSelectOffering} />
         ))}
       </ul>
       {hidden > 0 && (

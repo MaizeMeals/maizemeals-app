@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils"
 import { Sheet, SheetContent, SheetClose, SheetTitle } from "@/components/ui/sheet"
 import Link from "next/link"
 import Image from "next/image"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { getItemPhotoPublicUrl } from "@/lib/item-photos"
 import { useLgUp } from "@/hooks/use-lg-up"
 import { LogFoodDialog } from "@/components/nutrition/LogFoodDialog"
@@ -326,6 +326,8 @@ export interface ItemDetailPanelProps {
   variant: "sheet" | "sidebar"
   swipe?: ItemDetailSwipeApi
   className?: string
+  /** Optional secondary action under "I ate this" (e.g. Find food's "View full menu at …"). */
+  extraAction?: ReactNode
 }
 
 export function ItemDetailPanel({
@@ -336,6 +338,7 @@ export function ItemDetailPanel({
   variant,
   swipe,
   className,
+  extraAction,
 }: ItemDetailPanelProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const scrollBodyRef = useRef<HTMLDivElement>(null)
@@ -618,7 +621,7 @@ export function ItemDetailPanel({
              <LogFoodDialog item={item} />
           </div>
 
-          <div className="mb-20 text-center">
+          <div className={cn("text-center", extraAction ? "mb-3" : "mb-20")}>
              {onStartReview ? (
                <Button
                  size="lg"
@@ -646,6 +649,7 @@ export function ItemDetailPanel({
                </Link>
              )}
           </div>
+          {extraAction ? <div className="mb-20 text-center">{extraAction}</div> : null}
         </div>
       </div>
     </>
@@ -660,6 +664,7 @@ export interface FoodDetailDrawerProps {
   onStartReview?: (item: ItemWithPhotos) => void
   /** Path to the current location menu; passed through to reviews for a "return to menu" link. */
   reviewsReturnPath?: string
+  extraAction?: ReactNode
 }
 
 export function DetailDrawer({
@@ -668,6 +673,7 @@ export function DetailDrawer({
   onClose,
   onStartReview,
   reviewsReturnPath,
+  extraAction,
 }: FoodDetailDrawerProps) {
   const dismiss = useCallback(() => onClose(false), [onClose])
   const lgUp = useLgUp()
@@ -700,6 +706,7 @@ export function DetailDrawer({
           onStartReview={onStartReview}
           reviewsReturnPath={reviewsReturnPath}
           swipe={swipe}
+          extraAction={extraAction}
         />
       </SheetContent>
     </Sheet>

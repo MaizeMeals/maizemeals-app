@@ -31,6 +31,8 @@ import {
 import type { DayMenuItem } from "@/lib/day-menu/types";
 import { DishCard } from "./DishCard";
 import { FavoritesSection } from "./FavoritesSection";
+import { DishDetail, type DishSelection } from "./DishDetail";
+import type { Offering } from "@/lib/day-menu/dishes";
 import { useFavoriteFoods } from "@/hooks/use-favorite-foods";
 
 const PAGE = 30;
@@ -77,6 +79,7 @@ export function FoodFinder() {
   }));
   const [prefsApplied, setPrefsApplied] = useState(false);
   const [limit, setLimit] = useState(PAGE);
+  const [selection, setSelection] = useState<DishSelection | null>(null);
   const query = filters.search;
 
   // Start from the profile's dealbreakers; chip changes here stay page-local.
@@ -164,6 +167,11 @@ export function FoodFinder() {
     [showFavorites, dishes, favorites],
   );
 
+  const openOffering = (o: Offering) => {
+    track("find_food_item_opened", { hall: o.hall.slug, food_key: o.item.key });
+    setSelection({ itemId: o.item.id, hallName: o.hall.name, hallSlug: o.hall.slug, date, isToday });
+  };
+
   const toggleDietary = (id: string) =>
     setFilters((f) => ({
       ...f,
@@ -250,7 +258,13 @@ export function FoodFinder() {
         )}
 
         {showFavorites && !loading && menu && (
-          <FavoritesSection favorites={favorites} dishes={favoriteDishes} date={date} isToday={isToday} />
+          <FavoritesSection
+            favorites={favorites}
+            dishes={favoriteDishes}
+            date={date}
+            isToday={isToday}
+            onSelectOffering={openOffering}
+          />
         )}
 
         <section className="mt-4" aria-live="polite" data-testid="food-results">
@@ -291,7 +305,7 @@ export function FoodFinder() {
               </p>
               <div className="space-y-3">
                 {listDishes.slice(0, limit).map((dish) => (
-                  <DishCard key={dish.key} dish={dish} date={date} isToday={isToday} />
+                  <DishCard key={dish.key} dish={dish} date={date} isToday={isToday} onSelectOffering={openOffering} />
                 ))}
               </div>
               {listDishes.length > limit && (
@@ -307,6 +321,7 @@ export function FoodFinder() {
           )}
         </section>
       </div>
+      <DishDetail selection={selection} onClose={() => setSelection(null)} />
     </PageShell>
   );
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CalendarClock, Heart } from "lucide-react";
 import { SectionHeader } from "@/components/layout/page-shell";
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item";
-import type { Dish } from "@/lib/day-menu/dishes";
+import type { Dish, Offering } from "@/lib/day-menu/dishes";
 import { easternDate } from "@/lib/day-menu/scoring";
 import type { UpcomingFavorite } from "@/lib/day-menu/types";
 import { DishCard } from "./DishCard";
@@ -50,7 +50,9 @@ export function FavoritesSection({
   dishes,
   date,
   isToday,
+  onSelectOffering,
 }: {
+  onSelectOffering?: (offering: Offering) => void;
   favorites: ReadonlyMap<string, string>;
   /** Dishes for the current date/meal/filters that are favorites. */
   dishes: Dish[];
@@ -85,7 +87,7 @@ export function FavoritesSection({
       {dishes.length > 0 && (
         <div className="space-y-3">
           {dishes.map((dish) => (
-            <DishCard key={dish.key} dish={dish} date={date} isToday={isToday} />
+            <DishCard key={dish.key} dish={dish} date={date} isToday={isToday} onSelectOffering={onSelectOffering} />
           ))}
         </div>
       )}
