@@ -31,7 +31,11 @@ import {
 import type { DayMenuItem } from "@/lib/day-menu/types";
 import { DishCard } from "./DishCard";
 import { FavoritesSection } from "./FavoritesSection";
-import { DishDetail, type DishSelection } from "./DishDetail";
+import { DishDrawer, DishSidebar, useDishItem, type DishSelection } from "./DishDetail";
+import { ReviewModal } from "@/components/locations/detail-panel/ReviewModal";
+import { useLgUp } from "@/hooks/use-lg-up";
+import { cn } from "@/lib/utils";
+import type { ItemWithPhotos } from "@/types/dining";
 import type { Offering } from "@/lib/day-menu/dishes";
 import { useFavoriteFoods } from "@/hooks/use-favorite-foods";
 
@@ -80,6 +84,9 @@ export function FoodFinder() {
   const [prefsApplied, setPrefsApplied] = useState(false);
   const [limit, setLimit] = useState(PAGE);
   const [selection, setSelection] = useState<DishSelection | null>(null);
+  const [reviewItem, setReviewItem] = useState<ItemWithPhotos | null>(null);
+  const dishItem = useDishItem(selection);
+  const lgUp = useLgUp();
   const query = filters.search;
 
   // Start from the profile's dealbreakers; chip changes here stay page-local.
@@ -189,7 +196,10 @@ export function FoodFinder() {
   }, [visibleItems]);
 
   return (
-    <PageShell className="px-0 md:px-0">
+    // lg+: the item panel sits beside the page and the content shifts over
+    // (same pattern and widths as the hall menu), instead of a blocking overlay.
+    <div className="lg:flex lg:w-full lg:items-start">
+    <PageShell className="min-w-0 px-0 md:px-0 lg:flex-1">
       <div className="px-4">
         <PageHeader
           title="Find food"
@@ -321,8 +331,48 @@ export function FoodFinder() {
           )}
         </section>
       </div>
-      <DishDetail selection={selection} onClose={() => setSelection(null)} />
     </PageShell>
+
+      <aside
+        className={cn(
+          "hidden lg:sticky lg:top-16 lg:z-10 lg:shrink-0 lg:overflow-hidden lg:bg-background lg:transition-[width,min-width] lg:duration-300 lg:ease-out motion-reduce:lg:transition-none",
+          selection
+            ? "lg:flex lg:w-[min(420px,38vw)] lg:min-w-[280px] lg:border-l lg:border-border lg:shadow-md"
+            : "lg:w-0 lg:min-w-0 lg:border-l lg:border-transparent",
+        )}
+        aria-hidden={!selection}
+        aria-label={selection ? "Dish details" : undefined}
+      >
+        {lgUp && selection ? (
+          <div className="flex h-[calc(100vh-4rem)] min-h-[28rem] w-[min(420px,38vw)] min-w-[280px] flex-col">
+            <DishSidebar
+              selection={selection}
+              state={dishItem}
+              onClose={() => setSelection(null)}
+              onStartReview={setReviewItem}
+            />
+          </div>
+        ) : null}
+      </aside>
+
+      {!lgUp && (
+        <DishDrawer
+          selection={selection}
+          state={dishItem}
+          onClose={() => setSelection(null)}
+          onStartReview={setReviewItem}
+        />
+      )}
+
+      {reviewItem && (
+        <ReviewModal
+          itemId={reviewItem.id}
+          itemName={reviewItem.name}
+          open
+          onOpenChange={(open) => !open && setReviewItem(null)}
+        />
+      )}
+    </div>
   );
 }
 

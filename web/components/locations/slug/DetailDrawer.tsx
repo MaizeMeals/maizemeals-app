@@ -721,11 +721,13 @@ export function ItemDetailSidebar({
   onClose,
   onStartReview,
   reviewsReturnPath,
+  extraAction,
 }: {
   item: ItemWithPhotos
   onClose: () => void
   onStartReview?: (item: ItemWithPhotos) => void
   reviewsReturnPath?: string
+  extraAction?: ReactNode
 }) {
   const [exiting, setExiting] = useState(false)
 
@@ -771,6 +773,7 @@ export function ItemDetailSidebar({
         onStartReview={onStartReview}
         reviewsReturnPath={reviewsReturnPath}
         className="h-full min-h-0"
+        extraAction={extraAction}
       />
     </div>
   )
