@@ -3,6 +3,7 @@
 import { LocationSummary } from "@/types/location-summary";
 import { Clock, MapPin, ChevronRight, Star, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import {
   CAPACITY_BG_COLORS,
@@ -207,18 +208,15 @@ export function LocationListCard({ data, selected, onSelectVenue }: Props) {
 }
 
 function MatchBadge({ score }: { score: number }) {
-  const tone =
-    score >= 80
-      ? "bg-maize text-umich-blue"
-      : score >= 60
-        ? "bg-maize/25 text-foreground"
-        : "bg-muted text-muted-foreground";
+  const variant = score >= 80 ? "maize" : score >= 60 ? "maize-soft" : "muted";
   return (
-    <span
-      className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums", tone)}
+    <Badge
+      variant={variant}
+      shape="pill"
+      className="shrink-0 py-0 text-[11px] font-bold tabular-nums"
       title="How well this hall's menu matches your preferences"
     >
       {score}% match
-    </span>
+    </Badge>
   );
 }

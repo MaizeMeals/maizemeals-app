@@ -1,6 +1,6 @@
 "use client"
 
-import { Search, X } from "lucide-react"
+import { SearchField } from "@/components/ui/search-field"
 import { FilterState } from "./filters/types"
 import { Item } from "@/types/dining"
 import { FilterDialog } from "./FilterDialog"
@@ -56,24 +56,11 @@ export function StickyHeader({ filters, setFilters, items, selectedDate, availab
         {/* Top Bar (Search + Date + Filters) */}
         <div className="flex gap-2">
            {/* Search Bar (Left/Center) */}
-           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search menu..."
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              className="w-full h-10 pl-9 pr-4 bg-muted border border-transparent focus:border-muted-foreground rounded-full text-sm outline-none transition-all"
-            />
-            {filters.search && (
-                <button
-                    onClick={() => setFilters({...filters, search: ""})}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 border-muted-foreground rounded-full"
-                >
-                    <X className="w-3 h-3" />
-                </button>
-            )}
-          </div>
+           <SearchField
+             value={filters.search}
+             onValueChange={(search) => setFilters({ ...filters, search })}
+             placeholder="Search menu..."
+           />
 
            {/* Date Picker (Desktop: DatePicker, Mobile: Dialog Trigger) */}
            <DateControls

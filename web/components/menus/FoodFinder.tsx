@@ -2,37 +2,38 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Loader2, Search, SearchX, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Loader2, SearchX, Store } from "lucide-react";
 import { HEADER_HEIGHT } from "@/components/layout/constants";
-import { SegmentedControl } from "@/components/ui/segmented-control";
-import { DIETARY_IDS } from "@/components/locations/slug/DietaryTags";
-import { DietaryFilterButton } from "@/components/locations/slug/filters/DietaryFilterButton";
+import { PageHeader, PageShell } from "@/components/layout/page-shell";
+import { Button } from "@/components/ui/button";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { SearchField } from "@/components/ui/search-field";
+import { DateControls } from "@/components/locations/slug/DateControls";
+import { FilterDialog } from "@/components/locations/slug/FilterDialog";
+import { MenuTabs } from "@/components/locations/slug/MenuTabs";
+import { QuickToggles } from "@/components/locations/slug/QuickToggles";
+import { INITIAL_FILTERS, type FilterState } from "@/components/locations/slug/filters/types";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useDayMenu } from "@/hooks/use-day-menu";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { appToolbarControlClassName } from "@/lib/button-styles";
+import { filterItems } from "@/lib/filter-utils";
 import { buildDishes, mealsOnMenu } from "@/lib/day-menu/dishes";
+import { isDiningHall } from "@/lib/day-menu/match";
 import {
+  asScoringItem,
   defaultMealForNow,
   easternDate,
   easternMinutes,
   easternToday,
 } from "@/lib/day-menu/scoring";
+import type { DayMenuItem } from "@/lib/day-menu/types";
 import { DishCard } from "./DishCard";
 
 const PAGE = 30;
 const DAYS_AHEAD = 6;
+const ANY_MEAL = "Any meal";
 const CRAVINGS = ["Pizza", "Chicken", "Pasta", "Burger", "Tacos", "Salad", "Rice", "Cookie", "Eggs", "Soup"];
-
-function dayLabel(date: string, offset: number): string {
-  if (offset === 0) return "Today";
-  if (offset === 1) return "Tomorrow";
-  const [y, m, d] = date.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d, 12)).toLocaleDateString("en-US", {
-    weekday: "short",
-    timeZone: "UTC",
-  });
-}
 
 function isWeekend(date: string): boolean {
   const [y, m, d] = date.split("-").map(Number);
@@ -43,8 +44,10 @@ function isWeekend(date: string): boolean {
 /**
  * Item-based browsing: "I know what I want — where is it today?"
  * Every dish served on a date, grouped across locations, with each
- * location's own rating and serving window, ranked by the user's
- * Smart Preferences.
+ * location's own rating and serving window, ranked by Smart Preferences.
+ *
+ * The toolbar deliberately reuses the hall menu's controls (search, date,
+ * filters, dietary chips, meal tabs) so both views behave the same.
  */
 export function FoodFinder() {
   const searchParams = useSearchParams();
@@ -58,64 +61,83 @@ export function FoodFinder() {
     [today],
   );
 
-  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [date, setDate] = useState(() => {
     const d = searchParams.get("date");
     return d && dates.includes(d) ? d : today;
   });
   const [meal, setMeal] = useState<string | null>(() => searchParams.get("meal"));
   const [includeRetail, setIncludeRetail] = useState(false);
-  const [filters, setFilters] = useState<string[] | null>(null);
+  const [filters, setFilters] = useState<FilterState>(() => ({
+    ...INITIAL_FILTERS,
+    search: searchParams.get("q") ?? "",
+  }));
+  const [prefsApplied, setPrefsApplied] = useState(false);
   const [limit, setLimit] = useState(PAGE);
+  const query = filters.search;
 
-  // Hard filters start from the profile's dealbreakers; chip changes here are page-local.
+  // Start from the profile's dealbreakers; chip changes here stay page-local.
   useEffect(() => {
-    if (!prefsLoading && filters === null) setFilters(preferences.dietary_filters);
-  }, [prefsLoading, filters, preferences.dietary_filters]);
+    if (prefsLoading || prefsApplied) return;
+    setFilters((f) => ({ ...f, dietary: preferences.dietary_filters }));
+    setPrefsApplied(true);
+  }, [prefsLoading, prefsApplied, preferences.dietary_filters]);
 
   const { menu, loading, error } = useDayMenu(date);
   const isToday = date === today;
   const nowMinutes = isToday ? easternMinutes() : null;
 
+  const visibleItems = useMemo(() => {
+    if (!menu) return [];
+    const halls = new Map(menu.halls.map((h) => [h.id, h]));
+    return menu.items.filter((it) => {
+      const hall = halls.get(it.hallId);
+      return hall && (includeRetail || isDiningHall(hall));
+    });
+  }, [menu, includeRetail]);
+  // FilterDialog derives its macro slider ranges from these.
+  const scoringItems = useMemo(() => visibleItems.map(asScoringItem), [visibleItems]);
+
   const mealOptions = useMemo(() => (menu ? mealsOnMenu(menu, includeRetail) : []), [menu, includeRetail]);
   const effectiveMeal = useMemo(() => {
-    if (meal && (meal === "Any" || mealOptions.includes(meal))) return meal;
-    if (!mealOptions.length) return "Any";
+    if (meal && (meal === ANY_MEAL || mealOptions.includes(meal))) return meal;
+    if (!mealOptions.length) return ANY_MEAL;
     // Searching answers "where/when is it served?" — look across every meal.
-    if (query.trim()) return "Any";
+    if (query.trim()) return ANY_MEAL;
     if (isToday) {
       const guess = defaultMealForNow(nowMinutes ?? 0, isWeekend(date));
       if (mealOptions.includes(guess)) return guess;
     }
-    return mealOptions.find((m) => m !== "All Day") ?? "Any";
+    return mealOptions.find((m) => m !== "All Day") ?? ANY_MEAL;
   }, [meal, mealOptions, isToday, nowMinutes, date, query]);
 
   const dishes = useMemo(() => {
-    if (!menu || filters === null) return [];
+    if (!menu || !prefsApplied) return [];
+    // Same predicate as the hall page (dietary + rating/M-Scale/macros); text
+    // search is handled by buildDishes' relevance ranking instead.
+    const nonSearch = { ...filters, search: "" };
+    const include = (it: DayMenuItem) => filterItems([asScoringItem(it)], nonSearch).length > 0;
     return buildDishes(menu, preferences, {
       query,
-      meal: effectiveMeal,
-      filters,
+      meal: effectiveMeal === ANY_MEAL ? "Any" : effectiveMeal,
+      include,
       includeRetail,
       nowMinutes,
     });
     // nowMinutes intentionally omitted: recomputed when inputs change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [menu, preferences, query, effectiveMeal, filters, includeRetail]);
+  }, [menu, preferences, prefsApplied, filters, query, effectiveMeal, includeRetail]);
 
-  // Keep the URL shareable (?q=&date=&meal=) without adding history entries.
+  // Shareable URL (?q=&date=&meal=). history.replaceState, not router.replace,
+  // so typing doesn't cause server round-trips; Next syncs useSearchParams.
   useEffect(() => {
     const params = new URLSearchParams();
     if (query.trim()) params.set("q", query.trim());
     if (date !== today) params.set("date", date);
     if (meal) params.set("meal", meal);
     const qs = params.toString();
-    // history.replaceState (not router.replace) so typing doesn't trigger
-    // server round-trips; Next keeps useSearchParams in sync with it.
     window.history.replaceState(null, "", qs ? `/menus?${qs}` : "/menus");
   }, [query, date, meal, today]);
 
-  // Debounced search analytics.
   useEffect(() => {
     if (!query.trim()) return;
     const t = setTimeout(
@@ -125,181 +147,148 @@ export function FoodFinder() {
     return () => clearTimeout(t);
   }, [query, dishes.length, date, dates, track]);
 
-  useEffect(() => setLimit(PAGE), [query, date, effectiveMeal, filters, includeRetail]);
+  useEffect(() => setLimit(PAGE), [filters, date, effectiveMeal, includeRetail]);
 
-  const toggleFilter = (id: string) =>
-    setFilters((prev) => {
-      const cur = prev ?? [];
-      return cur.includes(id) ? cur.filter((f) => f !== id) : [...cur, id];
-    });
+  const toggleDietary = (id: string) =>
+    setFilters((f) => ({
+      ...f,
+      dietary: f.dietary.includes(id) ? f.dietary.filter((t) => t !== id) : [...f.dietary, id],
+    }));
+
+  const activeFilterCount =
+    filters.dietary.length +
+    (filters.minRating > 0 ? 1 : 0) +
+    (filters.minMScale > 1 ? 1 : 0);
 
   const cravings = useMemo(() => {
-    if (!menu) return [];
-    const names = menu.items.map((i) => i.name.toLowerCase());
+    const names = visibleItems.map((i) => i.name.toLowerCase());
     return CRAVINGS.filter((c) => names.some((n) => n.includes(c.toLowerCase()))).slice(0, 8);
-  }, [menu]);
-
-  const mealSegments = [
-    ...mealOptions.map((m) => ({ value: m, label: m === "All Day" ? "All day" : m })),
-    { value: "Any", label: "Any" },
-  ];
+  }, [visibleItems]);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 pb-10" style={{ paddingTop: `calc(${HEADER_HEIGHT} + 1.25rem)` }}>
-      <header className="mb-4">
-        <h1 className="font-heading text-2xl font-bold tracking-tight md:text-3xl">Find food</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Search everything on the menu across campus and see where it&apos;s served.
-        </p>
-      </header>
+    <PageShell className="px-0 md:px-0">
+      <div className="px-4">
+        <PageHeader
+          title="Find food"
+          description="Search everything on the menu across campus and see where it's served."
+        />
+      </div>
 
-      <div className="sticky z-20 -mx-4 space-y-3 border-b border-border/60 bg-background/95 px-4 pb-3 pt-1 backdrop-blur-md" style={{ top: HEADER_HEIGHT }}>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <input
-            type="text"
-            inputMode="search"
-            enterKeyHint="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="What are you craving?"
-            aria-label="Search dishes"
-            className="h-11 w-full rounded-full border border-transparent bg-muted pl-10 pr-10 text-base outline-none transition-colors focus:border-muted-foreground/40 md:text-sm"
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-background"
-              aria-label="Clear search"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-
-        <div className="flex gap-2 overflow-x-auto no-scrollbar" role="radiogroup" aria-label="Day">
-          {dates.map((d, i) => (
-            <button
-              key={d}
-              type="button"
-              role="radio"
-              aria-checked={d === date}
-              onClick={() => {
+      {/* Same toolbar anatomy as the hall menu (StickyHeader + MenuTabs). */}
+      <div className="sticky z-20 border-b border-border bg-background" style={{ top: HEADER_HEIGHT }}>
+        <div className="space-y-3 px-4 pb-2 pt-2">
+          <div className="flex gap-2">
+            <SearchField
+              value={query}
+              onValueChange={(search) => setFilters((f) => ({ ...f, search }))}
+              placeholder="What are you craving?"
+            />
+            <DateControls
+              selectedDate={date}
+              onDateChange={(d) => {
                 setDate(d);
                 setMeal(null);
               }}
-              className={cn(
-                "shrink-0 rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
-                d === date
-                  ? "border-umich-blue bg-umich-blue text-white dark:border-maize dark:bg-maize dark:text-umich-blue"
-                  : "border-border bg-card text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {dayLabel(d, i)}
-            </button>
-          ))}
-        </div>
-
-        {mealOptions.length > 0 && (
-          <SegmentedControl label="Meal" options={mealSegments} value={effectiveMeal} onChange={setMeal} />
-        )}
-
-        <div className="flex gap-2 overflow-x-auto no-scrollbar">
-          {DIETARY_IDS.map((id) => (
-            <DietaryFilterButton
-              key={id}
-              id={id}
-              variant="small"
-              isSelected={(filters ?? []).includes(id)}
-              onClick={() => toggleFilter(id)}
+              availableDates={dates}
+              loading={loading}
             />
-          ))}
-          <button
-            type="button"
-            aria-pressed={includeRetail}
-            onClick={() => setIncludeRetail((v) => !v)}
-            className={cn(
-              "shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-bold transition-colors",
-              includeRetail
-                ? "border-maize bg-maize/20 text-foreground"
-                : "border-border bg-card text-muted-foreground hover:text-foreground",
-            )}
-          >
-            + Cafés &amp; markets
-          </button>
+            <Button
+              variant="outline"
+              className={appToolbarControlClassName(includeRetail)}
+              aria-pressed={includeRetail}
+              onClick={() => setIncludeRetail((v) => !v)}
+              title="Include cafés & markets"
+            >
+              <Store className="h-4 w-4" />
+              <span className="hidden md:inline">Cafés</span>
+            </Button>
+            <FilterDialog
+              filters={filters}
+              setFilters={setFilters}
+              items={scoringItems}
+              activeCount={activeFilterCount}
+              resultCount={dishes.length}
+            />
+          </div>
+          <QuickToggles selected={filters.dietary} onChange={toggleDietary} />
         </div>
+        {mealOptions.length > 0 && (
+          <MenuTabs meals={[...mealOptions, ANY_MEAL]} activeTab={effectiveMeal} onTabChange={setMeal} />
+        )}
       </div>
 
-      {!query && cravings.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2" aria-label="Popular searches">
-          {cravings.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setQuery(c)}
-              className="rounded-full border border-border bg-card px-3 py-1 text-sm font-medium hover:border-maize hover:bg-maize/10"
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <section className="mt-4" aria-live="polite">
-        {loading || filters === null ? (
-          <div className="flex items-center justify-center gap-2 py-20 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" /> Loading menus…
-          </div>
-        ) : error ? (
-          <EmptyState title="Couldn't load menus" body="Check your connection and try again." />
-        ) : !menu || menu.items.length === 0 ? (
-          <EmptyState
-            title="No menus posted"
-            body="Dining halls haven't published menus for this day yet — breaks and holidays often have none."
-          />
-        ) : dishes.length === 0 ? (
-          <EmptyState
-            title={query ? `No “${query}” ${effectiveMeal === "Any" ? "" : `at ${effectiveMeal.toLowerCase()} `}${isToday ? "today" : "that day"}` : "Nothing matches"}
-            body={
-              (filters ?? []).length
-                ? "Try another meal or day, or loosen your dietary filters."
-                : "Try another meal or day, or include cafés & markets."
-            }
-          />
-        ) : (
-          <>
-            <p className="mb-3 text-xs font-medium text-muted-foreground">
-              {dishes.length} {dishes.length === 1 ? "dish" : "dishes"}
-              {query ? "" : " · ranked for your preferences"}
-            </p>
-            <div className="space-y-3">
-              {dishes.slice(0, limit).map((dish) => (
-                <DishCard key={dish.key} dish={dish} date={date} isToday={isToday} />
-              ))}
-            </div>
-            {dishes.length > limit && (
-              <button
-                type="button"
-                onClick={() => setLimit((l) => l + PAGE)}
-                className="mt-4 w-full rounded-full border border-border bg-card py-2.5 text-sm font-semibold hover:bg-muted/60"
+      <div className="px-4">
+        {!query && cravings.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2" aria-label="Popular searches">
+            {cravings.map((c) => (
+              <Button
+                key={c}
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                onClick={() => setFilters((f) => ({ ...f, search: c }))}
               >
-                Show more ({dishes.length - limit})
-              </button>
-            )}
-          </>
+                {c}
+              </Button>
+            ))}
+          </div>
         )}
-      </section>
-    </div>
+
+        <section className="mt-4" aria-live="polite" data-testid="food-results">
+          {loading || !prefsApplied ? (
+            <div className="flex items-center justify-center gap-2 py-20 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" /> Loading menus…
+            </div>
+          ) : error ? (
+            <NoResults title="Couldn't load menus" body="Check your connection and try again." />
+          ) : !menu || menu.items.length === 0 ? (
+            <NoResults
+              title="No menus posted"
+              body="Dining halls haven't published menus for this day yet — breaks and holidays often have none."
+            />
+          ) : dishes.length === 0 ? (
+            <NoResults
+              title={query ? `No “${query}” ${isToday ? "today" : "that day"}` : "Nothing matches"}
+              body="Try another meal or day, include cafés & markets, or loosen your filters."
+            />
+          ) : (
+            <>
+              <p className="mb-3 text-xs font-medium text-muted-foreground">
+                {dishes.length} {dishes.length === 1 ? "dish" : "dishes"}
+                {query ? "" : " · ranked for your preferences"}
+              </p>
+              <div className="space-y-3">
+                {dishes.slice(0, limit).map((dish) => (
+                  <DishCard key={dish.key} dish={dish} date={date} isToday={isToday} />
+                ))}
+              </div>
+              {dishes.length > limit && (
+                <Button
+                  variant="outline"
+                  className="mt-4 w-full rounded-full"
+                  onClick={() => setLimit((l) => l + PAGE)}
+                >
+                  Show more ({dishes.length - limit})
+                </Button>
+              )}
+            </>
+          )}
+        </section>
+      </div>
+    </PageShell>
   );
 }
 
-function EmptyState({ title, body }: { title: string; body: string }) {
+function NoResults({ title, body }: { title: string; body: string }) {
   return (
-    <div className="flex flex-col items-center px-6 py-16 text-center">
-      <SearchX className="h-10 w-10 text-muted-foreground/50" aria-hidden />
-      <p className="mt-3 font-semibold">{title}</p>
-      <p className="mt-1 max-w-sm text-sm text-muted-foreground">{body}</p>
-    </div>
+    <Empty className="border-0">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <SearchX />
+        </EmptyMedia>
+        <EmptyTitle>{title}</EmptyTitle>
+        <EmptyDescription>{body}</EmptyDescription>
+      </EmptyHeader>
+    </Empty>
   );
 }

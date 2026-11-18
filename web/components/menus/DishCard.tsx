@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { DietaryTag } from "@/components/locations/slug/DietaryTags";
 import type { Dish, Offering } from "@/lib/day-menu/dishes";
 import { formatClock, itemTags } from "@/lib/day-menu/scoring";
@@ -21,17 +22,17 @@ function StatusPill({ offering }: { offering: Offering }) {
   const s = offering.status;
   if (s.kind === "now") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-800 dark:bg-green-950 dark:text-green-200">
+      <Badge variant="success" shape="pill" className="gap-1 py-0 text-[11px]">
         <span className="h-1.5 w-1.5 rounded-full bg-green-500" aria-hidden />
         Serving now
-      </span>
+      </Badge>
     );
   }
   if (s.kind === "later") {
     return (
-      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+      <Badge variant="muted" shape="pill" className="py-0 text-[11px]">
         {s.minutesUntil <= 90 ? `In ${formatDuration(s.minutesUntil)}` : `At ${formatClock(s.startsAt)}`}
-      </span>
+      </Badge>
     );
   }
   if (s.kind === "ended") {
@@ -106,12 +107,12 @@ export function DishCard({
     <article className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
       <header className="px-4 pb-2 pt-3">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-heading text-base font-semibold leading-snug">{dish.name}</h3>
+          <h3 className="type-card-title">{dish.name}</h3>
           {dish.bestRating && (
-            <span className="flex shrink-0 items-center gap-1 rounded-md bg-maize/15 px-1.5 py-0.5 text-xs font-bold">
+            <Badge variant="maize-soft" className="shrink-0 gap-1 px-1.5 font-bold">
               <Star className="h-3 w-3 fill-maize text-maize" aria-hidden />
               {dish.bestRating.value.toFixed(1)}
-            </span>
+            </Badge>
           )}
         </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">

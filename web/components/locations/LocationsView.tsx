@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { appGhostIconButtonClassName } from "@/lib/button-styles";
 import { HEADER_HEIGHT } from "@/components/layout/constants";
 import type { LocationSummary } from "@/types/location-summary";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDayMenu } from "@/hooks/use-day-menu";
 import { computeHallMatches, type HallMatch } from "@/lib/day-menu/match";
 import { easternMinutes, easternToday } from "@/lib/day-menu/scoring";
@@ -290,15 +290,14 @@ export default function LocationsView() {
       ) : filteredLocations.length > 0 ? (
         <div className="space-y-3">
           {hasMatches && (
-            <SegmentedControl
-              label="Sort locations"
-              value={sortMode}
-              onChange={setSortMode}
-              options={[
-                { value: "match", label: "Best match" },
-                { value: "nearest", label: userLocation ? "Nearest" : "Open now" },
-              ]}
-            />
+            <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
+              <TabsList className="grid h-10 w-full grid-cols-2 rounded-full">
+                <TabsTrigger value="match" className="rounded-full">Best match</TabsTrigger>
+                <TabsTrigger value="nearest" className="rounded-full">
+                  {userLocation ? "Nearest" : "Open now"}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           )}
           {filteredLocations.map((loc) => (
             <LocationListCard

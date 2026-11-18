@@ -181,3 +181,31 @@
     padding-bottom: var(--bottom-nav-h);
   }
 }
+
+/* --- Type scale (docs/design-system.md) ------------------------------------
+ * Use these instead of ad-hoc text-size/weight combos for headings.
+ */
+@utility type-page-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  @media (min-width: 768px) {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+}
+@utility type-section-title {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+@utility type-card-title {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+}

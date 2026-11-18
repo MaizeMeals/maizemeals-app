@@ -3,7 +3,6 @@ import { mealRank } from "./types";
 import {
   itemFit,
   mealForShift,
-  passesFilters,
   preferenceScore,
   shiftRange,
   type ScoringPrefs,
@@ -43,7 +42,8 @@ export type DishQuery = {
   query: string;
   /** A menu_events.meal value, or "Any". */
   meal: string;
-  filters: readonly string[];
+  /** Hard filters (dietary + the hall page's FilterDialog: rating, M-Scale, macros). */
+  include: (item: DayMenuItem) => boolean;
   includeRetail: boolean;
   /** Minutes since midnight Eastern when the date is today; null otherwise. */
   nowMinutes: number | null;
@@ -89,7 +89,7 @@ export function buildDishes(menu: DayMenu, prefs: ScoringPrefs, q: DishQuery): D
     if (!hall) continue;
     if (!q.includeRetail && !isDiningHall(hall)) continue;
     if (q.meal !== "Any" && !item.meals.includes(q.meal)) continue;
-    if (!passesFilters(item, q.filters)) continue;
+    if (!q.include(item)) continue;
     const rel = relevance(item, terms);
     if (rel === 0) continue;
 
