@@ -32,10 +32,10 @@ export function shiftBoundsOnDay(
   const endParts = clockParts(endTime);
 
   const start = new Date(day);
-  start.setHours(startParts.hours, startParts.minutes, 0);
+  start.setHours(startParts.hours, startParts.minutes, 0, 0);
 
   const end = new Date(day);
-  end.setHours(endParts.hours, endParts.minutes, 0);
+  end.setHours(endParts.hours, endParts.minutes, 0, 0);
 
   if (endParts.totalMinutes <= startParts.totalMinutes) {
     end.setDate(end.getDate() + 1);
