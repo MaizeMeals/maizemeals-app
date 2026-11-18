@@ -2,18 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Flame, Home, User, UtensilsCrossed } from "lucide-react";
+import { Flame, MapPin, Search, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/use-analytics";
 
 const TABS = [
-  { name: "Home", href: "/", icon: Home, match: (p: string) => p === "/" },
-  {
-    name: "Dining",
-    href: "/locations",
-    icon: UtensilsCrossed,
-    match: (p: string) => p.startsWith("/locations") || p.startsWith("/reviews") || p === "/menus",
-  },
+  { name: "Food", href: "/menus", icon: Search, match: (p: string) => p.startsWith("/menus") || p.startsWith("/reviews") },
+  { name: "Places", href: "/locations", icon: MapPin, match: (p: string) => p.startsWith("/locations") },
   { name: "Macros", href: "/nutrition", icon: Flame, match: (p: string) => p.startsWith("/nutrition") },
   {
     name: "Me",
@@ -55,7 +50,7 @@ export function BottomNav() {
                 onClick={() => track("bottom_nav_clicked", { tab: name.toLowerCase(), from: pathname })}
                 className={cn(
                   "flex h-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors",
-                  active ? "text-[#00274C] dark:text-maize" : "text-muted-foreground hover:text-foreground",
+                  active ? "text-umich-blue dark:text-maize" : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 <Icon className={cn("h-5 w-5", active && "stroke-[2.5]")} aria-hidden />

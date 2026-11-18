@@ -103,6 +103,7 @@ export function HeaderContent({ user, signOut, isAdmin = false }: HeaderContentP
   }, [pathname]);
 
   const navLinks = [
+    { name: "Find food", href: "/menus" },
     { name: "Locations", href: "/locations" },
     { name: "Nutrition", href: "/nutrition" },
     ...(isAdmin ? [{ name: "Admin", href: "/admin" } as const] : []),

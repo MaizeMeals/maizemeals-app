@@ -94,7 +94,7 @@ self.addEventListener("fetch", (event) => {
       event.respondWith(networkFirst(request, CACHES.pages, LIMITS.pages));
       return;
     }
-    if (url.pathname === "/recommendations") {
+    if (url.pathname === "/recommendations" || url.pathname === "/menus/offerings") {
       event.respondWith(networkFirst(request, CACHES.data, LIMITS.data));
       return;
     }

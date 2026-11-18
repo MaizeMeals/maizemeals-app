@@ -14,6 +14,31 @@ import { Button } from "@/components/ui/button";
 import { appGhostIconButtonClassName } from "@/lib/button-styles";
 import { HEADER_HEIGHT } from "@/components/layout/constants";
 import type { LocationSummary } from "@/types/location-summary";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { useDayMenu } from "@/hooks/use-day-menu";
+import { computeHallMatches, type HallMatch } from "@/lib/day-menu/match";
+import { easternMinutes, easternToday } from "@/lib/day-menu/scoring";
+
+type SortMode = "match" | "nearest";
+
+function withMatch(loc: LocationSummary, matches: Map<string, HallMatch>): LocationSummary {
+  const m = matches.get(loc.id);
+  return {
+    ...loc,
+    matchScore: m?.score ?? null,
+    matchMeal: m?.meal ?? null,
+    matchReasons: m?.reasons ?? [],
+    heroItem: m?.topItem ? { name: m.topItem.name, rating: m.topItem.rating } : null,
+    children: (loc.children ?? []).map((c) => withMatch(c, matches)),
+  };
+}
+
+function bestScore(loc: LocationSummary): number | null {
+  const scores = [loc, ...(loc.children ?? [])]
+    .map((v) => v.matchScore)
+    .filter((s): s is number => s != null);
+  return scores.length ? Math.max(...scores) : null;
+}
 
 const LocationMap = dynamic(() => import("@/components/locations/LocationMap"), {
   ssr: false,
@@ -72,12 +97,35 @@ export default function LocationsView() {
   /** After first `locations` load, we have applied initial `window.location.hash` (if any). */
   const initialHashAppliedRef = useRef(false);
 
+  // Hall Match Score: personalized against today's menu (guests use local prefs).
+  const { menu: todayMenu } = useDayMenu(easternToday());
+  const matches = useMemo(
+    () =>
+      todayMenu && !prefsLoading
+        ? computeHallMatches(todayMenu, preferences, easternMinutes())
+        : new Map<string, HallMatch>(),
+    [todayMenu, preferences, prefsLoading],
+  );
+  const hasMatches = matches.size > 0;
+  const [sortMode, setSortMode] = useState<SortMode>("match");
+
   const filteredLocations = useMemo(() => {
-    if (!searchQuery) return locations;
-    return locations.filter((l) =>
-      l.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const q = searchQuery.toLowerCase();
+    const base = (q ? locations.filter((l) => l.name.toLowerCase().includes(q)) : locations).map((l) =>
+      withMatch(l, matches),
     );
-  }, [locations, searchQuery]);
+    if (sortMode !== "match" || !hasMatches) return base; // hook order: open first, then nearest
+    // Best match: scored halls by score, then everything else in its existing order.
+    return base
+      .map((loc, i) => ({ loc, i, score: bestScore(loc) }))
+      .sort((a, b) => {
+        if (a.score != null && b.score != null) return b.score - a.score || a.i - b.i;
+        if (a.score != null) return -1;
+        if (b.score != null) return 1;
+        return a.i - b.i;
+      })
+      .map(({ loc }) => loc);
+  }, [locations, searchQuery, matches, hasMatches, sortMode]);
 
   const selectedLocation = locations.find((l) => l.id === selectedId);
 
@@ -241,6 +289,17 @@ export default function LocationsView() {
         </div>
       ) : filteredLocations.length > 0 ? (
         <div className="space-y-3">
+          {hasMatches && (
+            <SegmentedControl
+              label="Sort locations"
+              value={sortMode}
+              onChange={setSortMode}
+              options={[
+                { value: "match", label: "Best match" },
+                { value: "nearest", label: userLocation ? "Nearest" : "Open now" },
+              ]}
+            />
+          )}
           {filteredLocations.map((loc) => (
             <LocationListCard
               key={loc.id}

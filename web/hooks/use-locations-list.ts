@@ -43,6 +43,7 @@ const mapToSummary = (loc: CampusLocation, coords: any): LocationSummary => {
     isOpen: loc.status.isOpen,
     statusLabel: loc.status.label,
     statusColor: loc.status.color,
+    statusDetails: loc.status.details,
     capacity,
     contact: loc.contact,
     children: [], // Will be filled if this is a parent

@@ -40,7 +40,11 @@ export interface LocationSummary {
   /** Number of user ratings for items at this venue (null if none). */
   review_count?: number | null;
 
-  // Future Slots
+  // Hall Match Score (lib/day-menu/match.ts) — dining halls with a current/next meal
   matchScore?: number | null;
-  heroItem?: { name: string; rating: number } | null;
+  /** Meal the score is for, e.g. "Lunch". */
+  matchMeal?: string | null;
+  /** Short explanations, most persuasive first. */
+  matchReasons?: string[];
+  heroItem?: { name: string; rating: number | null } | null;
 }

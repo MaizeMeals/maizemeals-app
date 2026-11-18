@@ -162,6 +162,17 @@ export function LocationListCard({ data, selected, onSelectVenue }: Props) {
                   )}
                 </div>
 
+                {/* Row 2b: Hall Match Score for the current/next meal */}
+                {isDining && venue.matchScore != null && (
+                  <div className="mb-1.5 flex min-w-0 items-center gap-1.5 text-xs">
+                    <MatchBadge score={venue.matchScore} />
+                    <span className="truncate text-muted-foreground">
+                      {venue.matchMeal ? `${venue.matchMeal}: ` : ""}
+                      {(venue.matchReasons ?? []).slice(0, 2).join(" · ")}
+                    </span>
+                  </div>
+                )}
+
                 {/* Row 3: Actionable Data (Capacity) — only when open (live data meaningful) */}
                 {isDining && venue.isOpen && venue.capacity && (
                   <div className="flex items-center text-xs">
@@ -192,5 +203,22 @@ export function LocationListCard({ data, selected, onSelectVenue }: Props) {
         })}
       </div>
     </div>
+  );
+}
+
+function MatchBadge({ score }: { score: number }) {
+  const tone =
+    score >= 80
+      ? "bg-maize text-umich-blue"
+      : score >= 60
+        ? "bg-maize/25 text-foreground"
+        : "bg-muted text-muted-foreground";
+  return (
+    <span
+      className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums", tone)}
+      title="How well this hall's menu matches your preferences"
+    >
+      {score}% match
+    </span>
   );
 }

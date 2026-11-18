@@ -26,6 +26,12 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       {
+        name: "Find food",
+        short_name: "Find food",
+        url: "/menus?source=pwa-shortcut",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
+      },
+      {
         name: "Dining halls",
         short_name: "Dining",
         url: "/locations?source=pwa-shortcut",

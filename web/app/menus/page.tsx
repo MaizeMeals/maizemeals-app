@@ -1,6 +1,17 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { FoodFinder } from "@/components/menus/FoodFinder";
 
-/** Keep legacy and marketing links working while menus remain location-scoped. */
+export const metadata: Metadata = {
+  title: "Find food | MaizeMeals",
+  description:
+    "Search every dish on today's U-M dining menus and see which dining halls serve it, when, and how it's rated at each one.",
+};
+
 export default function MenusPage() {
-  redirect("/locations");
+  return (
+    <Suspense>
+      <FoodFinder />
+    </Suspense>
+  );
 }

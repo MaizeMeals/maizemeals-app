@@ -70,9 +70,13 @@ export default function LocationPage() {
   const itemParam = searchParams.get("item")
   const reviewParam = searchParams.get("review")
 
-  const [selectedDate, setSelectedDate] = useState<string>(() =>
-    new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
-  )
+  // `?date=YYYY-MM-DD` lets the item view (/menus) deep-link to a future menu.
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const requested = searchParams.get("date")
+    return requested && /^\d{4}-\d{2}-\d{2}$/.test(requested)
+      ? requested
+      : new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+  })
 
   const { data, loading, error, refetch } = useLocationData(slug, selectedDate)
   const { preferences, updatePreferences, loading: prefsLoading, isGuest } =

@@ -8,7 +8,7 @@ Small, well-scoped fixes from the November 2026 MVP audit. Each one is independe
 - **Don't touch these files.** Another agent is building the PWA, bottom nav and Hall Match Score in them:
   `web/app/layout.tsx`, `web/next.config.ts`, `web/components/layout/Header*.tsx`, `web/components/layout/constants.ts`,
   `web/components/locations/LocationsView.tsx`, `web/components/locations/LocationListCard.tsx`,
-  `web/hooks/use-locations-list.ts`, `web/app/recommendations/route.ts`, `web/lib/preference-scoring.ts`, `web/components/layout/UserNav.tsx`, `web/app/globals.css`, `web/components/pwa/*`, `web/public/{sw.js,offline.html,icons/}`, `web/app/manifest.ts`.
+  `web/hooks/use-locations-list.ts`, `web/app/recommendations/route.ts`, `web/lib/preference-scoring.ts`, `web/components/layout/UserNav.tsx`, `web/app/globals.css`, `web/components/pwa/*`, `web/components/menus/*`, `web/lib/day-menu/*`, `web/app/menus/*`, `web/components/ui/segmented-control.tsx`, `web/types/location-summary.ts`, `web/public/{sw.js,offline.html,icons/}`, `web/app/manifest.ts`.
 - Before each commit, `cd web && npx tsc --noEmit && npx next build` must pass. Building with placeholder `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` env vars is fine.
 
 ---
@@ -62,7 +62,7 @@ Small, well-scoped fixes from the November 2026 MVP audit. Each one is independe
     - Sign out button.
     - **Leave a placeholder section for "Delete account".** The owner is building that, because it needs the service role.
 
-11. **Landing CTAs link to `/menus`**, which just redirects. In `web/components/landing/Hero.tsx` and `CTA.tsx`, point them at `/locations`. Leave `app/menus/page.tsx` in place for old links.
+11. ~~Landing CTAs~~ — no change needed: `/menus` is now the item-based "Find food" view, so the Hero's "Find food" and the CTA's "View today's menu" links are correct as they are.
 
 ## Repo hygiene and docs
 
