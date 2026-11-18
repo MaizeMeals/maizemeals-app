@@ -24,6 +24,7 @@ import {
   type MacroTrackerDay,
 } from "@/app/actions/macro-tracker";
 import { Button } from "@/components/ui/button";
+import { PageHeader, PageShell } from "@/components/layout/page-shell";
 import { DateControls } from "@/components/locations/slug/DateControls";
 import { MacroWizard } from "@/components/nutrition/MacroWizard";
 import { useAnalytics } from "@/hooks/use-analytics";
@@ -288,25 +289,27 @@ export function MacroTracker({
   }
 
   return (
-    <div className="min-h-screen bg-muted/20 px-4 pb-16 pt-24 md:px-6">
-      <div className="mx-auto max-w-5xl">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-wider text-maize">Daily nutrition</p>
-            <h1 className="mt-1 text-3xl font-black tracking-tight md:text-4xl">Macro Tracker</h1>
-            <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-              Log campus menu items and compare your daily intake with your personal targets.
-            </p>
-          </div>
+    <PageShell className="min-h-screen bg-muted/20 pb-16">
+      <p className="text-sm font-bold uppercase tracking-wider text-maize">Daily nutrition</p>
+      <PageHeader
+        className="mb-8"
+        title="Macro Tracker"
+        description="Log campus menu items and compare your daily intake with your personal targets."
+        actions={
           <Button variant="outline" className="gap-2 rounded-full" onClick={() => setEditingProfile(true)}>
             <Settings2 className="h-4 w-4" /> Edit targets
           </Button>
-        </div>
+        }
+      />
 
-        <div className="mt-8 flex items-center justify-between rounded-2xl border border-border bg-card p-2 shadow-sm">
-          <Button variant="ghost" size="icon" onClick={() => void changeDate(shiftDate(date, -1))}>
+      <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-2 shadow-sm">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => void changeDate(shiftDate(date, -1))}
+            aria-label="Previous day"
+          >
             <ChevronLeft className="h-5 w-5" />
-            <span className="sr-only">Previous day</span>
           </Button>
           <div className="flex min-w-0 items-center gap-2">
             <DateControls
@@ -318,9 +321,13 @@ export function MacroTracker({
               {date === today ? `Today · ${friendlyDate(date)}` : friendlyDate(date)}
             </span>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => void changeDate(shiftDate(date, 1))}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => void changeDate(shiftDate(date, 1))}
+            aria-label="Next day"
+          >
             <ChevronRight className="h-5 w-5" />
-            <span className="sr-only">Next day</span>
           </Button>
         </div>
 
@@ -377,7 +384,6 @@ export function MacroTracker({
             </div>
           )}
         </section>
-      </div>
-    </div>
+    </PageShell>
   );
 }

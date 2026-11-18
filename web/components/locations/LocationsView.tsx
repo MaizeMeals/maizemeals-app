@@ -9,8 +9,15 @@ import { useMdUp } from "@/hooks/use-md-up";
 import { useMobileLocationsDrawerSwipe } from "@/hooks/use-mobile-locations-drawer-swipe";
 import { LocationListCard } from "@/components/locations/LocationListCard";
 import { LocationDetailPanel } from "@/components/locations/detail-panel/LocationDetailPanel";
-import { Search, Loader2, X, ChevronRight } from "lucide-react";
+import { Search, Loader2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SearchField } from "@/components/ui/search-field";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { appGhostIconButtonClassName } from "@/lib/button-styles";
 import { HEADER_HEIGHT } from "@/components/layout/constants";
 import type { LocationSummary } from "@/types/location-summary";
@@ -190,6 +197,8 @@ export default function LocationsView() {
     }
     blurCloseTimerRef.current = window.setTimeout(() => {
       blurCloseTimerRef.current = null;
+      const active = document.activeElement;
+      if (drawer && active && drawer.contains(active)) return;
       if (!selectedIdRef.current) closeMobileListDrawer();
     }, 180);
   };
@@ -314,10 +323,14 @@ export default function LocationsView() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground opacity-60">
-          <Search className="w-12 h-12 mb-2 opacity-20" />
-          <p>No locations found.</p>
-        </div>
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Search />
+            </EmptyMedia>
+            <EmptyTitle>No locations found.</EmptyTitle>
+          </EmptyHeader>
+        </Empty>
       )}
     </>
   );
@@ -360,26 +373,11 @@ export default function LocationsView() {
         ) : (
           <>
             <div className="p-4 border-b border-border bg-background/95 sticky top-0 z-10">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search dining halls, cafes..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-10 pl-9 pr-4 bg-muted border border-transparent focus:border-muted-foreground rounded-full text-sm outline-none transition-all"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground rounded-full"
-                    aria-label="Clear search"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
+              <SearchField
+                value={searchQuery}
+                onValueChange={setSearchQuery}
+                placeholder="Search dining halls, cafes..."
+              />
             </div>
             <div className="flex flex-1 flex-col min-h-0 overflow-y-auto p-4 no-scrollbar">
               {listContent}
@@ -448,35 +446,18 @@ export default function LocationsView() {
             ) : (
               <>
                 <div className="flex shrink-0 items-center gap-2 border-b border-border bg-background p-3">
-                  <div className="relative min-w-0 flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                    <input
-                      ref={mobileSearchRef}
-                      type="text"
-                      inputMode="search"
-                      role="searchbox"
-                      autoComplete="off"
-                      placeholder="Search dining halls, cafes…"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onFocus={clearBlurTimer}
-                      onBlur={handleMobileSearchBlur}
-                      onMouseDown={clearBlurTimer}
-                      className="w-full h-10 pl-9 pr-9 bg-muted border border-transparent focus:border-muted-foreground rounded-full text-sm outline-none transition-all"
-                      enterKeyHint="search"
-                    />
-                    {searchQuery && (
-                      <button
-                        type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => setSearchQuery("")}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground rounded-full"
-                        aria-label="Clear search"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
+                  <SearchField
+                    ref={mobileSearchRef}
+                    value={searchQuery}
+                    onValueChange={setSearchQuery}
+                    placeholder="Search dining halls, cafes…"
+                    containerClassName="min-w-0"
+                    role="searchbox"
+                    autoComplete="off"
+                    onFocus={clearBlurTimer}
+                    onBlur={handleMobileSearchBlur}
+                    onMouseDown={clearBlurTimer}
+                  />
                   <Button
                     type="button"
                     variant="ghost"
