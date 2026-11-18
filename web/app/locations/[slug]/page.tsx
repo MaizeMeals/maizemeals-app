@@ -15,7 +15,7 @@ import type { Item, ItemWithPhotos, MenuData, StationGroup as StationGroupData }
 import { LocationSkeleton } from "@/components/locations/slug/LocationSkeleton"
 import { StickyHeader } from "@/components/locations/slug/StickyHeader"
 import { FilterState, INITIAL_FILTERS } from "@/components/locations/slug/filters/types"
-import { filterItems } from "@/lib/filter-utils"
+import { filterItems, normalizeDietaryTag } from "@/lib/filter-utils"
 import { compareItemsBySmartPreferences } from "@/lib/preference-scoring"
 import { RefineRecommendationsBanner, REFINE_BANNER_DISMISSED_KEY } from "@/components/preferences/RefineRecommendationsBanner"
 import {
@@ -48,8 +48,23 @@ function sortStationGroups(filteredGroups: StationGroupData[]): StationGroupData
   })
 }
 
-function dietarySelectionKey(tags: string[]): string {
+function dietarySelectionKey(tags: readonly string[]): string {
   return [...tags].sort().join("\0")
+}
+
+/** Ids match DietaryEssentialsSheet OPTIONS. Only these are profile dealbreakers. */
+const TIER1_DIETARY_IDS = ["vegetarian", "vegan", "halal", "glutenfree"] as const
+
+function tier1DietaryIds(tags: readonly string[]): string[] {
+  const present = new Set(tags.map((tag) => normalizeDietaryTag(tag)))
+  return TIER1_DIETARY_IDS.filter((id) => present.has(id))
+}
+
+function mergePageDietaryWithProfileEssentials(
+  pageDietary: readonly string[],
+  profileDietary: readonly string[],
+): string[] {
+  return [...new Set([...tier1DietaryIds(profileDietary), ...pageDietary])]
 }
 
 function findMealForItem(menu: MenuData, itemId: string): string | null {
@@ -87,15 +102,21 @@ export default function LocationPage() {
   const [activeTab, setActiveTab] = useState<string>("Lunch")
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS)
+  const filtersRef = useRef(filters)
+  const cleanedDietaryPersistKeyRef = useRef<string | null>(null)
   const setFiltersWithProfileSync = useCallback(
     (action: React.SetStateAction<FilterState>) => {
-      setFilters((prev) => {
-        const next = typeof action === "function" ? action(prev) : action
-        if (dietarySelectionKey(prev.dietary) !== dietarySelectionKey(next.dietary)) {
-          void updatePreferences({ dietary_filters: next.dietary })
-        }
-        return next
-      })
+      const prev = filtersRef.current
+      const next = typeof action === "function" ? action(prev) : action
+      const prevEssentials = tier1DietaryIds(prev.dietary)
+      const nextEssentials = tier1DietaryIds(next.dietary)
+      filtersRef.current = next
+      setFilters(next)
+      // Page-only chips (spicy, kosher, protein, fiber) stay local.
+      // updatePreferences also saves guest essentials to localStorage.
+      if (dietarySelectionKey(prevEssentials) !== dietarySelectionKey(nextEssentials)) {
+        void updatePreferences({ dietary_filters: nextEssentials })
+      }
     },
     [updatePreferences],
   )
@@ -121,16 +142,30 @@ export default function LocationPage() {
 
   useEffect(() => {
     if (prefsLoading) return
-    setFilters((prev) => {
-      const merged = [
-        ...new Set([...preferences.dietary_filters, ...prev.dietary]),
-      ]
-      const prevKey = [...prev.dietary].sort().join("\0")
-      const mergedKey = [...merged].sort().join("\0")
-      if (prevKey === mergedKey) return prev
-      return { ...prev, dietary: merged }
-    })
+    const prev = filtersRef.current
+    const mergedDietary = mergePageDietaryWithProfileEssentials(
+      prev.dietary,
+      preferences.dietary_filters,
+    )
+    if (dietarySelectionKey(prev.dietary) === dietarySelectionKey(mergedDietary)) return
+    const next = { ...prev, dietary: mergedDietary }
+    filtersRef.current = next
+    setFilters(next)
   }, [preferences.dietary_filters, prefsLoading])
+
+  useEffect(() => {
+    if (prefsLoading) return
+    const stored = preferences.dietary_filters
+    const cleaned = tier1DietaryIds(stored)
+    const storedKey = dietarySelectionKey(stored)
+    if (storedKey === dietarySelectionKey(cleaned)) {
+      cleanedDietaryPersistKeyRef.current = null
+      return
+    }
+    if (cleanedDietaryPersistKeyRef.current === storedKey) return
+    cleanedDietaryPersistKeyRef.current = storedKey
+    void updatePreferences({ dietary_filters: cleaned })
+  }, [preferences.dietary_filters, prefsLoading, updatePreferences])
 
   const closeReviewModal = () => {
     setReviewItemFromDrawer(null)
@@ -139,18 +174,18 @@ export default function LocationPage() {
 
   const handleDateChange = (date: string) => {
     setSelectedDate(date)
-    setFiltersWithProfileSync({
+    setFiltersWithProfileSync((prev) => ({
       ...INITIAL_FILTERS,
-      dietary: filters.dietary
-    })
+      dietary: prev.dietary,
+    }))
   }
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
-    setFiltersWithProfileSync({
+    setFiltersWithProfileSync((prev) => ({
       ...INITIAL_FILTERS,
-      dietary: filters.dietary // dont reset, its visible
-    })
+      dietary: prev.dietary,
+    }))
   }
 
   const currentStationGroups = data?.menu?.[activeTab] || []
@@ -411,10 +446,10 @@ export default function LocationPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    setFiltersWithProfileSync({
+                    setFiltersWithProfileSync((prev) => ({
                       ...INITIAL_FILTERS,
-                      dietary: filters.dietary,
-                    })
+                      dietary: prev.dietary,
+                    }))
                   }
                   className="text-maize hover:underline text-sm mt-2 font-bold"
                 >
