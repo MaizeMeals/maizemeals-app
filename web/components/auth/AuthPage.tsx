@@ -42,6 +42,7 @@ const AUTH_DINING_IMAGES: readonly string[] = [
   '/images/dining_halls/south-quad-dining-hall.jpg',
   '/images/dining_halls/twigs-at-oxford.jpg',
   '/images/dining_halls/umma-cafe.jpeg',
+  '/images/dining_halls/wolverine-village-dining-hall.jpg',
 ]
 
 function duplicatedForMarquee(srcs: readonly string[]) {
