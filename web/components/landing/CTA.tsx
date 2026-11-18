@@ -18,7 +18,7 @@ export function CTA() {
   const handleViewMenuClick = () => {
     track('cta_view_menu_clicked', {
       section: 'landing_cta',
-      destination: '/locations'
+      destination: '/menus'
     })
   }
 
@@ -51,7 +51,7 @@ export function CTA() {
                 <Link href="/login" onClick={handleGetStartedClick}>Get Started</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-white/20 bg-transparent text-white hover:bg-white/10 dark:hover:bg-white/10">
-                <Link href="/locations" onClick={handleViewMenuClick}>View Today's Menu</Link>
+                <Link href="/menus" onClick={handleViewMenuClick}>View Today's Menu</Link>
               </Button>
             </div>
           </div>

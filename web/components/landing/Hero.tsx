@@ -16,7 +16,7 @@ export function Hero() {
   const handleFindFoodClick = () => {
     track('hero_find_food_clicked', {
       section: 'hero',
-      destination: '/locations'
+      destination: '/menus'
     })
   }
 
@@ -65,7 +65,7 @@ export function Hero() {
                 size="lg"
                 className={cn("w-full sm:w-auto", landingPrimaryButtonClassName)}
               >
-                <Link href="/locations" onClick={handleFindFoodClick} className="flex items-center gap-2">
+                <Link href="/menus" onClick={handleFindFoodClick} className="flex items-center gap-2">
                   <span className="w-4" />
                   Find Food Now
                   <ChevronRight className="h-4 w-4" />
