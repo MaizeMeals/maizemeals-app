@@ -21,7 +21,7 @@ export function ClusterPin({ mainLocation, isSelected, selectedChildId, onChildC
   const isMainSelected = isSelected && !selectedChildId;
 
   const getPinStyles = (open: boolean, selected: boolean) => {
-    if (selected) return "bg-maize border-2 border-maize shadow-lg text-slate-900";
+    if (selected) return "bg-maize border-2 border-maize shadow-lg text-umich-blue";
     if (open) return "bg-umich-blue border-2 border-green-500 dark:border-green-600 text-white shadow-md";
     return "bg-umich-blue border-2 border-red-500 dark:border-red-600 text-white shadow-md";
   };
@@ -65,10 +65,10 @@ export function ClusterPin({ mainLocation, isSelected, selectedChildId, onChildC
                 getPinStyles(child.isOpen, isChildSelected)
               )}
             >
-              <ChildIcon className={cn("w-5 h-5", isChildSelected ? "text-slate-900" : "text-white")} />
+              <ChildIcon className={cn("w-5 h-5", isChildSelected ? "text-umich-blue" : "text-white")} />
             </div>
             {isChildSelected && (
-              <span className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 px-2 py-1 bg-background border border-border text-xs font-medium rounded shadow-sm whitespace-nowrap max-w-[100px] truncate">
+              <span className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 px-2 py-1 bg-background border border-border text-xs font-medium rounded-md shadow-sm whitespace-nowrap max-w-[100px] truncate">
                 {child.name}
               </span>
             )}
@@ -89,7 +89,7 @@ export function ClusterPin({ mainLocation, isSelected, selectedChildId, onChildC
             getPinStyles(isOpen, isMainSelected)
           )}
         >
-          <MainIcon className={cn("w-5 h-5", isMainSelected ? "text-slate-900" : "text-white")} />
+          <MainIcon className={cn("w-5 h-5", isMainSelected ? "text-umich-blue" : "text-white")} />
           {hasChildren && childCount > 0 && (
             <div
               className={cn(
@@ -115,7 +115,7 @@ export function ClusterPin({ mainLocation, isSelected, selectedChildId, onChildC
         />
 
         {isSelected && isMainSelected && (
-          <span className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 px-2 py-1 bg-background border border-border text-xs font-medium rounded shadow-sm whitespace-nowrap">
+          <span className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 px-2 py-1 bg-background border border-border text-xs font-medium rounded-md shadow-sm whitespace-nowrap">
             {name}
           </span>
         )}

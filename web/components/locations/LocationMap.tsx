@@ -51,7 +51,7 @@ export default function LocationMap({ locations, selectedId, activeVenueId, onSe
   }, [selectedId, locations]);
 
   return (
-    <div className="h-full w-full relative bg-slate-950">
+    <div className="h-full w-full relative bg-background">
       <Map
         ref={mapRef}
         mapLib={maplibregl}

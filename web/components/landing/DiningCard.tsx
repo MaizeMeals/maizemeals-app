@@ -1,10 +1,11 @@
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { ChevronRight, Clock, Users } from "lucide-react"
 import Link from "next/link"
 import { CampusLocation } from "@/types/location"
 import { Skeleton } from "@/components/ui/skeleton"
-import { STATUS_COLORS, CAPACITY_COLORS } from "@/lib/dining-utils"
+import { STATUS_COLORS, CAPACITY_COLORS } from "@/lib/dining"
 import { cn } from "@/lib/utils"
 import { landingSurfaceOutlineButtonClassName } from "@/lib/button-styles"
 
@@ -15,7 +16,7 @@ interface DiningCardProps {
 }
 
 export function DiningCard({ hall, onClick, href }: DiningCardProps) {
-  const statusClass = STATUS_COLORS[hall.status.color] || STATUS_COLORS['gray']
+  const statusVariant = STATUS_COLORS[hall.status.color] ?? "muted"
 
   // Safe Capacity Logic: Only calculate if it exists
   const isDiningHall = hall.type === 'DINING_HALLS';
@@ -34,11 +35,14 @@ export function DiningCard({ hall, onClick, href }: DiningCardProps) {
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
 
-          {/* Status Badge */}
           <div className="absolute top-2 right-2">
-            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm border ${statusClass}`}>
+            <Badge
+              variant={statusVariant}
+              shape="pill"
+              className="px-2.5 py-1 text-[10px] font-bold shadow-sm"
+            >
               {hall.status.label}
-            </span>
+            </Badge>
           </div>
         </div>
 

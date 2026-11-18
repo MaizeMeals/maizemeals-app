@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { CampusLocation, DiningHallLocation, RetailLocation } from "@/types/location";
-import { determineHallStatus } from "@/lib/dining-utils";
+import { determineHallStatus } from "@/lib/dining";
 import { CapacityApiResponse } from "@/lib/api-types";
 
 export function useCampusLocations() {

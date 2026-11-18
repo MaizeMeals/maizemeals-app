@@ -76,7 +76,7 @@ function MacroSlider({
       </div>
 
       {/* Min/Max Footer Labels */}
-      <div className="flex justify-between text-[10px] text-slate-300 dark:text-slate-700 px-1 -mt-1">
+      <div className="flex justify-between text-[10px] text-muted-foreground px-1 -mt-1">
         <span>{min}</span>
         <span>{max}+</span>
       </div>

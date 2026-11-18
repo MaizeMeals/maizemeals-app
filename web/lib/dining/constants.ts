@@ -2,38 +2,14 @@
 
 export type DiningStatusColor = "green" | "red" | "orange" | "gray";
 
-// --- COLORS ---
+/** Badge `variant` names for live dining status. See docs/design-system.md. */
+export type StatusBadgeVariant = "success" | "warning" | "danger" | "muted";
 
-// 1. Primitive definitions (Source of Truth)
-const STATUS_PRIMITIVES = {
-  green: {
-    text: "text-green-700 dark:text-green-200",
-    bg: "bg-green-100 dark:bg-green-950",
-    border: "border-green-200 dark:border-green-800",
-  },
-  red: {
-    text: "text-red-700 dark:text-red-200",
-    bg: "bg-red-100 dark:bg-red-950",
-    border: "border-red-200 dark:border-red-800",
-  },
-  orange: {
-    text: "text-orange-800 dark:text-orange-200",
-    bg: "bg-orange-100 dark:bg-orange-950",
-    border: "border-orange-200 dark:border-orange-800",
-  },
-  gray: {
-    text: "text-slate-700 dark:text-slate-200",
-    bg: "bg-slate-100 dark:bg-slate-950",
-    border: "border-slate-200 dark:border-slate-800",
-  },
-};
-
-// 2. Exported Composites
-export const STATUS_COLORS: Record<DiningStatusColor, string> = {
-  green: `${STATUS_PRIMITIVES.green.bg} ${STATUS_PRIMITIVES.green.text} ${STATUS_PRIMITIVES.green.border}`,
-  red: `${STATUS_PRIMITIVES.red.bg} ${STATUS_PRIMITIVES.red.text} ${STATUS_PRIMITIVES.red.border}`,
-  orange: `${STATUS_PRIMITIVES.orange.bg} ${STATUS_PRIMITIVES.orange.text} ${STATUS_PRIMITIVES.orange.border}`,
-  gray: `${STATUS_PRIMITIVES.gray.bg} ${STATUS_PRIMITIVES.gray.text} ${STATUS_PRIMITIVES.gray.border}`,
+export const STATUS_COLORS: Record<DiningStatusColor, StatusBadgeVariant> = {
+  green: "success",
+  orange: "warning",
+  red: "danger",
+  gray: "muted",
 };
 
 export const CAPACITY_COLORS: Record<string, string> = {

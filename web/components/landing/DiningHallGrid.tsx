@@ -15,7 +15,7 @@ export function DiningHallGrid() {
     return (
       <div className="mx-auto max-w-5xl">
         <div className="flex justify-between mb-6 px-2">
-            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 md:[@media(min-height:800px)]:text-slate-300 2xl:text-muted-foreground transition-colors">
+            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 md:[@media(min-height:800px)]:text-white/80 2xl:text-muted-foreground transition-colors">
             <span className="h-2 w-2 rounded-full bg-muted-foreground/45 animate-pulse" />{" "}
             Live Status
             </h3>
@@ -57,7 +57,7 @@ export function DiningHallGrid() {
   return (
     <div className="mx-auto max-w-5xl">
       <div className="flex justify-between mb-6 px-2">
-        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 md:[@media(min-height:800px)]:text-slate-300 2xl:text-muted-foreground transition-colors">
+        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 md:[@media(min-height:800px)]:text-white/80 2xl:text-muted-foreground transition-colors">
            <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" /> Live Status
         </h3>
         <Link

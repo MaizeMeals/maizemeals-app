@@ -23,12 +23,12 @@ export function DualRangeSlider({
       <SliderPrimitive.Track
         className={cn(
           "relative w-full grow overflow-hidden rounded-full",
-          minimal ? "h-full bg-transparent" : "h-2 bg-slate-200 dark:bg-slate-800"
+          minimal ? "h-full bg-transparent" : "h-2 bg-border"
         )}
       >
         {minimal ? (
           <>
-            <div className="absolute h-[1px] w-full bg-slate-200 dark:bg-slate-800 top-1/2 -translate-y-1/2" />
+            <div className="absolute h-[1px] w-full bg-border top-1/2 -translate-y-1/2" />
             <SliderPrimitive.Range className={cn("absolute h-[1px] top-1/2 -translate-y-1/2", color)} />
           </>
         ) : (
@@ -39,7 +39,7 @@ export function DualRangeSlider({
       {props.value?.map((_, i) => (
         <SliderPrimitive.Thumb
           key={i}
-          className="block h-6 w-6 rounded-full border border-slate-200 bg-white shadow-md ring-offset-background transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:scale-110 cursor-grab active:cursor-grabbing active:scale-95"
+          className="block h-6 w-6 rounded-full border border-border bg-white shadow-md ring-offset-background transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:scale-110 cursor-grab active:cursor-grabbing active:scale-95"
         />
       ))}
     </SliderPrimitive.Root>
