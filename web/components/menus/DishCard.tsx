@@ -21,14 +21,9 @@ function formatDuration(mins: number): string {
 
 function StatusPill({ offering }: { offering: Offering }) {
   const s = offering.status;
-  if (s.kind === "now") {
-    return (
-      <Badge variant="success" shape="pill" className="gap-1 py-0 text-[11px]">
-        <span className="h-1.5 w-1.5 rounded-full bg-green-500" aria-hidden />
-        Serving now
-      </Badge>
-    );
-  }
+  // "Serving now" is the common case (most rows during a meal), so it gets no
+  // pill: only exceptions are labeled — later today, or already ended.
+  if (s.kind === "now") return null;
   if (s.kind === "later") {
     return (
       <Badge variant="muted" shape="pill" className="py-0 text-[11px]">
