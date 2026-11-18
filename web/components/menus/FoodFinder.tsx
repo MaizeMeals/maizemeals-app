@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Loader2, SearchX, Store } from "lucide-react";
 import { HEADER_HEIGHT } from "@/components/layout/constants";
@@ -54,7 +55,7 @@ function isWeekend(date: string): boolean {
 export function FoodFinder() {
   const searchParams = useSearchParams();
   const { track } = useAnalytics();
-  const { preferences, loading: prefsLoading } = usePreferences();
+  const { preferences, loading: prefsLoading, isGuest } = usePreferences();
   const { favorites } = useFavoriteFoods();
 
   const today = easternToday();
@@ -274,7 +275,19 @@ export function FoodFinder() {
               <p className="mb-3 text-xs font-medium text-muted-foreground">
                 {showFavorites ? "Everything else · " : ""}
                 {listDishes.length} {listDishes.length === 1 ? "dish" : "dishes"}
-                {query ? "" : " · ranked for your preferences"}
+                {!query && !prefsLoading && !isGuest && " · ranked for your preferences"}
+                {!query && !prefsLoading && isGuest && (
+                  <>
+                    {" · "}
+                    <Link
+                      href="/signup?next=%2Fmenus"
+                      onClick={() => track("find_food_signup_cta_clicked")}
+                      className="font-semibold text-foreground underline underline-offset-2 hover:text-maize"
+                    >
+                      Sign up to personalize these picks
+                    </Link>
+                  </>
+                )}
               </p>
               <div className="space-y-3">
                 {listDishes.slice(0, limit).map((dish) => (
