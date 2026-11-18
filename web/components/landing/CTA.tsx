@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import Image from "next/image"
 import { useAnalytics } from "@/hooks/use-analytics"
 import { landingPrimaryButtonClassName } from "@/lib/button-styles"
 
@@ -28,10 +29,12 @@ export function CTA() {
           <div className="bg-umich-blue rounded-2xl p-8 md:p-16 text-center shadow-2xl relative overflow-hidden group">
             {/* Background Image Effect for CTA */}
             <div className="absolute inset-0 opacity-10 mix-blend-overlay">
-                <img
-                    src="/images/dining_halls_hq/eq.jpg"
+                <Image
+                    src="/images/dining_halls_hq/eq.webp"
                     alt="CTA Background"
-                    className="w-full h-full object-cover grayscale"
+                    fill
+                    sizes="(min-width: 1400px) 1336px, calc(100vw - 4rem)"
+                    className="object-cover grayscale"
                 />
             </div>
 

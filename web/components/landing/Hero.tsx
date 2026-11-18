@@ -37,6 +37,7 @@ export function Hero() {
             loop
             muted
             playsInline
+            poster="/videos/campus-drone-poster.webp"
             className="w-full h-full object-cover transition-opacity duration-700"
             style={{ objectPosition: 'center 40%' }}
           >
