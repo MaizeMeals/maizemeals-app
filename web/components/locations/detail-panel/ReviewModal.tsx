@@ -1,22 +1,29 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
-import imageCompression from "browser-image-compression";
-import { X, Loader2, Camera, LogIn } from "lucide-react";
+import { X, Loader2, Camera, LogIn, Pencil } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
 import { appPrimaryButtonClassName } from "@/lib/button-styles";
 import { StarRatingInput } from "./StarRatingInput";
 import { submitReview, type SubmitReviewResult } from "@/app/actions/submit-review";
+import {
+  EditReviewDialog,
+  type EditReviewTarget,
+} from "@/components/reviews/EditReviewDialog";
 import { createClient } from "@/lib/supabase/client";
+import {
+  compressReviewPhoto,
+  REVIEW_PHOTO_PROCESS_ERROR,
+} from "@/lib/compress-review-photo";
 import { cn } from "@/lib/utils";
 
-const MAX_PHOTO_MB = 2;
-
 type AuthStatus = "loading" | "signed-in" | "signed-out";
+
+type OwnReview = EditReviewTarget & { rating: number };
 
 type Props = {
   itemId: string;
@@ -38,11 +45,41 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
   const router = useRouter();
   const pathname = usePathname();
   const postLoginPath = `${pathname}?review=${encodeURIComponent(itemId)}`;
+  const locationSlug = locationSlugFromPathname(pathname);
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [alreadyReviewed, setAlreadyReviewed] = useState(false);
+  const [ownReview, setOwnReview] = useState<OwnReview | null>(null);
+  const [loadingOwnReview, setLoadingOwnReview] = useState(false);
+  const [ownReviewError, setOwnReviewError] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const photoRequestRef = useRef(0);
+  const reviewRequestRef = useRef(0);
+  /** Read at event time so a nested edit dialog cannot dismiss this one mid-open. */
+  const editOpenRef = useRef(false);
+
+  const setEditing = useCallback((next: boolean) => {
+    editOpenRef.current = next;
+    setEditOpen(next);
+  }, []);
+
+  const resetComposer = useCallback(() => {
+    photoRequestRef.current += 1;
+    reviewRequestRef.current += 1;
+    setRating(0);
+    setComment("");
+    setPhotoFile(null);
+    setIsCompressing(false);
+    setAlreadyReviewed(false);
+    setOwnReview(null);
+    setLoadingOwnReview(false);
+    setOwnReviewError(null);
+    setEditing(false);
+  }, [setEditing]);
 
   useEffect(() => {
     if (!open) {
@@ -61,16 +98,92 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
     };
   }, [open]);
 
+  useEffect(() => {
+    resetComposer();
+  }, [itemId, resetComposer]);
+
+  const loadOwnReview = useCallback(async (): Promise<
+    { ok: true; review: OwnReview } | { ok: false; message: string }
+  > => {
+    const supabase = createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    if (!userId) {
+      return { ok: false, message: "Sign in again to edit your review." };
+    }
+
+    const { data: row, error } = await supabase
+      .from("user_ratings")
+      .select("id, rating, comment")
+      .eq("item_id", itemId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error || !row) {
+      if (error) {
+        console.error("[ReviewModal] load own review failed:", error.message);
+      }
+      return { ok: false, message: "Couldn't load your review. Try again." };
+    }
+
+    const { data: photoRows, error: photoError } = await supabase
+      .from("photos")
+      .select("storage_path, is_approved")
+      .eq("user_rating_id", row.id);
+
+    if (photoError) {
+      console.error("[ReviewModal] load review photos failed:", photoError.message);
+    }
+
+    return {
+      ok: true,
+      review: {
+        id: row.id,
+        rating: row.rating,
+        comment: row.comment,
+        photos: photoError
+          ? null
+          : (photoRows ?? []).map((photo) => ({
+              storage_path: photo.storage_path,
+              is_approved: photo.is_approved,
+            })),
+      },
+    };
+  }, [itemId]);
+
+  const refreshOwnReview = useCallback(async () => {
+    const requestId = ++reviewRequestRef.current;
+    setLoadingOwnReview(true);
+    setOwnReviewError(null);
+    try {
+      const result = await loadOwnReview();
+      if (requestId !== reviewRequestRef.current) return null;
+      if (!result.ok) {
+        setOwnReview(null);
+        setOwnReviewError(result.message);
+        return null;
+      }
+      setOwnReview(result.review);
+      setOwnReviewError(null);
+      return result.review;
+    } finally {
+      if (requestId === reviewRequestRef.current) {
+        setLoadingOwnReview(false);
+      }
+    }
+  }, [loadOwnReview]);
+
   const handleOpenChange = useCallback(
     (next: boolean) => {
+      if (!next && editOpenRef.current) return;
       if (!next && !isSubmitting) {
-        setRating(0);
-        setComment("");
-        setPhotoFile(null);
+        resetComposer();
       }
       onOpenChange(next);
     },
-    [onOpenChange, isSubmitting]
+    [onOpenChange, isSubmitting, resetComposer]
   );
 
   const handleSubmit = useCallback(
@@ -87,8 +200,7 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
         formData.set("rating", String(rating));
         if (comment.trim()) formData.set("comment", comment.trim());
         if (photoFile) formData.set("photo", photoFile);
-        const slug = locationSlugFromPathname(pathname);
-        if (slug) formData.set("revalidate_location_slug", slug);
+        if (locationSlug) formData.set("revalidate_location_slug", locationSlug);
 
         const result: SubmitReviewResult = await submitReview(formData);
 
@@ -112,45 +224,71 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
           );
           return;
         }
+
+        if (result.code === "already_reviewed") {
+          toast.error(result.error);
+          setAlreadyReviewed(true);
+          void refreshOwnReview();
+          return;
+        }
+
         toast.error(result.error);
       } finally {
         setIsSubmitting(false);
       }
     },
-    [itemId, rating, comment, photoFile, handleOpenChange, router, postLoginPath, pathname, onPosted]
+    [
+      itemId,
+      rating,
+      comment,
+      photoFile,
+      handleOpenChange,
+      router,
+      postLoginPath,
+      locationSlug,
+      onPosted,
+      refreshOwnReview,
+    ]
   );
 
-  const [isCompressing, setIsCompressing] = useState(false);
+  const openOwnReviewEditor = useCallback(async () => {
+    const review = ownReview ?? (await refreshOwnReview());
+    if (review) setEditing(true);
+  }, [ownReview, refreshOwnReview, setEditing]);
 
   const onPhotoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) {
       setPhotoFile(null);
       return;
     }
-    const isImage = file.type.startsWith("image/");
-    if (!isImage) {
-      setPhotoFile(file);
-      return;
-    }
+    const requestId = ++photoRequestRef.current;
     setIsCompressing(true);
     try {
-      const compressed = await imageCompression(file, {
-        maxSizeMB: 0.5,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true,
-      });
+      const compressed = await compressReviewPhoto(file);
+      if (requestId !== photoRequestRef.current) return;
       setPhotoFile(compressed);
     } catch (err) {
       console.error("Image compression failed:", err);
-      toast.error("Could not compress image. Using original.");
-      setPhotoFile(file);
+      if (requestId !== photoRequestRef.current) return;
+      input.value = "";
+      setPhotoFile(null);
+      toast.error(REVIEW_PHOTO_PROCESS_ERROR);
     } finally {
-      setIsCompressing(false);
+      if (requestId === photoRequestRef.current) setIsCompressing(false);
     }
   }, []);
 
+  const blockDismissWhileEditing = useCallback(
+    (event: { preventDefault: () => void }) => {
+      if (editOpenRef.current) event.preventDefault();
+    },
+    []
+  );
+
   return (
+    <>
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay
@@ -168,6 +306,10 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
             "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
           )}
+          onInteractOutside={blockDismissWhileEditing}
+          onPointerDownOutside={blockDismissWhileEditing}
+          onFocusOutside={blockDismissWhileEditing}
+          onEscapeKeyDown={blockDismissWhileEditing}
         >
           <div className="flex flex-col gap-4 p-5">
             <div className="flex items-center justify-between">
@@ -211,7 +353,36 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
               </div>
             )}
 
-            {authStatus === "signed-in" && (
+            {authStatus === "signed-in" && alreadyReviewed && (
+              <div className="flex flex-col gap-4 py-1" aria-live="polite">
+                <p className="text-sm text-foreground">
+                  You&apos;ve already reviewed this item.
+                </p>
+                {ownReview ? (
+                  <p className="text-sm text-muted-foreground">
+                    Your current rating is {ownReview.rating} out of 5.
+                  </p>
+                ) : null}
+                {ownReviewError ? (
+                  <p className="text-sm text-destructive">{ownReviewError}</p>
+                ) : null}
+                <Button
+                  type="button"
+                  onClick={() => void openOwnReviewEditor()}
+                  disabled={loadingOwnReview}
+                  className={cn("w-full gap-2", appPrimaryButtonClassName)}
+                >
+                  {loadingOwnReview ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Pencil className="h-4 w-4" />
+                  )}
+                  Edit your review
+                </Button>
+              </div>
+            )}
+
+            {authStatus === "signed-in" && !alreadyReviewed && (
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div>
                 <span className="text-sm font-medium text-foreground">
@@ -251,7 +422,7 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
 
               <div>
                 <label className="text-sm font-medium text-foreground">
-                  Photo (optional, compressed to ~500KB)
+                  Photo (optional, JPEG, PNG, or WebP)
                 </label>
                 <div className="mt-2 flex items-center gap-2">
                   <label
@@ -270,7 +441,7 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
                     {isCompressing ? "Compressing…" : photoFile ? photoFile.name : "Choose photo"}
                     <input
                       type="file"
-                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      accept="image/jpeg,image/png,image/webp"
                       className="sr-only"
                       onChange={onPhotoChange}
                       disabled={isSubmitting || isCompressing}
@@ -291,7 +462,7 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
 
               <Button
                 type="submit"
-                disabled={isSubmitting || rating < 1}
+                disabled={isSubmitting || rating < 1 || isCompressing}
                 className={cn("mt-2 w-full gap-2", appPrimaryButtonClassName)}
               >
                 {isSubmitting ? (
@@ -309,5 +480,18 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+    <EditReviewDialog
+      itemId={itemId}
+      review={ownReview}
+      open={editOpen && ownReview !== null}
+      onOpenChange={setEditing}
+      revalidateLocationSlug={locationSlug}
+      onSaved={() => {
+        onPosted?.();
+        router.refresh();
+        onOpenChange(false);
+      }}
+    />
+    </>
   );
 }

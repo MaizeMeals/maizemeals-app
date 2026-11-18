@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import imageCompression from "browser-image-compression";
 import { Loader2, X } from "lucide-react";
 import { updateReview, type UpdateReviewResult } from "@/app/actions/update-review";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,10 @@ import {
   appPrimaryButtonClassName,
   appSurfaceOutlineButtonClassName,
 } from "@/lib/button-styles";
+import {
+  compressReviewPhoto,
+  REVIEW_PHOTO_PROCESS_ERROR,
+} from "@/lib/compress-review-photo";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +35,8 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void | Promise<void>;
+  /** Location page to revalidate after a successful save, when known. */
+  revalidateLocationSlug?: string | null;
 };
 
 export function EditReviewDialog({
@@ -40,19 +45,24 @@ export function EditReviewDialog({
   open,
   onOpenChange,
   onSaved,
+  revalidateLocationSlug,
 }: Props) {
   const [comment, setComment] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [removePhoto, setRemovePhoto] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [compressing, setCompressing] = useState(false);
+  const photoRequestRef = useRef(0);
 
   useEffect(() => {
     if (open && review) {
       setComment(review.comment ?? "");
       setFile(null);
       setRemovePhoto(false);
+      return;
     }
+    photoRequestRef.current += 1;
+    setCompressing(false);
   }, [open, review]);
 
   const hasPhoto =
@@ -62,30 +72,27 @@ export function EditReviewDialog({
 
   const onPhotoChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const next = e.target.files?.[0];
+      const input = e.target;
+      const next = input.files?.[0];
       if (!next) {
         setFile(null);
         return;
       }
-      setRemovePhoto(false);
-      if (!next.type.startsWith("image/")) {
-        setFile(next);
-        return;
-      }
+      const requestId = ++photoRequestRef.current;
       setCompressing(true);
       try {
-        const compressed = await imageCompression(next, {
-          maxSizeMB: 0.5,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true,
-        });
+        const compressed = await compressReviewPhoto(next);
+        if (requestId !== photoRequestRef.current) return;
+        setRemovePhoto(false);
         setFile(compressed);
       } catch (err) {
         console.error("Image compression failed:", err);
-        toast.error("Could not compress image. Using original.");
-        setFile(next);
+        if (requestId !== photoRequestRef.current) return;
+        input.value = "";
+        setFile(null);
+        toast.error(REVIEW_PHOTO_PROCESS_ERROR);
       } finally {
-        setCompressing(false);
+        if (requestId === photoRequestRef.current) setCompressing(false);
       }
     },
     [],
@@ -102,6 +109,8 @@ export function EditReviewDialog({
       fd.set("comment", comment.trim());
       if (removePhoto) fd.set("remove_photo", "1");
       if (file) fd.set("photo", file);
+      const slug = revalidateLocationSlug?.trim();
+      if (slug) fd.set("revalidate_location_slug", slug);
 
       const res: UpdateReviewResult = await updateReview(fd);
       if (res.success) {
@@ -125,14 +134,14 @@ export function EditReviewDialog({
       <Dialog.Portal>
         <Dialog.Overlay
           className={cn(
-            "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm",
+            "fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
           )}
         />
         <Dialog.Content
           className={cn(
-            "fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%]",
+            "fixed left-[50%] top-[50%] z-[60] w-full max-w-md translate-x-[-50%] translate-y-[-50%]",
             "overflow-hidden rounded-xl border bg-background shadow-lg",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
@@ -193,13 +202,13 @@ export function EditReviewDialog({
                 htmlFor="edit-review-photo"
                 className="text-sm font-medium text-foreground"
               >
-                {hasPhoto ? "Replace photo" : "Add photo"} (optional, max{" "}
-                {MAX_PHOTO_MB}MB)
+                {hasPhoto ? "Replace photo" : "Add photo"} (optional, JPEG, PNG,
+                or WebP, max {MAX_PHOTO_MB}MB)
               </label>
               <input
                 id="edit-review-photo"
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 disabled={submitting || compressing}
                 onChange={onPhotoChange}
                 className="mt-2 block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-foreground"
