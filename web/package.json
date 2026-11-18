@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "dotenv -e ../.env -- next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "vitest run"
   },
   "dependencies": {
     "@ncdai/react-wheel-picker": "^1.2.0",
@@ -50,6 +51,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }
