@@ -1,0 +1,107 @@
+MaizeMeals ingredient-flag datasets
+Retrieved: 2026-11-18
+
+These are compact derived files for scanning University of Michigan NetNutrition
+ingredient paragraphs. The raw taxonomies are not in this repository.
+
+1. additives.json
+   Open Food Facts additives taxonomy (ODbL).
+   JSON export: https://static.openfoodfacts.org/data/taxonomies/additives.json
+   English synonyms: https://github.com/openfoodfacts/openfoodfacts-server/blob/main/taxonomies/additives.txt
+   The JSON export keeps one English display name per additive. Phrase-match
+   names come from the English synonym lines in the taxonomy source. Names are
+   lowercased, punctuation-folded, and limited to English. Very generic tokens
+   (salt, water, sugar, oil, starch, spice, natural flavor, and similar) are
+   omitted so they do not match ordinary dining-label words.
+   US/UK spelling pairs that were generated from those names, not added as new
+   chemicals: aluminium/aluminum, sulphate/sulfate, sulphite/sulfite, colour/color.
+
+2. ingredient-watch.json
+   Curated MaizeMeals watch list of seed oils and palm oil. The moderate
+   concern is a watch-list label. It is not an Open Food Facts additive and
+   not a toxicity determination.
+   Oil names were checked against the Open Food Facts ingredients taxonomy
+   (ODbL): https://static.openfoodfacts.org/data/taxonomies/ingredients.json
+   That file lists most of these oils and was not vendored. It does not supply
+   the moderate concern. maize oil and the spelling grapeseed oil are
+   dining-label synonyms.
+
+Concern values are copied from structured taxonomy fields, or marked unknown.
+They are not Yuka grades and not an invented score.
+
+On each additive, concern is taken from these fields when they are present:
+  efsa_evaluation_overexposure_risk
+    en:high -> high
+    en:moderate -> moderate
+    en:no -> low
+  If that field is absent:
+    efsa_evaluation_exposure_mean_greater_than_adi
+    efsa_evaluation_exposure_95th_greater_than_adi
+    efsa_evaluation_exposure_mean_greater_than_noael
+    efsa_evaluation_exposure_95th_greater_than_noael
+    A value that names a population group (anything other than en:no-group)
+    means exposure above the reference -> high.
+    en:no-group means no population group was above the reference and is not
+    treated as exposure above ADI. If every present exposure field is
+    en:no-group, concern is low.
+  If none of these fields are present, concern is unknown, even when the
+  taxonomy links an EFSA opinion title (efsa_evaluation) and even when the
+  class is colour or preservative. The class is still recorded, and colour,
+  preservative, sweetener, and flavour-enhancer also set a flag.
+
+When a child additive has none of those EFSA fields, the same fields are read
+from the nearest parent with the same numeric E-number. concern_reasons then
+name that parent id. The child's own field always wins when it exists.
+
+Class flags: colour/color -> food-coloring, plus preservative, sweetener, and
+flavour-enhancer. EFSA flags record the structured values above:
+efsa-overexposure-high, efsa-overexposure-moderate, efsa-overexposure-no,
+exposure-above-adi, exposure-above-noael.
+
+The seed-oil list is a curated watch list.
+
+3. Open Food Facts API v3
+   Spec checked 2026-11-18:
+   https://github.com/openfoodfacts/openfoodfacts-server/blob/main/docs/api/ref/api-v3.yaml
+   The file says API v3.4 and that v3 is under development. It does not
+   replace additives.json for a NetNutrition ingredient sentence, which has
+   no barcode. Read requests need no auth. A User-Agent is recommended.
+
+   GET /api/v3/product/{code}
+     Path code is the barcode. Query fields selects the response (none, raw,
+     all, or a comma-separated list). knowledge_panels is excluded from all
+     unless requested. The product object is schema product_v3, which pulls
+     in Product-Ingredients and Product-Nutrition-v3.5. Those hold packaged
+     product ingredients, additives, allergens, and nutrition. This call
+     cannot scan a dining-hall sentence.
+
+   PATCH /api/v3/product/{code}
+     code may be the barcode, or test to analyze a payload without saving.
+     The body product object can include language-specific fields such as
+     ingredients text. The spec says this write API is still changing. It is
+     not a bulk concern list.
+
+   GET /api/v3/taxonomy_canonicalize_tags
+     Query tagtype (example ingredients), local_tags_list (comma-separated
+     tags), optional lc. Returns canonical_tags_list, for example
+     en:sugar,en:water. This canonicalizes tags. It does not parse a
+     parenthetical paragraph and it does not return EFSA overexposure.
+
+   GET /api/v3/taxonomy_display_tags
+     Query tagtype, canonical_tags_list, optional lc. Returns display_tags.
+
+   GET /api/v3/taxonomy_suggestions
+     Query tagtype, optional string (alias term), lc, cc, categories, shape,
+     limit (default 25, max 400), get_synonyms. Returns suggestions and,
+     when get_synonyms is 1, matched_synonyms. Autocomplete only.
+
+   GET /api/v3/tag/{tagtype}/{tag_or_tagid}
+     Returns knowledge_panels for one tag. The spec lists category packaging
+     stats, related categories, and an optional unknown-NOVA panel. It does
+     not list additive risk panels.
+
+   GET /api/v3.4/attribute_groups
+     Returns attribute_groups used for personal preferences. Each attribute
+     has id, name, values, and optional parameters. Unwanted ingredients use
+     parameter id attribute_unwanted_ingredients_tags, tagtype ingredients,
+     type tags. These are user settings, not additive grades.

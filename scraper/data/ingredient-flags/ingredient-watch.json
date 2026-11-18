@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "retrieved_on": "2026-11-18",
+  "sources": [
+    {
+      "name": "MaizeMeals curated seed-oil and palm-oil watch list",
+      "license": "Curated by MaizeMeals. Concern is a watch-list label, not a copied toxicity rating.",
+      "note": "The names and the moderate concern are curated in this file. This is not an Open Food Facts additive extract."
+    },
+    {
+      "name": "Open Food Facts ingredients taxonomy",
+      "url": "https://static.openfoodfacts.org/data/taxonomies/ingredients.json",
+      "license": "ODbL",
+      "note": "Used only to confirm that most of these oil names exist as ingredients. Canonical strings there include soya oil, canola oil, rapeseed oil, corn oil, cottonseed oil, sunflower oil, safflower oil, grape seed oil, rice bran oil, vegetable oil, palm oil, and palm kernel oil. It does not assign the moderate concern. maize oil and the closed spelling grapeseed oil are dining-label synonyms kept in this file. The raw taxonomy is not vendored."
+    }
+  ],
+  "entries": [
+    {
+      "id": "watch:soybean-oil",
+      "kind": "seed-oil",
+      "names": [
+        "soybean oil",
+        "soy oil",
+        "soya oil"
+      ],
+      "classes": [],
+      "flags": [
+        "seed-oil"
+      ],
+      "concern": "moderate",
+      "concern_reasons": [
+        "Curated MaizeMeals watch list of refined seed oils that show up on dining-hall labels. Not an Open Food Facts additive and not a toxicity determination."
+      ]
+    },
+    {
+      "id": "watch:canola-oil",
+      "kind": "seed-oil",
+      "names": [
+        "canola oil",
+        "rapeseed oil",
+        "colza oil"
+      ],
+      "classes": [],
+      "flags": [
+        "seed-oil"
+      ],
+      "concern": "moderate",
+      "concern_reasons": [
+        "Curated MaizeMeals watch list of refined seed oils that show up on dining-hall labels. Not an Open Food Facts additive and not a toxicity determination."
+      ]
+    },
+    {
+      "id": "watch:corn-oil",
+      "kind": "seed-oil",
+      "names": [
+        "corn oil",
+        "maize oil"
+      ],
+      "classes": [],
+      "flags": [
+        "seed-oil"
+      ],
+      "concern": "moderate",
+      "concern_reasons": [
+        "Curated MaizeMeals watch list of refined seed oils that show up on dining-hall labels. Not an Open Food Facts additive and not a toxicity determination."
+      ]
+    },
+    {
+      "id": "watch:cottonseed-oil",
+      "kind": "seed-oil",
+      "names": [
+        "cottonseed oil"
+      ],
+      "classes": [],
+      "flags": [
+        "seed-oil"
+      ],
+      "concern": "moderate",
+      "concern_reasons": [
+        "Curated MaizeMeals watch list of refined seed oils that show up on dining-hall labels. Not an Open Food Facts additive and not a toxicity determination."
+      ]
+    },
+    {
+      "id": "watch:sunflower-oil",
+      "kind": "seed-oil",
+      "names": [
+        "sunflower oil"
+      ],
+      "classes": [],
+      "flags": [
+        "seed-oil"
+      ],
+      "concern": "moderate",
+      "concern_reasons": [
+        "Curated MaizeMeals watch list of refined seed oils that show up on dining-hall labels. Not an Open Food Facts additive and not a toxicity determination."
+      ]
+    },
+    {
+      "id": "watch:safflower-oil",
+      "kind": "seed-oil",
+      "names": [
+        "safflower oil"
+      ],
+      "classes": [],
+      "flags": [
+        "seed-oil"
+      ],
+      "concern": "moderate",
+      "concern_reasons": [
+        "Curated MaizeMeals watch list of refined seed oils that show up on dining-hall labels. Not an Open Food Facts additive and not a toxicity determination."
+      ]
+    },
+    {
+      "id": "watch:grapeseed-oil",
+      "kind": "seed-oil",
+      "names": [
+        "grapeseed oil",
+        "grape seed oil"
+      ],
+      "classes": [],
+      "flags": [
+        "seed-oil"
+      ],
+      "concern": "moderate",
+      "concern_reasons": [
+        "Curated MaizeMeals watch list of refined seed oils that show up on dining-hall labels. Not an Open Food Facts additive and not a toxicity determination."
+      ]
+    },
+    {
+      "id": "watch:rice-bran-oil",
+      "kind": "seed-oil",
+      "names": [
+        "rice bran oil"
+      ],
+      "classes": [],
+      "flags": [
+        "seed-oil"
+      ],
+      "concern": "moderate",
+      "concern_reasons": [
+        "Curated MaizeMeals watch list of refined seed oils that show up on dining-hall labels. Not an Open Food Facts additive and not a toxicity determination."
+      ]
+    },
+    {
+      "id": "watch:vegetable-oil",
+      "kind": "seed-oil",
+      "names": [
+        "vegetable oil",
+        "vegetable oil blend"
+      ],
+      "classes": [],
+      "flags": [
+        "seed-oil"
+      ],
+      "concern": "moderate",
+      "concern_reasons": [
+        "Curated MaizeMeals watch list. On a dining label, vegetable oil does not name the source oil. Not an Open Food Facts additive and not a toxicity determination."
+      ]
+    },
+    {
+      "id": "watch:palm-oil",
+      "kind": "other",
+      "names": [
+        "palm oil"
+      ],
+      "classes": [],
+      "flags": [
+        "palm-oil"
+      ],
+      "concern": "moderate",
+      "concern_reasons": [
+        "Curated MaizeMeals watch list for palm oil on dining-hall labels. Not an Open Food Facts additive and not a toxicity determination."
+      ]
+    },
+    {
+      "id": "watch:palm-kernel-oil",
+      "kind": "other",
+      "names": [
+        "palm kernel oil"
+      ],
+      "classes": [],
+      "flags": [
+        "palm-oil"
+      ],
+      "concern": "moderate",
+      "concern_reasons": [
+        "Curated MaizeMeals watch list for palm kernel oil on dining-hall labels. Not an Open Food Facts additive and not a toxicity determination."
+      ]
+    }
+  ]
+}
