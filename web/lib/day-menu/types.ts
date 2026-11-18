@@ -43,6 +43,10 @@ export type DayMenuItem = {
   reviewCount: number;
   /** menu_events.meal values this item is served at on the date. */
   meals: string[];
+  /** Normalized allergens from NetNutrition ("Milk", "Wheat", ...). */
+  allergens: string[];
+  /** Additive highlight categories present in the ingredients ("seed_oil", ...). */
+  additives: string[];
 };
 
 export type DayMenu = {

@@ -41,6 +41,8 @@ function item(overrides: Partial<DayMenuItem> = {}): DayMenuItem {
     avgRating: 1,
     reviewCount: 1,
     meals: ["Lunch"],
+    allergens: [],
+    additives: [],
     ...overrides,
   };
 }

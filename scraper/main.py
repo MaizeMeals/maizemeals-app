@@ -276,7 +276,24 @@ def revalidate_day_menu():
     except Exception:
         print(f"⚠ Warning: day-menu cache revalidate failed for {logged_url}")
 
-def run_scraper(days_ahead=1):
+def _run_ingredient_enrichment(supabase, days_ahead):
+    """Step 3: NetNutrition ingredients. Logged, never fails the run."""
+    from lib.enrich import enrich_ingredients  # local import: optional step
+
+    print("\n--- 3. Ingredients & allergens (NetNutrition) ---")
+    try:
+        summary = enrich_ingredients(supabase, days_ahead=days_ahead)
+        print(
+            f"✓ Ingredients: {summary['labels']} labels fetched, {summary['copied']} copied "
+            f"from the same dish at another hall, {summary['checked_missing']} not listed"
+        )
+        for message in summary["errors"][:10]:
+            print(f"   ⚠️ {message}")
+    except Exception as exc:  # menus are already saved; don't fail the run
+        print(f"⚠️ Ingredient enrichment skipped: {_redact(exc)}")
+
+
+def run_scraper(days_ahead=1, ingredients=False):
     print(f"🚀 Starting Scrape for next {days_ahead} day(s)...")
     # Saved-item count for this run: the sum of row counts reported by the
     # items-table upsert (upsert_items' return value), not the raw menu
@@ -329,6 +346,9 @@ def run_scraper(days_ahead=1):
         print(f"❌ {message}")
         location_errors.append(message)
 
+    if ingredients and saved_item_count > 0:
+        _run_ingredient_enrichment(supabase, days_ahead)
+
     return finish_run(saved_item_count, location_errors)
 
 if __name__ == "__main__":
@@ -339,5 +359,12 @@ if __name__ == "__main__":
         default=1,
         help="Number of days ahead to scrape (default: 1)",
     )
+    parser.add_argument(
+        "--no-ingredients",
+        action="store_true",
+        help="Skip the NetNutrition ingredients/allergens step "
+        "(also skipped when NETNUTRITION_ENABLED=0)",
+    )
     args = parser.parse_args()
-    sys.exit(run_scraper(days_ahead=args.days))
+    with_ingredients = not args.no_ingredients and os.environ.get("NETNUTRITION_ENABLED", "1") != "0"
+    sys.exit(run_scraper(days_ahead=args.days, ingredients=with_ingredients))

@@ -6,6 +6,7 @@ import { ChevronRight, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { FavoriteButton } from "./FavoriteButton";
+import { AdditiveMarker } from "@/components/ingredients/AdditiveMarker";
 import { DietaryTag } from "@/components/locations/slug/DietaryTags";
 import type { Dish, Offering } from "@/lib/day-menu/dishes";
 import { formatClock, itemTags } from "@/lib/day-menu/scoring";
@@ -145,6 +146,7 @@ export function DishCard({
             </span>
           )}
         </div>
+        <AdditiveMarker categories={primary.additives} className="mt-1.5" />
       </header>
       <ul className="divide-y divide-border/60 border-t border-border/60">
         {shown.map((o) => (

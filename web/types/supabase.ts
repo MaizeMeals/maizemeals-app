@@ -188,16 +188,22 @@ export type Database = {
       }
       items: {
         Row: {
+          allergens: string[] | null
           avg_rating: number | null
           created_at: string | null
           dietary_tags: string[] | null
           dining_hall_id: string
           id: string
+          ingredient_flags: Json | null
+          ingredients: string | null
+          ingredients_checked_at: string | null
           is_mhealthy: boolean | null
           item_type: string | null
+          label_notes: string[] | null
           macronutrients: Json | null
           name: string
           normalized_name: string | null
+          nutrition_label: Json | null
           nutrition_score: number | null
           review_count: number
           serving_size: string | null
@@ -205,16 +211,22 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          allergens?: string[] | null
           avg_rating?: number | null
           created_at?: string | null
           dietary_tags?: string[] | null
           dining_hall_id: string
           id?: string
+          ingredient_flags?: Json | null
+          ingredients?: string | null
+          ingredients_checked_at?: string | null
           is_mhealthy?: boolean | null
           item_type?: string | null
+          label_notes?: string[] | null
           macronutrients?: Json | null
           name: string
           normalized_name?: string | null
+          nutrition_label?: Json | null
           nutrition_score?: number | null
           review_count?: number
           serving_size?: string | null
@@ -222,16 +234,22 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          allergens?: string[] | null
           avg_rating?: number | null
           created_at?: string | null
           dietary_tags?: string[] | null
           dining_hall_id?: string
           id?: string
+          ingredient_flags?: Json | null
+          ingredients?: string | null
+          ingredients_checked_at?: string | null
           is_mhealthy?: boolean | null
           item_type?: string | null
+          label_notes?: string[] | null
           macronutrients?: Json | null
           name?: string
           normalized_name?: string | null
+          nutrition_label?: Json | null
           nutrition_score?: number | null
           review_count?: number
           serving_size?: string | null

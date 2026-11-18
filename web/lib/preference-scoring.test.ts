@@ -17,8 +17,14 @@ const neutralPrefs = {
 
 function makeItem(overrides: Partial<Item> & Pick<Item, "id" | "name">): Item {
   return {
+    allergens: null,
     avg_rating: null,
     created_at: null,
+    ingredient_flags: null,
+    ingredients: null,
+    ingredients_checked_at: null,
+    label_notes: null,
+    nutrition_label: null,
     dietary_tags: null,
     dining_hall_id: "hall-1",
     is_mhealthy: null,

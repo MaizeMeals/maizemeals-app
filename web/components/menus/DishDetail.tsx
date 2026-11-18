@@ -126,6 +126,7 @@ export function DishDrawer({
       onStartReview={onStartReview}
       reviewsReturnPath={returnPath()}
       extraAction={<ViewHallMenuButton selection={selection} />}
+      ingredientsLoading={state.loading}
     />
   );
 }
@@ -152,6 +153,7 @@ export function DishSidebar({
       onStartReview={onStartReview}
       reviewsReturnPath={returnPath()}
       extraAction={<ViewHallMenuButton selection={selection} />}
+      ingredientsLoading={state.loading}
     />
   );
 }

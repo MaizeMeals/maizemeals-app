@@ -40,6 +40,14 @@ export function asScoringItem(it: DayMenuItem): Item {
     is_mhealthy: null,
     created_at: null,
     updated_at: null,
+    // Ingredients/label aren't in the day-menu payload; the item drawer loads
+    // the full record (and shows "loading" until then).
+    allergens: it.allergens.length ? it.allergens : null,
+    ingredients: null,
+    ingredient_flags: null,
+    ingredients_checked_at: null,
+    label_notes: null,
+    nutrition_label: null,
   };
 }
 

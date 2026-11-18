@@ -19,6 +19,9 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { getItemPhotoPublicUrl } from "@/lib/item-photos"
 import { useLgUp } from "@/hooks/use-lg-up"
 import { LogFoodDialog } from "@/components/nutrition/LogFoodDialog"
+import { AllergenChips, IngredientsSection } from "@/components/ingredients/IngredientsSection"
+import { AdditiveMarker } from "@/components/ingredients/AdditiveMarker"
+import { parseIngredientFlags } from "@/lib/ingredients"
 
 const AXIS_LOCK_PX = 10
 
@@ -328,6 +331,8 @@ export interface ItemDetailPanelProps {
   className?: string
   /** Optional secondary action under "I ate this" (e.g. Find food's "View full menu at …"). */
   extraAction?: ReactNode
+  /** The full record (ingredients) is still loading (Find food opens instantly). */
+  ingredientsLoading?: boolean
 }
 
 export function ItemDetailPanel({
@@ -339,6 +344,7 @@ export function ItemDetailPanel({
   swipe,
   className,
   extraAction,
+  ingredientsLoading = false,
 }: ItemDetailPanelProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const scrollBodyRef = useRef<HTMLDivElement>(null)
@@ -575,6 +581,14 @@ export function ItemDetailPanel({
                 <DietaryTag key={tag} tag={tag} alwaysShowLabel />
               ))}
             </div>
+
+            {/* At-a-glance: allergens + what's in it (full list below the label). */}
+            <AllergenChips allergens={item.allergens} className="mt-3" />
+            <AdditiveMarker
+              categories={parseIngredientFlags(item.ingredient_flags, item.ingredients)?.categories}
+              max={4}
+              className="mt-2 flex-wrap"
+            />
           </div>
 
           <hr className="border-border mb-6" />
@@ -616,6 +630,8 @@ export function ItemDetailPanel({
                * The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.
              </div>
           </div>
+
+          <IngredientsSection item={item} loading={ingredientsLoading} className="mx-auto mt-8 max-w-sm" />
 
           <div className="mt-8 mb-3 text-center">
              <LogFoodDialog item={item} />
@@ -665,6 +681,7 @@ export interface FoodDetailDrawerProps {
   /** Path to the current location menu; passed through to reviews for a "return to menu" link. */
   reviewsReturnPath?: string
   extraAction?: ReactNode
+  ingredientsLoading?: boolean
 }
 
 export function DetailDrawer({
@@ -674,6 +691,7 @@ export function DetailDrawer({
   onStartReview,
   reviewsReturnPath,
   extraAction,
+  ingredientsLoading,
 }: FoodDetailDrawerProps) {
   const dismiss = useCallback(() => onClose(false), [onClose])
   const lgUp = useLgUp()
@@ -707,6 +725,7 @@ export function DetailDrawer({
           reviewsReturnPath={reviewsReturnPath}
           swipe={swipe}
           extraAction={extraAction}
+          ingredientsLoading={ingredientsLoading}
         />
       </SheetContent>
     </Sheet>
@@ -722,12 +741,14 @@ export function ItemDetailSidebar({
   onStartReview,
   reviewsReturnPath,
   extraAction,
+  ingredientsLoading,
 }: {
   item: ItemWithPhotos
   onClose: () => void
   onStartReview?: (item: ItemWithPhotos) => void
   reviewsReturnPath?: string
   extraAction?: ReactNode
+  ingredientsLoading?: boolean
 }) {
   const [exiting, setExiting] = useState(false)
 
@@ -774,6 +795,7 @@ export function ItemDetailSidebar({
         reviewsReturnPath={reviewsReturnPath}
         className="h-full min-h-0"
         extraAction={extraAction}
+        ingredientsLoading={ingredientsLoading}
       />
     </div>
   )

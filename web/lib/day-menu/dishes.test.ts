@@ -37,6 +37,8 @@ function item(overrides: Partial<DayMenuItem> & Pick<DayMenuItem, "id" | "hallId
     avgRating: 0,
     reviewCount: 0,
     meals: ["Lunch"],
+    allergens: [],
+    additives: [],
     ...overrides,
   };
 }
@@ -135,6 +137,8 @@ describe("buildDishes", () => {
             name: "Tomato Soup",
             key: "tomato soup",
             meals: ["Lunch"],
+            allergens: [],
+            additives: [],
             macros: { calories: 400, protein: 10, carbs: 30, fat: 12, fiber: 3, satFat: 0, sodium: 0, sugars: 0 },
             avgRating: 5,
             reviewCount: 20,
@@ -145,6 +149,8 @@ describe("buildDishes", () => {
             name: "Pasta",
             key: "pasta",
             meals: ["Dinner"],
+            allergens: [],
+            additives: [],
             macros: { calories: 80, protein: 3, carbs: 14, fat: 1, fiber: 1, satFat: 0, sodium: 0, sugars: 0 },
           }),
         ],

@@ -12,13 +12,14 @@ import { foodKey, type DayMenu, type DayMenuHall, type DayMenuItem } from "./typ
  *    mScale, avgRating, reviewCount, meals, servingSize]
  * - v2 adds satFat/sodium/sugars + servingSize so the item drawer can render
  *   the full nutrition label instantly (no second pop while loading).
+ * - v3 appends allergens + additive categories (row markers in Find food).
  * - `key` is recomputed from `name` (foodKey(normalized_name) === foodKey(name)).
  * - carbon-footprint tags aren't sent (unused by these views).
  * - hall ids are replaced by an index into `halls`.
  * `fromWire` still accepts v1 (e.g. an offline copy cached by the service worker).
  */
 
-export const WIRE_VERSION = 2;
+export const WIRE_VERSION = 3;
 
 type Macros = [number, number, number, number, number, number?, number?, number?];
 
@@ -34,10 +35,12 @@ type WireItem = [
   reviewCount: number,
   meals: string[],
   servingSize?: string | null,
+  allergens?: string[],
+  additives?: string[],
 ];
 
 export type DayMenuWire = {
-  v: 1 | 2;
+  v: 1 | 2 | 3;
   date: string;
   generatedAt: string;
   halls: DayMenuHall[];
@@ -76,14 +79,16 @@ export function toWire(menu: DayMenu): DayMenuWire {
         it.reviewCount,
         it.meals,
         it.servingSize,
+        it.allergens,
+        it.additives,
       ]),
   };
 }
 
 export function fromWire(wire: DayMenuWire): DayMenu {
-  if (wire.v !== 1 && wire.v !== 2) throw new Error(`Unsupported menu format v${String(wire.v)}`);
+  if (wire.v !== 1 && wire.v !== 2 && wire.v !== 3) throw new Error(`Unsupported menu format v${String(wire.v)}`);
   const items: DayMenuItem[] = wire.items.map(
-    ([id, hall, name, station, tags, m, mScale, avgRating, reviewCount, meals, servingSize]) => ({
+    ([id, hall, name, station, tags, m, mScale, avgRating, reviewCount, meals, servingSize, allergens, additives]) => ({
       id,
       hallId: wire.halls[hall].id,
       name,
@@ -105,6 +110,8 @@ export function fromWire(wire: DayMenuWire): DayMenu {
       avgRating,
       reviewCount,
       meals,
+      allergens: allergens ?? [],
+      additives: additives ?? [],
     }),
   );
   return { date: wire.date, generatedAt: wire.generatedAt, halls: wire.halls, items };

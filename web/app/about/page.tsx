@@ -24,6 +24,28 @@ export default function AboutPage() {
         Menu data comes from the M-Dining JSON API, not from an official
         partnership. It may be incomplete or wrong.
       </p>
+      <p className="mt-4 text-sm text-muted-foreground">
+        Ingredients and allergens come from U-M NetNutrition. Additive
+        highlights use the{" "}
+        <a
+          href="https://world.openfoodfacts.org/"
+          className="text-primary underline-offset-4 hover:underline"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open Food Facts
+        </a>{" "}
+        additives database, available under the{" "}
+        <a
+          href="https://opendatacommons.org/licenses/odbl/1-0/"
+          className="text-primary underline-offset-4 hover:underline"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open Database License
+        </a>
+        . Always confirm allergens with dining staff.
+      </p>
       <p className="mt-8 text-sm">
         <Link href="/" className="text-primary underline-offset-4 hover:underline">
           Back to home

@@ -39,6 +39,8 @@ function item(id: string, hallId: string, overrides: Partial<DayMenuItem> = {}):
     avgRating: 0,
     reviewCount: 0,
     meals: ["Lunch"],
+    allergens: [],
+    additives: [],
     ...overrides,
   };
 }

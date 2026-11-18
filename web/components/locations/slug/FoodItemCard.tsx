@@ -22,6 +22,8 @@ import {
 import { toast } from "@/lib/toast"
 import { useAnalytics } from "@/hooks/use-analytics"
 import { FavoriteButton } from "@/components/menus/FavoriteButton"
+import { AdditiveMarker } from "@/components/ingredients/AdditiveMarker"
+import { parseIngredientFlags } from "@/lib/ingredients"
 
 interface FoodItemCardProps {
   item: Item
@@ -151,6 +153,10 @@ export function FoodItemCard({ item, onClick, highlight, mealType }: FoodItemCar
           ) : null}
           {otherTags.map(tag => <DietaryTag key={tag} tag={tag} />)}
         </div>
+        <AdditiveMarker
+          categories={parseIngredientFlags(item.ingredient_flags, item.ingredients)?.categories}
+          className="mt-2"
+        />
       </div>
 
       <div className="flex shrink-0 flex-col items-end gap-2">
