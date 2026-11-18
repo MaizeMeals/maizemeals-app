@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { PageHeader, PageShell } from '@/components/layout/page-shell'
 
 export const metadata: Metadata = {
   title: 'About',
@@ -9,13 +10,11 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="container mx-auto max-w-2xl px-4 pb-12 pt-28 md:px-6">
-      <h1 className="font-heading text-3xl font-bold text-foreground">About</h1>
-      <p className="mt-4 text-sm text-muted-foreground">
-        MaizeMeals is a student-built dining companion for University of
-        Michigan students. It helps you look up dining hall menus, rate dishes,
-        and keep track of what you want to eat on campus.
-      </p>
+    <PageShell width="narrow">
+      <PageHeader
+        title="About"
+        description="MaizeMeals is a student-built dining companion for University of Michigan students. It helps you look up dining hall menus, rate dishes, and keep track of what you want to eat on campus."
+      />
       <p className="mt-4 text-sm text-muted-foreground">
         This application is a student project and is not affiliated with,
         endorsed by, or sponsored by the University of Michigan. Trademarks
@@ -30,6 +29,6 @@ export default function AboutPage() {
           Back to home
         </Link>
       </p>
-    </div>
+    </PageShell>
   )
 }

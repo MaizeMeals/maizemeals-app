@@ -30,6 +30,7 @@ export function ThemeToggle({ forceWhite }: ThemeToggleProps) {
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
+      aria-label="Toggle theme"
       className={cn(
         forceWhite ? "text-white hover:text-white hover:bg-white/20" : ""
       )}

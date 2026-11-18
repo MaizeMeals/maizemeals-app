@@ -1,10 +1,18 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Calendar as CalendarIcon, X, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import * as Dialog from "@radix-ui/react-dialog";
 import { format, formatRelative } from "date-fns";
+import {
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogContent,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@/components/ui/responsive-dialog";
 import { PopoverTrigger } from "@/components/ui/popover";
 import { PopoverContent } from "@/components/ui/popover";
 import { Popover } from "@/components/ui/popover";
@@ -87,11 +95,12 @@ export function DateControls({
   return (
     <div className="shrink-0 relative">
       <div className="md:hidden">
-        <Dialog.Root open={isDateDialogOpen} onOpenChange={setIsDateDialogOpen}>
-          <Dialog.Trigger asChild>
+        <ResponsiveDialog open={isDateDialogOpen} onOpenChange={setIsDateDialogOpen}>
+          <ResponsiveDialogTrigger asChild>
             <Button
               variant="outline"
               size="icon"
+              aria-label="Choose date"
               className={appToolbarIconControlClassName(
                 isDateDialogOpen || !isToday,
               )}
@@ -102,49 +111,39 @@ export function DateControls({
                 <CalendarIcon className="w-4 h-4" />
               )}
             </Button>
-          </Dialog.Trigger>
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-            <Dialog.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-sm translate-x-[-50%] translate-y-[-50%] border bg-background p-6 shadow-lg sm:rounded-lg overflow-hidden">
-
-              {/* 1. Main Content Wrapper */}
-              <div className="flex flex-col space-y-4">
-                <div className="flex items-center justify-between">
-                  <Dialog.Title className="text-lg font-semibold">
-                    Select Date
-                  </Dialog.Title>
-                  <Dialog.Close disabled={loading}>
-                    <X className="h-4 w-4" />
-                  </Dialog.Close>
-                </div>
-
+          </ResponsiveDialogTrigger>
+          <ResponsiveDialogContent>
+            <ResponsiveDialogHeader>
+              <ResponsiveDialogTitle>Select Date</ResponsiveDialogTitle>
+            </ResponsiveDialogHeader>
+            <ResponsiveDialogBody>
+              <div data-vaul-no-drag>
                 <DateSelector
                   value={tempDate}
                   onChange={setTempDate}
                   availableDates={availableDates}
                 />
-
-                <Button
-                  className={cn("w-full", appPrimaryButtonClassName)}
-                  onClick={handleDone}
-                  disabled={loading}
-                >
-                  Done
-                </Button>
               </div>
-
-              {/* 2. Loading Overlay - Moved outside the flex container to ignore its layout/spacing */}
-              {loading && (
-                <div className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
-                  <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                  <span className="text-foreground font-semibold animate-pulse">
-                    Loading Menu...
-                  </span>
-                </div>
-              )}
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
+            </ResponsiveDialogBody>
+            <ResponsiveDialogFooter>
+              <Button
+                className={cn("w-full", appPrimaryButtonClassName)}
+                onClick={handleDone}
+                disabled={loading}
+              >
+                Done
+              </Button>
+            </ResponsiveDialogFooter>
+            {loading && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <span className="animate-pulse font-semibold text-foreground">
+                  Loading Menu...
+                </span>
+              </div>
+            )}
+          </ResponsiveDialogContent>
+        </ResponsiveDialog>
       </div>
 
       {/* Desktop Picker */}
@@ -153,6 +152,7 @@ export function DateControls({
           <PopoverTrigger asChild>
             <Button
               variant="outline"
+              aria-label="Choose date"
               className={appToolbarControlClassName(false)}
             >
               {loading ? (

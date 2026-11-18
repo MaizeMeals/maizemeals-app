@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils"
 import { OperatingHour } from "@/types/dining"
-import { formatTime } from "@/lib/dining-utils"
+import { formatTime } from "@/lib/dining"
+import { Button } from "@/components/ui/button"
 import { useEffect, useMemo, useRef } from "react"
 
 interface MenuTabsProps {
@@ -102,13 +103,15 @@ export function MenuTabs({ meals, activeTab, onTabChange, hours = [] }: MenuTabs
               const isActive = activeTab === meal
 
               return (
-              <button
+              <Button
                 key={meal}
+                type="button"
+                variant="ghost"
                 onClick={() => onTabChange(meal)}
                 className={cn(
-                  "flex-1 min-w-[100px] py-3 text-sm font-semibold transition-colors relative flex flex-col items-center justify-center gap-0.5",
+                  "relative h-auto min-w-[100px] flex-1 flex-col gap-0.5 rounded-none px-2 py-3 text-sm font-semibold shadow-none hover:bg-transparent",
                   isActive
-                    ? "text-primary"
+                    ? "text-primary hover:text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -124,7 +127,7 @@ export function MenuTabs({ meals, activeTab, onTabChange, hours = [] }: MenuTabs
                 {isActive && (
                   <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary" />
                 )}
-              </button>
+              </Button>
             )})}
          </div>
       </div>

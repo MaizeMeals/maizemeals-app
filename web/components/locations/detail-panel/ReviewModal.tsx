@@ -2,11 +2,18 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import * as Dialog from "@radix-ui/react-dialog";
-import { X, Loader2, Camera, LogIn, Pencil } from "lucide-react";
+import { Loader2, Camera, LogIn, Pencil } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
+import {
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogContent,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@/components/ui/responsive-dialog";
 import { appPrimaryButtonClassName } from "@/lib/button-styles";
 import { StarRatingInput } from "./StarRatingInput";
 import { submitReview, type SubmitReviewResult } from "@/app/actions/submit-review";
@@ -289,58 +296,40 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
 
   return (
     <>
-    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay
-          className={cn(
-            "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
-          )}
-        />
-        <Dialog.Content
-          className={cn(
-            "fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%]",
-            "border bg-background shadow-lg rounded-xl overflow-hidden",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
-          )}
+      <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
+        <ResponsiveDialogContent
           onInteractOutside={blockDismissWhileEditing}
           onPointerDownOutside={blockDismissWhileEditing}
           onFocusOutside={blockDismissWhileEditing}
           onEscapeKeyDown={blockDismissWhileEditing}
         >
-          <div className="flex flex-col gap-4 p-5">
-            <div className="flex items-center justify-between">
-              <Dialog.Title className="text-lg font-semibold">
-                {authStatus === "signed-out" ? "Sign in to review" : `Rate: ${itemName}`}
-              </Dialog.Title>
-              <Dialog.Close
-                disabled={isSubmitting}
-                className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
-              >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
-              </Dialog.Close>
-            </div>
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle className="pr-8">
+              {authStatus === "signed-out" ? "Sign in to review" : `Rate: ${itemName}`}
+            </ResponsiveDialogTitle>
+          </ResponsiveDialogHeader>
 
-            {authStatus === "loading" && (
+          {authStatus === "loading" && (
+            <ResponsiveDialogBody>
               <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                <Loader2 className="mb-2 h-8 w-8 animate-spin" />
                 <span className="text-sm">Checking sign-in…</span>
               </div>
-            )}
+            </ResponsiveDialogBody>
+          )}
 
-            {authStatus === "signed-out" && (
-              <div className="flex flex-col gap-4 py-2">
+          {authStatus === "signed-out" && (
+            <>
+              <ResponsiveDialogBody className="flex flex-col gap-4">
                 <p className="text-sm text-foreground">
                   You must be signed in to leave a review.
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Sign in with your @umich.edu email to rate items and share your experience.
                 </p>
-                <form action="/auth/login" method="post">
+              </ResponsiveDialogBody>
+              <ResponsiveDialogFooter>
+                <form action="/auth/login" method="post" className="w-full">
                   <input type="hidden" name="next" value={postLoginPath} />
                   <Button
                     type="submit"
@@ -350,11 +339,13 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
                     Sign in with @umich.edu
                   </Button>
                 </form>
-              </div>
-            )}
+              </ResponsiveDialogFooter>
+            </>
+          )}
 
-            {authStatus === "signed-in" && alreadyReviewed && (
-              <div className="flex flex-col gap-4 py-1" aria-live="polite">
+          {authStatus === "signed-in" && alreadyReviewed && (
+            <>
+              <ResponsiveDialogBody className="flex flex-col gap-4" aria-live="polite">
                 <p className="text-sm text-foreground">
                   You&apos;ve already reviewed this item.
                 </p>
@@ -366,6 +357,8 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
                 {ownReviewError ? (
                   <p className="text-sm text-destructive">{ownReviewError}</p>
                 ) : null}
+              </ResponsiveDialogBody>
+              <ResponsiveDialogFooter>
                 <Button
                   type="button"
                   onClick={() => void openOwnReviewEditor()}
@@ -379,119 +372,121 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
                   )}
                   Edit your review
                 </Button>
-              </div>
-            )}
+              </ResponsiveDialogFooter>
+            </>
+          )}
 
-            {authStatus === "signed-in" && !alreadyReviewed && (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div>
-                <span className="text-sm font-medium text-foreground">
-                  Your rating <span className="text-destructive">*</span>
-                </span>
-                <div className="mt-2">
-                  <StarRatingInput
-                    value={rating}
-                    onChange={setRating}
+          {authStatus === "signed-in" && !alreadyReviewed && (
+            <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+              <ResponsiveDialogBody className="flex flex-col gap-4">
+                <div>
+                  <span className="text-sm font-medium text-foreground">
+                    Your rating <span className="text-destructive">*</span>
+                  </span>
+                  <div className="mt-2">
+                    <StarRatingInput
+                      value={rating}
+                      onChange={setRating}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="review-comment"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Comment (optional)
+                  </label>
+                  <textarea
+                    id="review-comment"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
                     disabled={isSubmitting}
+                    placeholder="How was it?"
+                    rows={3}
+                    maxLength={2000}
+                    className={cn(
+                      "mt-2 w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm",
+                      "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                      "disabled:cursor-not-allowed disabled:opacity-50"
+                    )}
                   />
                 </div>
-              </div>
 
-              <div>
-                <label
-                  htmlFor="review-comment"
-                  className="text-sm font-medium text-foreground"
-                >
-                  Comment (optional)
-                </label>
-                <textarea
-                  id="review-comment"
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  disabled={isSubmitting}
-                  placeholder="How was it?"
-                  rows={3}
-                  maxLength={2000}
-                  className={cn(
-                    "mt-2 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm",
-                    "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                    "disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-                  )}
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-foreground">
-                  Photo (optional, JPEG, PNG, or WebP)
-                </label>
-                <div className="mt-2 flex items-center gap-2">
-                  <label
-                    className={cn(
-                      "inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors",
-                      "hover:bg-accent hover:text-accent-foreground cursor-pointer",
-                      "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
-                      (isCompressing || isSubmitting) && "opacity-70 pointer-events-none"
-                    )}
-                  >
-                    {isCompressing ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Camera className="h-4 w-4" />
-                    )}
-                    {isCompressing ? "Compressing…" : photoFile ? photoFile.name : "Choose photo"}
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="sr-only"
-                      onChange={onPhotoChange}
-                      disabled={isSubmitting || isCompressing}
-                    />
+                <div>
+                  <label className="text-sm font-medium text-foreground">
+                    Photo (optional, JPEG, PNG, or WebP)
                   </label>
-                  {photoFile && !isCompressing && (
-                    <button
-                      type="button"
-                      onClick={() => setPhotoFile(null)}
-                      disabled={isSubmitting}
-                      className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+                  <div className="mt-2 flex items-center gap-2">
+                    <label
+                      className={cn(
+                        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors",
+                        "hover:bg-accent hover:text-accent-foreground",
+                        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+                        (isCompressing || isSubmitting) && "pointer-events-none opacity-70"
+                      )}
                     >
-                      Remove
-                    </button>
-                  )}
+                      {isCompressing ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Camera className="h-4 w-4" />
+                      )}
+                      {isCompressing ? "Compressing…" : photoFile ? photoFile.name : "Choose photo"}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="sr-only"
+                        onChange={onPhotoChange}
+                        disabled={isSubmitting || isCompressing}
+                      />
+                    </label>
+                    {photoFile && !isCompressing && (
+                      <button
+                        type="button"
+                        onClick={() => setPhotoFile(null)}
+                        disabled={isSubmitting}
+                        className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={isSubmitting || rating < 1 || isCompressing}
-                className={cn("mt-2 w-full gap-2", appPrimaryButtonClassName)}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Posting…
-                  </>
-                ) : (
-                  "Post review"
-                )}
-              </Button>
+              </ResponsiveDialogBody>
+              <ResponsiveDialogFooter>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || rating < 1 || isCompressing}
+                  className={cn("w-full gap-2", appPrimaryButtonClassName)}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Posting…
+                    </>
+                  ) : (
+                    "Post review"
+                  )}
+                </Button>
+              </ResponsiveDialogFooter>
             </form>
-            )}
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-    <EditReviewDialog
-      itemId={itemId}
-      review={ownReview}
-      open={editOpen && ownReview !== null}
-      onOpenChange={setEditing}
-      revalidateLocationSlug={locationSlug}
-      onSaved={() => {
-        onPosted?.();
-        router.refresh();
-        onOpenChange(false);
-      }}
-    />
+          )}
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
+      <EditReviewDialog
+        itemId={itemId}
+        review={ownReview}
+        open={editOpen && ownReview !== null}
+        onOpenChange={setEditing}
+        revalidateLocationSlug={locationSlug}
+        onSaved={() => {
+          onPosted?.();
+          router.refresh();
+          onOpenChange(false);
+        }}
+      />
     </>
   );
 }

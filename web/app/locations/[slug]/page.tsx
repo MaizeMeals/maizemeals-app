@@ -11,6 +11,15 @@ import { SocialProof } from "@/components/locations/slug/SocialProof"
 import { ReviewItemPickerModal } from "@/components/locations/slug/ReviewItemPickerModal"
 import { ReviewModal } from "@/components/locations/detail-panel/ReviewModal"
 import { Utensils } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  Empty,
+  EmptyContent,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
+import { appGhostTextButtonClassName } from "@/lib/button-styles"
 import type { Item, ItemWithPhotos, MenuData, StationGroup as StationGroupData } from "@/types/dining"
 import { LocationSkeleton } from "@/components/locations/slug/LocationSkeleton"
 import { StickyHeader } from "@/components/locations/slug/StickyHeader"
@@ -435,27 +444,38 @@ export default function LocationPage() {
                 />
               ))
             ) : allItems.length === 0 ? (
-              <div className="text-center py-20 text-muted-foreground">
-                <Utensils className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                <p>It seems like there isnt any menu for today</p>
-              </div>
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <Utensils />
+                  </EmptyMedia>
+                  <EmptyTitle>No menu posted for this day</EmptyTitle>
+                </EmptyHeader>
+              </Empty>
             ) : (
-              <div className="text-center py-20 text-muted-foreground">
-                <Utensils className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                <p>No menu items matching your filters.</p>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFiltersWithProfileSync((prev) => ({
-                      ...INITIAL_FILTERS,
-                      dietary: prev.dietary,
-                    }))
-                  }
-                  className="text-maize hover:underline text-sm mt-2 font-bold"
-                >
-                  Clear Filters
-                </button>
-              </div>
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <Utensils />
+                  </EmptyMedia>
+                  <EmptyTitle>No menu items matching your filters.</EmptyTitle>
+                </EmptyHeader>
+                <EmptyContent>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className={appGhostTextButtonClassName}
+                    onClick={() =>
+                      setFiltersWithProfileSync((prev) => ({
+                        ...INITIAL_FILTERS,
+                        dietary: prev.dietary,
+                      }))
+                    }
+                  >
+                    Clear Filters
+                  </Button>
+                </EmptyContent>
+              </Empty>
             )}
           </main>
         </div>

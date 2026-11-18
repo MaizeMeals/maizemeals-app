@@ -1,10 +1,18 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import * as Dialog from "@radix-ui/react-dialog";
-import { Loader2, X } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { updateReview, type UpdateReviewResult } from "@/app/actions/update-review";
 import { Button } from "@/components/ui/button";
+import {
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@/components/ui/responsive-dialog";
 import {
   appPrimaryButtonClassName,
   appSurfaceOutlineButtonClassName,
@@ -130,39 +138,14 @@ export function EditReviewDialog({
   };
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay
-          className={cn(
-            "fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-          )}
-        />
-        <Dialog.Content
-          className={cn(
-            "fixed left-[50%] top-[50%] z-[60] w-full max-w-md translate-x-[-50%] translate-y-[-50%]",
-            "overflow-hidden rounded-xl border bg-background shadow-lg",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-          )}
-        >
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5">
-            <div className="flex items-center justify-between">
-              <Dialog.Title className="text-lg font-semibold text-foreground">
-                Edit your review
-              </Dialog.Title>
-              <Dialog.Close
-                disabled={submitting}
-                type="button"
-                className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
-              >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
-              </Dialog.Close>
-            </div>
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+      <ResponsiveDialogContent>
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle className="pr-8">Edit your review</ResponsiveDialogTitle>
+          </ResponsiveDialogHeader>
 
+          <ResponsiveDialogBody className="flex flex-col gap-4">
             <div>
               <label
                 htmlFor="edit-review-comment"
@@ -223,36 +206,36 @@ export function EditReviewDialog({
                 New or replaced photos are shown after moderator approval.
               </p>
             </div>
+          </ResponsiveDialogBody>
 
-            <div className="flex justify-end gap-2 pt-1">
-              <Dialog.Close asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={submitting}
-                  className={appSurfaceOutlineButtonClassName}
-                >
-                  Cancel
-                </Button>
-              </Dialog.Close>
+          <ResponsiveDialogFooter className="flex-row justify-end gap-2 sm:space-x-0">
+            <ResponsiveDialogClose asChild>
               <Button
-                type="submit"
-                disabled={submitting || compressing}
-                className={cn("gap-2", appPrimaryButtonClassName)}
+                type="button"
+                variant="outline"
+                disabled={submitting}
+                className={appSurfaceOutlineButtonClassName}
               >
-                {submitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Saving…
-                  </>
-                ) : (
-                  "Save changes"
-                )}
+                Cancel
               </Button>
-            </div>
-          </form>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+            </ResponsiveDialogClose>
+            <Button
+              type="submit"
+              disabled={submitting || compressing}
+              className={cn("gap-2", appPrimaryButtonClassName)}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                "Save changes"
+              )}
+            </Button>
+          </ResponsiveDialogFooter>
+        </form>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

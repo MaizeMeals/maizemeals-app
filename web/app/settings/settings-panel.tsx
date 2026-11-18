@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SmartSlidersDialog } from "@/components/preferences/SmartSlidersDialog";
 import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
 import { usePreferences } from "@/hooks/use-preferences";
+import { PageHeader, PageShell } from "@/components/layout/page-shell";
 import { appPrimaryButtonClassName } from "@/lib/button-styles";
 import { cn } from "@/lib/utils";
 
@@ -43,11 +44,9 @@ export function SettingsPanel({ email }: { email: string | null }) {
   };
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 pb-12 pt-28 md:px-6">
-      <h1 className="font-heading text-3xl font-bold text-foreground">
-        Settings
-      </h1>
-      <p className="mt-4 text-sm text-muted-foreground">
+    <PageShell width="narrow">
+      <PageHeader title="Settings" />
+      <p className="text-sm text-muted-foreground">
         {email ? (
           <>
             Signed in as <span className="text-foreground">{email}</span>.
@@ -184,6 +183,6 @@ export function SettingsPanel({ email }: { email: string | null }) {
           Back to home
         </Link>
       </p>
-    </div>
+    </PageShell>
   );
 }

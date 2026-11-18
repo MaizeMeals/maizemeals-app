@@ -294,7 +294,7 @@ function AuthPageInner({ source }: { source: AuthPageSource }) {
             {error ? (
               <p
                 role="alert"
-                className="mt-6 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-center text-sm text-destructive md:border-red-400/40 md:bg-red-950/50 md:text-red-100"
+                className="mt-6 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-center text-sm text-destructive md:border-red-400/40 md:bg-red-950/50 md:text-red-100"
               >
                 {error}
               </p>
@@ -333,7 +333,7 @@ function AuthPageInner({ source }: { source: AuthPageSource }) {
                   className={cn(
                     'h-12 w-full gap-3 rounded-lg border text-base font-medium shadow-md',
                     'border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background',
-                    'md:border-white/20 md:!bg-white md:!text-neutral-900 md:hover:!bg-white/90 md:hover:!text-neutral-900',
+                    'md:border-white/20 md:!bg-white md:!text-black md:hover:!bg-white/90 md:hover:!text-black',
                   )}
                   onClick={handleSubmitClick}
                 >

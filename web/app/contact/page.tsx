@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { PageHeader, PageShell } from '@/components/layout/page-shell'
 
 export const metadata: Metadata = {
   title: 'Contact',
@@ -13,14 +14,11 @@ const GITHUB_REPO_URL = 'https://github.com/MaizeMeals/maizemeals-app'
 
 export default function ContactPage() {
   return (
-    <div className="container mx-auto max-w-2xl px-4 pb-12 pt-28 md:px-6">
-      <h1 className="font-heading text-3xl font-bold text-foreground">
-        Contact
-      </h1>
-      <p className="mt-4 text-sm text-muted-foreground">
-        MaizeMeals is a student project. Questions about the app can go to the
-        owner, or you can open an issue on GitHub.
-      </p>
+    <PageShell width="narrow">
+      <PageHeader
+        title="Contact"
+        description="MaizeMeals is a student project. Questions about the app can go to the owner, or you can open an issue on GitHub."
+      />
       {CONTACT_EMAIL ? (
         <p className="mt-4 text-sm text-muted-foreground">
           Email{' '}
@@ -53,6 +51,6 @@ export default function ContactPage() {
           Back to home
         </Link>
       </p>
-    </div>
+    </PageShell>
   )
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { PageHeader, PageShell } from '@/components/layout/page-shell'
 
 export const metadata: Metadata = {
   title: 'FAQ',
@@ -9,11 +10,11 @@ export const metadata: Metadata = {
 
 export default function FaqPage() {
   return (
-    <div className="container mx-auto max-w-2xl px-4 pb-12 pt-28 md:px-6">
-      <h1 className="font-heading text-3xl font-bold text-foreground">FAQ</h1>
-      <p className="mt-4 text-sm text-muted-foreground">
-        Short answers for using MaizeMeals on campus.
-      </p>
+    <PageShell width="narrow">
+      <PageHeader
+        title="FAQ"
+        description="Short answers for using MaizeMeals on campus."
+      />
 
       <h2 className="mt-8 text-lg font-semibold text-foreground">
         How do ratings work?
@@ -54,6 +55,6 @@ export default function FaqPage() {
           Back to home
         </Link>
       </p>
-    </div>
+    </PageShell>
   )
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { PageHeader, PageShell } from '@/components/layout/page-shell'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -8,15 +9,12 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-12 md:px-6">
-      <h1 className="font-heading text-3xl font-bold text-foreground">
-        Privacy Policy
-      </h1>
-      <p className="mt-4 text-sm text-muted-foreground">
-        A detailed privacy policy for MaizeMeals is being prepared. This page
-        is a placeholder so sign-in and footer links work correctly.
-      </p>
-      <p className="mt-4 text-sm text-muted-foreground">
+    <PageShell width="narrow">
+      <PageHeader
+        title="Privacy Policy"
+        description="A detailed privacy policy for MaizeMeals is being prepared. This page is a placeholder so sign-in and footer links work correctly."
+      />
+      <p className="text-sm text-muted-foreground">
         Questions?{' '}
         <Link href="/contact" className="text-primary underline-offset-4 hover:underline">
           Contact us
@@ -28,6 +26,6 @@ export default function PrivacyPage() {
           Back to home
         </Link>
       </p>
-    </div>
+    </PageShell>
   )
 }

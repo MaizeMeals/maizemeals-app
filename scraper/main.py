@@ -3,8 +3,10 @@ import json
 import os
 import sys
 import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta
+from urllib.parse import urlsplit, urlunsplit
 
 from lib.api import fetch_locations, fetch_meal_hours, fetch_menu_data
 from lib.db import (
@@ -116,8 +118,10 @@ def finish_run(saved_item_count, location_errors):
     """Return 0 only when items were saved and no location errored.
 
     Otherwise POST a summary when DISCORD_WEBHOOK_URL is set and return 1.
-    A clean run does not POST.
+    A clean run does not POST. Any saved menus drop the day-menu cache.
     """
+    if saved_item_count > 0:
+        revalidate_day_menu()
     if saved_item_count > 0 and not location_errors:
         print("\n🏁 Scrape Complete!")
         return 0
@@ -245,6 +249,33 @@ def _scrape_location(supabase, loc, hall_uuid, api_date_str, db_date_str, locati
     )
 
 
+def revalidate_day_menu():
+    # WEB_REVALIDATE_URL is optional, e.g. https://host/api/revalidate.
+    url = (os.environ.get("WEB_REVALIDATE_URL") or "").strip()
+    if not url:
+        return
+
+    secret = (os.environ.get("CRON_SECRET") or "").strip()
+    if not secret:
+        print("⚠ Warning: CRON_SECRET is not set; skipping day-menu cache revalidation.")
+        return
+
+    parts = urlsplit(url)
+    logged_url = urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+    try:
+        request = urllib.request.Request(
+            url,
+            data=b"",
+            method="POST",
+            headers={"Authorization": "Bearer " + secret},
+        )
+        with urllib.request.urlopen(request, timeout=15) as response:
+            response.read()
+    except urllib.error.HTTPError as err:
+        print(f"⚠ Warning: day-menu cache revalidate failed ({err.code}) for {logged_url}")
+    except Exception:
+        print(f"⚠ Warning: day-menu cache revalidate failed for {logged_url}")
+
 def run_scraper(days_ahead=1):
     print(f"🚀 Starting Scrape for next {days_ahead} day(s)...")
     # Saved-item count for this run: the sum of row counts reported by the
@@ -299,7 +330,6 @@ def run_scraper(days_ahead=1):
         location_errors.append(message)
 
     return finish_run(saved_item_count, location_errors)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Scrape UMich Dining Menus")

@@ -2,11 +2,21 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import * as Dialog from "@radix-ui/react-dialog";
-import { Check, PlusCircle, X } from "lucide-react";
+import { Check, PlusCircle } from "lucide-react";
 import { logFoodItem } from "@/app/actions/macro-tracker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@/components/ui/responsive-dialog";
 import { useAnalytics } from "@/hooks/use-analytics";
 import {
   dateInEasternTime,
@@ -103,8 +113,8 @@ export function LogFoodDialog({
   };
 
   return (
-    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
-      <Dialog.Trigger asChild>
+    <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
+      <ResponsiveDialogTrigger asChild>
         {trigger ?? (
           <Button
             size="lg"
@@ -115,86 +125,79 @@ export function LogFoodDialog({
             {hasNutrition ? "Add to food log" : "Nutrition unavailable"}
           </Button>
         )}
-      </Dialog.Trigger>
+      </ResponsiveDialogTrigger>
 
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-[71] w-[min(calc(100vw-1.5rem),430px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-background p-0 shadow-2xl">
-          <div className="border-b border-border px-5 py-4 pr-12">
-            <Dialog.Title className="text-lg font-bold">Add to food log</Dialog.Title>
-            <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-              {item.name} · {item.serving_size || "1 serving"}
-            </Dialog.Description>
-            <Dialog.Close className="absolute right-4 top-4 rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground">
-              <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
-            </Dialog.Close>
-          </div>
+      <ResponsiveDialogContent>
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle className="pr-8">Add to food log</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
+            {item.name} · {item.serving_size || "1 serving"}
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
-          <div className="space-y-5 p-5">
-            <div className="grid grid-cols-4 gap-2 rounded-xl bg-muted/60 p-3 text-center">
-              {[
-                ["Calories", roundMacro(total.calories), ""],
-                ["Protein", roundMacro(total.protein), "g"],
-                ["Carbs", roundMacro(total.carbs), "g"],
-                ["Fat", roundMacro(total.fat), "g"],
-              ].map(([label, value, unit]) => (
-                <div key={String(label)}>
-                  <div className="text-base font-bold tabular-nums">
-                    {value}{unit}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">{label}</div>
+        <ResponsiveDialogBody className="space-y-5">
+          <div className="grid grid-cols-4 gap-2 rounded-xl bg-muted/60 p-3 text-center">
+            {[
+              ["Calories", roundMacro(total.calories), ""],
+              ["Protein", roundMacro(total.protein), "g"],
+              ["Carbs", roundMacro(total.carbs), "g"],
+              ["Fat", roundMacro(total.fat), "g"],
+            ].map(([label, value, unit]) => (
+              <div key={String(label)}>
+                <div className="text-base font-bold tabular-nums">
+                  {value}{unit}
                 </div>
+                <div className="text-[11px] text-muted-foreground">{label}</div>
+              </div>
+            ))}
+          </div>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-semibold">Servings</span>
+            <Input
+              type="number"
+              inputMode="decimal"
+              min="0.1"
+              max="100"
+              step="0.25"
+              value={servings}
+              onChange={(event) => setServings(event.target.value)}
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-semibold">Meal</span>
+            <select
+              value={meal}
+              onChange={(event) => setMeal(event.target.value as FoodLogMeal)}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              {FOOD_LOG_MEALS.map((option) => (
+                <option key={option} value={option}>{foodLogMealLabel(option)}</option>
               ))}
-            </div>
+            </select>
+          </label>
 
-            <label className="block space-y-2">
-              <span className="text-sm font-semibold">Servings</span>
-              <Input
-                type="number"
-                inputMode="decimal"
-                min="0.1"
-                max="100"
-                step="0.25"
-                value={servings}
-                onChange={(event) => setServings(event.target.value)}
-              />
-            </label>
+          <label className="block space-y-2">
+            <span className="text-sm font-semibold">Date eaten</span>
+            <Input
+              type="date"
+              value={consumedOn}
+              onChange={(event) => setConsumedOn(event.target.value)}
+            />
+          </label>
+        </ResponsiveDialogBody>
 
-            <label className="block space-y-2">
-              <span className="text-sm font-semibold">Meal</span>
-              <select
-                value={meal}
-                onChange={(event) => setMeal(event.target.value as FoodLogMeal)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-              >
-                {FOOD_LOG_MEALS.map((option) => (
-                  <option key={option} value={option}>{foodLogMealLabel(option)}</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block space-y-2">
-              <span className="text-sm font-semibold">Date eaten</span>
-              <Input
-                type="date"
-                value={consumedOn}
-                onChange={(event) => setConsumedOn(event.target.value)}
-              />
-            </label>
-          </div>
-
-          <div className="flex justify-end gap-2 border-t border-border p-4">
-            <Dialog.Close asChild>
-              <Button variant="outline" disabled={saving}>Cancel</Button>
-            </Dialog.Close>
-            <Button onClick={save} disabled={saving} className={appPrimaryButtonClassName}>
-              <Check className="h-4 w-4" />
-              {saving ? "Adding…" : "Add item"}
-            </Button>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        <ResponsiveDialogFooter className="flex-row justify-end gap-2 sm:space-x-0">
+          <ResponsiveDialogClose asChild>
+            <Button variant="outline" disabled={saving}>Cancel</Button>
+          </ResponsiveDialogClose>
+          <Button onClick={save} disabled={saving} className={appPrimaryButtonClassName}>
+            <Check className="h-4 w-4" />
+            {saving ? "Adding…" : "Add item"}
+          </Button>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }
