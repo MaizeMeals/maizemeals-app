@@ -22,9 +22,8 @@ export default function AboutPage() {
         including M Dining belong to their owners.
       </p>
       <p className="mt-4 text-sm text-muted-foreground">
-        Menu data comes from the M-Dining JSON API (MDINING_API_KEY /
-        MDINING_BASE_URL), not from an official partnership. It may be
-        incomplete or wrong.
+        Menu data comes from the M-Dining JSON API, not from an official
+        partnership. It may be incomplete or wrong.
       </p>
       <p className="mt-8 text-sm">
         <Link href="/" className="text-primary underline-offset-4 hover:underline">

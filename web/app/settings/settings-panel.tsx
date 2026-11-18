@@ -15,14 +15,21 @@ const DEALBREAKERS: { id: string; label: string }[] = [
   { id: "glutenfree", label: "Gluten-Free" },
 ];
 
+const DEALBREAKER_IDS = new Set(DEALBREAKERS.map((option) => option.id));
+
+/** Profile dealbreakers are only these four. Page chips such as Spicy must not be written back. */
+function dealbreakersOnly(filters: readonly string[]): string[] {
+  return filters.filter((id) => DEALBREAKER_IDS.has(id));
+}
+
 export function SettingsPanel({ email }: { email: string | null }) {
   const { preferences, updatePreferences, loading } = usePreferences();
   const [slidersOpen, setSlidersOpen] = useState(false);
   const [savingDiet, setSavingDiet] = useState(false);
 
   const toggleDealbreaker = async (id: string) => {
-    if (loading || savingDiet) return;
-    const current = preferences.dietary_filters;
+    if (loading || savingDiet || !DEALBREAKER_IDS.has(id)) return;
+    const current = dealbreakersOnly(preferences.dietary_filters);
     const next = current.includes(id)
       ? current.filter((filter) => filter !== id)
       : [...current, id];
