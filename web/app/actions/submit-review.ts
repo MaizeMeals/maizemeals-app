@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ITEM_PHOTOS_BUCKET } from "@/lib/item-photos";
 import {
-  MAX_REVIEW_PHOTO_BYTES,
   reviewPhotoFileExtension,
+  reviewPhotoValidationError,
 } from "@/lib/review-upload";
 import { syncUserProfileIdentity } from "@/lib/sync-user-profile-identity";
 
@@ -14,7 +14,13 @@ const UUID_REGEX =
 
 export type SubmitReviewResult =
   | { success: true }
-  | { success: false; error: string; status?: number };
+  | {
+      success: false;
+      error: string;
+      status?: number;
+      /** Set only for the one-review-per-user unique violation (Postgres 23505). */
+      code?: "already_reviewed";
+    };
 
 function isValidUUID(value: string): boolean {
   return UUID_REGEX.test(value);
@@ -58,11 +64,11 @@ export async function submitReview(
   const file =
     photoFile instanceof File && photoFile.size > 0 ? photoFile : null;
 
-  if (file && file.size > MAX_REVIEW_PHOTO_BYTES) {
-    return {
-      success: false,
-      error: `Photo must be under ${MAX_REVIEW_PHOTO_BYTES / 1024 / 1024}MB.`,
-    };
+  if (file) {
+    const photoError = reviewPhotoValidationError(file);
+    if (photoError) {
+      return { success: false, error: photoError };
+    }
   }
 
   const sync = await syncUserProfileIdentity(supabase, user);
@@ -92,6 +98,13 @@ export async function submitReview(
       details: ratingError.details,
       hint: ratingError.hint,
     });
+    if (ratingError.code === "23505") {
+      return {
+        success: false,
+        code: "already_reviewed",
+        error: "You've already reviewed this item.",
+      };
+    }
     return {
       success: false,
       error: formatUserRatingError(ratingError),
@@ -163,9 +176,6 @@ function formatUserRatingError(err: {
   }
   if (err.code === "42501") {
     return "You do not have permission to post a review. If this persists, contact support.";
-  }
-  if (err.code === "23505") {
-    return "You have already reviewed this item.";
   }
   if (err.code === "23503") {
     return "This menu item could not be found. Try again from today’s menu.";

@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ITEM_PHOTOS_BUCKET } from "@/lib/item-photos";
 import {
-  MAX_REVIEW_PHOTO_BYTES,
   reviewPhotoFileExtension,
+  reviewPhotoValidationError,
 } from "@/lib/review-upload";
 import { syncUserProfileIdentity } from "@/lib/sync-user-profile-identity";
 
@@ -66,11 +66,11 @@ export async function updateReview(
   const file =
     photoFile instanceof File && photoFile.size > 0 ? photoFile : null;
 
-  if (file && file.size > MAX_REVIEW_PHOTO_BYTES) {
-    return {
-      success: false,
-      error: `Photo must be under ${MAX_REVIEW_PHOTO_BYTES / 1024 / 1024}MB.`,
-    };
+  if (file) {
+    const photoError = reviewPhotoValidationError(file);
+    if (photoError) {
+      return { success: false, error: photoError };
+    }
   }
 
   const { data: row, error: fetchError } = await supabase
