@@ -1,6 +1,7 @@
 import { OperatingHour, Item } from "@/types/dining"
 import { getDynamicTags } from "./filter-utils"
 import { CLIENT_PUBLIC_FILES_PATH } from "next/dist/shared/lib/constants"
+import { shiftBoundsOnDay } from "@/lib/dining/status"
 
 export type DiningStatus = {
   isOpen: boolean
@@ -74,7 +75,11 @@ export function cleanLocationName(name: string, type: string) {
     .trim();
 }
 
-export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): DiningStatus {
+export function determineHallStatus(
+  shifts: OperatingHour[],
+  dateStr?: string,
+  priorDayShifts?: OperatingHour[],
+): DiningStatus {
   const now = new Date();
   let estNow = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
 
@@ -97,7 +102,18 @@ export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): 
       }
   }
 
-  let bestShift: OperatingHour | null = null;
+  // Callers must pass prior-day shifts to recognize a shift that started
+  // yesterday and is still open after midnight. Those rows are anchored on
+  // the previous calendar day. Same-day overnight windows use shiftBoundsOnDay.
+  const requestedDay = new Date(estNow);
+  const priorDay = new Date(estNow);
+  priorDay.setDate(priorDay.getDate() - 1);
+  const anchored = [
+      ...(priorDayShifts ?? []).map((shift) => ({ shift, day: priorDay })),
+      ...shifts.map((shift) => ({ shift, day: requestedDay })),
+  ];
+
+  let best: { shift: OperatingHour; day: Date } | null = null;
   // Helper to parse priority (assuming lower number = higher priority, e.g. Dinner=1, Breakfast=3)
   // Ensure this matches your actual getPriority logic
   const getPriority = (name: string) => {
@@ -108,33 +124,32 @@ export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): 
       return 4;
   };
 
-  for (const s of shifts) {
-      // Create date objects for Start (sDate) and End (eDate) of the current shift 's'
-      const [eh, em] = s.end_time.split(':').map(Number);
-      const eDate = new Date(estNow); eDate.setHours(eh, em, 0);
+  for (const candidate of anchored) {
+      const s = candidate.shift;
+      // Start/end on the shift's calendar day. Overnight ends roll to the next day.
+      const { start: sDate, end: eDate } = shiftBoundsOnDay(s.start_time, s.end_time, candidate.day);
 
-      const [sh, sm] = s.start_time.split(':').map(Number);
-      const sDate = new Date(estNow); sDate.setHours(sh, sm, 0);
-
-      // Filter out shifts that have already ended
-      if (estNow < eDate) {
-          if (!bestShift) {
-              bestShift = s;
+      // Exact end is still open; drop the shift only once instant > end.
+      if (estNow <= eDate) {
+          if (!best) {
+              best = candidate;
           } else {
               // --- COMPARISON LOGIC ---
               const sPriority = getPriority(s.event_name || '');
-              const bestPriority = getPriority(bestShift.event_name || '');
+              const bestPriority = getPriority(best.shift.event_name || '');
 
-              // Date objects for 'bestShift' (bDate)
-              const [bh, bm] = bestShift.start_time.split(':').map(Number);
-              const bDate = new Date(estNow); bDate.setHours(bh, bm, 0);
+              const bDate = shiftBoundsOnDay(
+                  best.shift.start_time,
+                  best.shift.end_time,
+                  best.day,
+              ).start;
 
               const isSActive = estNow >= sDate;
               const isBestActive = estNow >= bDate;
 
               // 1. Prefer ACTIVE over FUTURE
               if (isSActive && !isBestActive) {
-                  bestShift = s;
+                  best = candidate;
                   continue;
               }
               if (!isSActive && isBestActive) {
@@ -144,7 +159,7 @@ export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): 
               // 2. If BOTH are ACTIVE: Use Priority (e.g. choose Dinner over Kiosk)
               if (isSActive && isBestActive) {
                   if (sPriority < bestPriority) {
-                      bestShift = s;
+                      best = candidate;
                   }
                   continue;
               }
@@ -153,11 +168,11 @@ export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): 
               // If it's 2 AM, pick Breakfast (7 AM) over Dinner (4 PM)
               if (!isSActive && !isBestActive) {
                   if (sDate < bDate) {
-                       bestShift = s;
+                       best = candidate;
                   }
                   // If times are same (rare), use priority as tiebreaker
                   else if (sDate.getTime() === bDate.getTime() && sPriority < bestPriority) {
-                       bestShift = s;
+                       best = candidate;
                   }
               }
           }
@@ -167,7 +182,9 @@ export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): 
   // Fallback: If no shifts found (e.g. late night after all shifts ended), use the last one (usually Dinner)
   // to show "Closed" status correctly, OR handle as "Tomorrow" logic if needed.
   // For now, defaulting to the last shift is standard for "Closed" state.
-  const targetShift = bestShift || shifts[shifts.length - 1];
+  const target = best || (shifts.length
+      ? { shift: shifts[shifts.length - 1], day: requestedDay }
+      : null);
 
   let status: DiningStatus = {
       isOpen: false,
@@ -178,12 +195,13 @@ export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): 
       details: "Check Schedule"
   };
 
-  if (targetShift) {
-      const [eh, em] = targetShift.end_time.split(':').map(Number);
-      const eDate = new Date(estNow); eDate.setHours(eh, em, 0);
-
-      const [sh, sm] = targetShift.start_time.split(':').map(Number);
-      const sDate = new Date(estNow); sDate.setHours(sh, sm, 0);
+  if (target) {
+      const targetShift = target.shift;
+      const { start: sDate, end: eDate } = shiftBoundsOnDay(
+          targetShift.start_time,
+          targetShift.end_time,
+          target.day,
+      );
 
       let eventName = targetShift.event_name || 'Dining';
       if (eventName.includes('24/7') || eventName.includes('Kiosk')) eventName = 'Market';
@@ -216,9 +234,15 @@ export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): 
           const closesAtText = formatTime(targetShift.end_time);
 
           // Don't show "Closing Soon" if the next shift starts when this one ends (e.g. Breakfast → Brunch)
-          const nextShiftStartsImmediately = shifts.some(
-              (s) => s !== targetShift && s.start_time === targetShift.end_time
-          );
+          const nextShiftStartsImmediately = anchored.some((other) => {
+              if (other.shift === targetShift) return false;
+              const otherStart = shiftBoundsOnDay(
+                  other.shift.start_time,
+                  other.shift.end_time,
+                  other.day,
+              ).start;
+              return otherStart.getTime() === eDate.getTime();
+          });
           const showClosingSoon = minutesLeft < 30 && !nextShiftStartsImmediately;
 
           if (showClosingSoon) {

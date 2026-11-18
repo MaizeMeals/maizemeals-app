@@ -3,6 +3,15 @@ import { createClient } from "@/lib/supabase/client";
 import type { Item, ItemMetadata, LocationData, MenuData, MenuEvent, OperatingHour } from "@/types/dining";
 import { determineHallStatus } from "@/lib/dining";
 
+function previousCalendarDay(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() - 1);
+  const month = String(dt.getMonth() + 1).padStart(2, "0");
+  const day = String(dt.getDate()).padStart(2, "0");
+  return `${dt.getFullYear()}-${month}-${day}`;
+}
+
 type RecommendedMenuEvent = MenuEvent & {
   items: (Item & {
     photos: Array<{ storage_path: string; is_approved: boolean | null }>;
@@ -46,6 +55,7 @@ export function useLocationData(slug: string, dateStr?: string) {
       const endStr = endRange.toLocaleDateString("en-CA");
       const todayStr = todayDate.toLocaleDateString("en-CA");
       const weekEndStr = weekEndRange.toLocaleDateString("en-CA");
+      const viewingToday = targetDate === todayStr;
 
       // 1. Fetch Hall Details
       const { data: hall, error: hallError } = await supabase
@@ -91,9 +101,20 @@ export function useLocationData(slug: string, dateStr?: string) {
           return (fallbackEvents ?? []) as RecommendedMenuEvent[];
         });
 
-      // 2. Fetch Hours (Target Date + Full Week Parallel)
+      // 2. Fetch Hours (Target Date + yesterday when live + Full Week Parallel)
+      // Yesterday's rows let an overnight shift that started yesterday stay open after midnight.
+      const priorHoursRequest = viewingToday
+        ? supabase
+            .from("operating_hours")
+            .select("*")
+            .eq("dining_hall_id", hall.id)
+            .eq("date", previousCalendarDay(targetDate))
+            .order("start_time")
+        : Promise.resolve({ data: [] as OperatingHour[] });
+
       const [
         { data: targetHours },
+        { data: priorDayHours },
         { data: weeklyHoursData },
         { data: availability },
         events,
@@ -104,6 +125,7 @@ export function useLocationData(slug: string, dateStr?: string) {
           .eq("dining_hall_id", hall.id)
           .eq("date", targetDate)
           .order("start_time"),
+        priorHoursRequest,
         supabase
           .from("operating_hours")
           .select("*")
@@ -136,7 +158,11 @@ export function useLocationData(slug: string, dateStr?: string) {
       const reviewCount = hall.review_count ?? 0;
 
       // --- Process Status ---
-      const status = determineHallStatus(targetHours || [], targetDate);
+      const status = determineHallStatus(
+        targetHours || [],
+        targetDate,
+        viewingToday ? priorDayHours || [] : undefined,
+      );
 
       // --- Process Menu & Metadata ---
       const menu: MenuData = {};
