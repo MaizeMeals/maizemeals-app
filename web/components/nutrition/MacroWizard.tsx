@@ -16,6 +16,7 @@ import {
   type UserMacroGoals,
 } from "@/app/actions/macro-tracker";
 import { Button } from "@/components/ui/button";
+import { PageHeader, PageShell } from "@/components/layout/page-shell";
 import { Input } from "@/components/ui/input";
 import { useAnalytics } from "@/hooks/use-analytics";
 import {
@@ -198,26 +199,24 @@ export function MacroWizard({
   };
 
   return (
-    <div className="ph-no-capture min-h-screen bg-muted/20 px-4 pb-16 pt-24 md:px-6">
-      <div className="mx-auto max-w-2xl">
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-wider text-maize">MaizeMacros targets</p>
-            <h1 className="mt-1 text-3xl font-black tracking-tight md:text-4xl">
-              {step === 3 ? "Set your daily targets" : "Estimate your daily targets"}
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {step === 3
-                ? "The estimate is only a starting point. Adjust every target to fit your needs."
-                : "Use the private estimator, then review and customize its suggestions."}
-            </p>
-          </div>
-          {onCancel ? (
+    <PageShell className="ph-no-capture min-h-screen bg-muted/20 pb-16">
+      <p className="text-sm font-bold uppercase tracking-wider text-maize">MaizeMacros targets</p>
+      <PageHeader
+        className="mb-6"
+        title={step === 3 ? "Set your daily targets" : "Estimate your daily targets"}
+        description={
+          step === 3
+            ? "The estimate is only a starting point. Adjust every target to fit your needs."
+            : "Use the private estimator, then review and customize its suggestions."
+        }
+        actions={
+          onCancel ? (
             <Button variant="ghost" size="icon" onClick={onCancel} aria-label="Cancel target editing">
               <X className="h-5 w-5" />
             </Button>
-          ) : null}
-        </div>
+          ) : undefined
+        }
+      />
 
         <div className="mb-6 flex gap-2" aria-label={`Step ${step + 1} of 4`}>
           {[0, 1, 2, 3].map((index) => (
@@ -488,7 +487,6 @@ export function MacroWizard({
             </Button>
           )}
         </div>
-      </div>
-    </div>
+    </PageShell>
   );
 }

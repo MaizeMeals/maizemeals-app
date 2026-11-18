@@ -1,10 +1,18 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useRef } from "react";
 import Link from "next/link";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { User as UserIcon, Settings, LogOut, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { User as UserIcon, Settings, LogOut, ChevronDown, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { clearUserCaches } from "@/lib/pwa";
@@ -17,31 +25,21 @@ interface UserNavProps {
   user: User | null;
   signOut: () => Promise<void>;
   forceWhite?: boolean;
+  isAdmin?: boolean;
 }
 
-export function UserNav({ user, signOut, forceWhite = false }: UserNavProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
+export function UserNav({ user, signOut, forceWhite = false, isAdmin = false }: UserNavProps) {
+  const signOutFormRef = useRef<HTMLFormElement>(null);
   const { track, reset } = useAnalytics();
 
   const handleLogout = () => {
-    track("logout_clicked");
+    if (typeof track === "function") {
+      track("logout_clicked");
+    }
     reset();
     clearUserCaches();
+    signOutFormRef.current?.requestSubmit();
   };
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
   if (!user) {
     return (
@@ -74,75 +72,79 @@ export function UserNav({ user, signOut, forceWhite = false }: UserNavProps) {
     "User";
 
   return (
-    <div className="relative" ref={menuRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "flex items-center gap-2 p-1 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring",
-          forceWhite
-            ? "hover:bg-white/10 text-white hover:text-white"
-            : "hover:bg-accent",
-        )}
-      >
-        <div
-          className={cn(
-            "h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center border",
-            forceWhite ? "border-white/20" : "border-border",
-          )}
-        >
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt="Avatar"
-              referrerPolicy="no-referrer"
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <UserIcon className="h-5 w-5 text-muted-foreground" />
-          )}
-        </div>
-        <span
-          className={cn(
-            "text-sm font-medium hidden md:block max-w-25 truncate",
-            forceWhite ? "text-white/90" : "text-foreground",
-          )}
-        >
-          {name}
-        </span>
-        <ChevronDown
-          className={cn(
-            "h-4 w-4 transition-transform",
-            forceWhite ? "text-white/70" : "text-muted-foreground",
-            isOpen ? "rotate-180" : "",
-          )}
-        />
-      </button>
-
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 rounded-md border bg-popover text-popover-foreground p-1 shadow-md z-50 animate-in fade-in zoom-in-95 duration-200">
-          <div className="px-2 py-1.5 text-sm font-semibold border-b border-border mb-1">
-            My Account
-          </div>
-          <Link
-            href="/settings"
-            className="flex items-center w-full px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-            onClick={() => setIsOpen(false)}
+    <>
+      <form ref={signOutFormRef} action={signOut} className="hidden" />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="Account menu"
+            className={cn(
+              "group flex items-center gap-2 rounded-full p-1 transition-colors focus:outline-none focus:ring-2 focus:ring-ring",
+              forceWhite
+                ? "text-white hover:bg-white/10 hover:text-white"
+                : "hover:bg-accent",
+            )}
           >
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </Link>
-          <form action={signOut} className="w-full">
-            <button
-              type="submit"
-              onClick={handleLogout}
-              className="flex items-center w-full px-2 py-1.5 text-sm rounded-sm hover:bg-destructive hover:text-destructive-foreground text-red-500 transition-colors"
+            <div
+              className={cn(
+                "flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border bg-muted",
+                forceWhite ? "border-white/20" : "border-border",
+              )}
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              Log out
-            </button>
-          </form>
-        </div>
-      )}
-    </div>
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Avatar"
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <UserIcon className="h-5 w-5 text-muted-foreground" />
+              )}
+            </div>
+            <span
+              className={cn(
+                "hidden max-w-25 truncate text-sm font-medium md:block",
+                forceWhite ? "text-white/90" : "text-foreground",
+              )}
+            >
+              {name}
+            </span>
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 transition-transform group-data-[state=open]:rotate-180",
+                forceWhite ? "text-white/70" : "text-muted-foreground",
+              )}
+            />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/settings">
+              <Settings />
+              Settings
+            </Link>
+          </DropdownMenuItem>
+          {isAdmin ? (
+            <DropdownMenuItem asChild>
+              <Link href="/admin">
+                <Shield />
+                Admin
+              </Link>
+            </DropdownMenuItem>
+          ) : null}
+          <DropdownMenuItem
+            onSelect={handleLogout}
+            className="text-red-500 focus:bg-destructive focus:text-destructive-foreground"
+          >
+            <LogOut />
+            Log out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   );
 }

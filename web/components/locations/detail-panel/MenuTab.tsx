@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { Loader2, Star, Flame, Camera, UtensilsCrossed } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import type { MenuData, ItemMetadata } from "@/types/dining";
 import { getStoragePhotoUrl } from "./PhotosDialog";
 import { FOOD_ITEM_PLACEHOLDER_IMAGE } from "@/lib/food-placeholder-image";
@@ -168,11 +174,18 @@ export function MenuTab({ loading, menu, itemMetadata, venueSlug }: Props) {
                       );
                    })
                 ) : (
-                   <div className="text-center text-muted-foreground text-sm py-8 border rounded-xl bg-muted/20">
-                      {preferences.dietary_filters.length > 0
-                        ? "No menu items match your dietary preferences today."
-                        : "No menu items available today."}
-                   </div>
+                   <Empty>
+                     <EmptyHeader>
+                       <EmptyMedia variant="icon">
+                         <UtensilsCrossed />
+                       </EmptyMedia>
+                       <EmptyTitle>
+                         {preferences.dietary_filters.length > 0
+                           ? "No menu items match your dietary preferences today."
+                           : "No menu items available today."}
+                       </EmptyTitle>
+                     </EmptyHeader>
+                   </Empty>
                 )}
              </div>
 

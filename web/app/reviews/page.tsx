@@ -20,10 +20,17 @@ import { ChevronLeft, Pencil, Star, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { EditReviewDialog } from "@/components/reviews/EditReviewDialog";
 import { Button } from "@/components/ui/button";
+import { PageHeader, PageShell } from "@/components/layout/page-shell";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { appSurfaceOutlineButtonClassName } from "@/lib/button-styles";
 import { getItemPhotoPublicUrl } from "@/lib/item-photos";
 import { cn } from "@/lib/utils";
-import { HEADER_HEIGHT } from "@/components/layout/constants";
 
 /** Same-origin path only; ignores open-redirect values. */
 function safeMenuReturnPath(raw: string | null): string | null {
@@ -177,9 +184,15 @@ function RatingSummaryBlock({
 
   if (reviewCount === 0) {
     return (
-      <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground shadow-sm">
-        No reviews yet — be the first to rate this item.
-      </div>
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Star />
+          </EmptyMedia>
+          <EmptyTitle>No reviews yet</EmptyTitle>
+          <EmptyDescription>Be the first to rate this item.</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
@@ -362,10 +375,10 @@ function ItemReviewsContent() {
   if (!itemId) {
     return (
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold text-foreground">Reviews</h1>
-        <p className="text-sm text-muted-foreground">
-          Open a menu item at a dining hall and tap &quot;See reviews&quot; to view ratings here.
-        </p>
+        <PageHeader
+          title="Reviews"
+          description="Open a menu item at a dining hall and tap “See reviews” to view ratings here."
+        />
         <Link
           href="/locations"
           className="text-sm font-medium text-maize hover:underline"
@@ -385,7 +398,7 @@ function ItemReviewsContent() {
   if (error) {
     return (
       <div className="space-y-3">
-        <h1 className="text-xl font-semibold text-foreground">Reviews</h1>
+        <PageHeader title="Reviews" />
         <p className="text-sm text-destructive">{error}</p>
         <Link
           href={menuReturnPath ?? "/locations"}
@@ -411,9 +424,7 @@ function ItemReviewsContent() {
           Return to menu
         </Link>
       ) : null}
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">{itemName}</h1>
-      </div>
+      <PageHeader title={itemName} />
 
       <RatingSummaryBlock
         reviewCount={reviewCount}
@@ -574,19 +585,14 @@ function ItemReviewsContent() {
 
 export default function ReviewsPage() {
   return (
-    <div
-      className="min-h-screen bg-background"
-      style={{ paddingTop: HEADER_HEIGHT }}
-    >
-      <div className="container mx-auto max-w-2xl px-4 py-10 lg:max-w-3xl">
-        <Suspense
-          fallback={
-            <div className="h-40 animate-pulse rounded-xl bg-muted" aria-label="Loading" />
-          }
-        >
-          <ItemReviewsContent />
-        </Suspense>
-      </div>
-    </div>
+    <PageShell className="min-h-screen bg-background">
+      <Suspense
+        fallback={
+          <div className="h-40 animate-pulse rounded-xl bg-muted" aria-label="Loading" />
+        }
+      >
+        <ItemReviewsContent />
+      </Suspense>
+    </PageShell>
   );
 }

@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Loader2, Check, X, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader, PageShell } from "@/components/layout/page-shell";
 import { createClient } from "@/lib/supabase/client";
 import { getItemPhotoPublicUrl } from "@/lib/item-photos";
-import { HEADER_HEIGHT } from "@/components/layout/constants";
 
 type PhotoRow = {
   id: string;
@@ -91,25 +91,22 @@ export default function AdminPhotosPage() {
 
   if (loading && photos.length === 0) {
     return (
-      <div
+      <PageShell
+        width="wide"
         className="flex min-h-screen items-center justify-center bg-background"
-        style={{ paddingTop: HEADER_HEIGHT }}
       >
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div
-      className="min-h-screen bg-background p-6"
-      style={{ paddingTop: HEADER_HEIGHT }}
-    >
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold mb-2">Photo moderation</h1>
-        <p className="text-muted-foreground text-sm mb-6">
-          Approve or reject photos (unapproved only). Route is protected by ADMIN_USER_IDS.
-        </p>
+    <PageShell width="wide" className="min-h-screen bg-background">
+      <PageHeader
+        className="mb-6"
+        title="Photo moderation"
+        description="Approve or reject photos (unapproved only). Route is protected by ADMIN_USER_IDS."
+      />
 
         {error && (
           <div className="flex items-center gap-2 text-destructive mb-4 p-3 rounded-lg bg-destructive/10">
@@ -182,7 +179,6 @@ export default function AdminPhotosPage() {
             })}
           </div>
         )}
-      </div>
-    </div>
+    </PageShell>
   );
 }

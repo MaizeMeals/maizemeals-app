@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { User } from "@supabase/supabase-js";
@@ -19,7 +18,6 @@ import {
 } from "@/components/layout/constants";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserNav } from "@/components/layout/UserNav";
-import { Button } from "@/components/ui/button";
 
 const MD_UP_QUERY = "(min-width: 768px)";
 
@@ -43,7 +41,6 @@ interface HeaderContentProps {
 export function HeaderContent({ user, signOut, isAdmin = false }: HeaderContentProps) {
   const { track } = useAnalytics();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   /** Auth uses the glass/transparent header only at `md+`; mobile uses normal themed chrome. */
   const isMdUp = useSyncExternalStore(subscribeMdUp, getMdUpSnapshot, () => false);
   const pathname = usePathname();
@@ -51,16 +48,6 @@ export function HeaderContent({ user, signOut, isAdmin = false }: HeaderContentP
   const isLocationPage = pathname.startsWith("/locations/");
   const isAuthPage =
     pathname === "/login" || pathname === "/signup";
-
-  const handleMobileMenuToggle = () => {
-    const newState = !isMobileMenuOpen;
-    setIsMobileMenuOpen(newState);
-    if (newState) {
-      track("mobile_menu_opened", {
-        current_page: pathname,
-      });
-    }
-  };
 
   const handleNavLinkClick = (
     linkName: string,
@@ -97,11 +84,6 @@ export function HeaderContent({ user, signOut, isAdmin = false }: HeaderContentP
     return () => window.removeEventListener("scroll", handleScroll);
   }, [isAuthPage, isLocationPage]);
 
-  // Close mobile menu when route changes
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [pathname]);
-
   const navLinks = [
     { name: "Find food", href: "/menus" },
     { name: "Locations", href: "/locations" },
@@ -111,23 +93,20 @@ export function HeaderContent({ user, signOut, isAdmin = false }: HeaderContentP
 
   // Transparent hero-style bar: landing/location, or auth at `md+` only (mobile auth = themed header)
   const isTransparent =
-    !isMobileMenuOpen &&
-    ((isAuthPage && isMdUp) ||
-      (!isAuthPage && (isLandingPage || isLocationPage) && !isScrolled));
+    (isAuthPage && isMdUp) ||
+    (!isAuthPage && (isLandingPage || isLocationPage) && !isScrolled);
 
   return (
     <header
       className={cn(
-        isMobileMenuOpen
-          ? "fixed top-0 z-50 w-full bg-background border-border border-b"
-          : !isTransparent
-            ? cn(
-                HEADER_CHROME_BASE,
-                "bg-background border-border border-b shadow-sm",
-              )
-            : isAuthPage
-              ? "fixed top-0 z-50 w-full border-b border-white/10 bg-transparent transition-all duration-300 transform-gpu"
-              : cn(HEADER_CHROME_BASE, HEADER_TRANSPARENT_SURFACE),
+        !isTransparent
+          ? cn(
+              HEADER_CHROME_BASE,
+              "bg-background border-border border-b shadow-sm",
+            )
+          : isAuthPage
+            ? "fixed top-0 z-50 w-full border-b border-white/10 bg-transparent transition-all duration-300 transform-gpu"
+            : cn(HEADER_CHROME_BASE, HEADER_TRANSPARENT_SURFACE),
       )}
     >
       <div
@@ -157,46 +136,14 @@ export function HeaderContent({ user, signOut, isAdmin = false }: HeaderContentP
 
         <div className="flex items-center gap-4">
           <ThemeToggle forceWhite={isTransparent} />
-          <UserNav user={user} signOut={signOut} forceWhite={isTransparent} />
-
-          {/* Mobile Menu Toggle — the bottom tab bar covers primary nav on phones,
-              so the menu only remains for admins (Admin link). */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              isAdmin ? "md:hidden" : "hidden",
-              isTransparent ? "text-white hover:bg-white/20" : "",
-            )}
-            onClick={handleMobileMenuToggle}
-          >
-            {isMobileMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
-            <span className="sr-only">Toggle menu</span>
-          </Button>
+          <UserNav
+            user={user}
+            signOut={signOut}
+            forceWhite={isTransparent}
+            isAdmin={isAdmin}
+          />
         </div>
       </div>
-
-      {/* Mobile Menu Dropdown */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background px-4 py-4 shadow-lg animate-in slide-in-from-top-2">
-          <nav className="flex flex-col gap-4">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => handleNavLinkClick(link.name, link.href, true)}
-                className="text-base font-medium text-foreground/80 hover:text-maize transition-colors py-2"
-              >
-                {link.name}
-              </Link>
-            ))}
-          </nav>
-        </div>
-      )}
     </header>
   );
 }
