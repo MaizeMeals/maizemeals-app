@@ -20,6 +20,7 @@ import {
 } from "@/lib/nutrition"
 import { toast } from "@/lib/toast"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { FavoriteButton } from "@/components/menus/FavoriteButton"
 
 interface FoodItemCardProps {
   item: Item
@@ -124,6 +125,7 @@ export function FoodItemCard({ item, onClick, highlight, mealType }: FoodItemCar
       <div className="flex-1 pr-4">
         <div className="mb-1 flex flex-wrap items-center gap-2">
           <h4 className="text-base font-bold leading-tight text-foreground">{item.name}</h4>
+          <FavoriteButton name={item.name} size="sm" className="-my-1" />
         </div>
 
         <div className="mb-2 flex items-center gap-3 text-sm">

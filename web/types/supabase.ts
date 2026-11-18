@@ -100,6 +100,27 @@ export type Database = {
         }
         Relationships: []
       }
+      favorite_foods: {
+        Row: {
+          created_at: string
+          display_name: string
+          food_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          food_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          food_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       food_logs: {
         Row: {
           calories_per_serving: number
@@ -525,6 +546,10 @@ export type Database = {
       }
     }
     Functions: {
+      storage_objects_owned_by: {
+        Args: { target_user: string }
+        Returns: { bucket_id: string; name: string }[]
+      }
       refresh_item_and_hall_stats: {
         Args: { p_item_id: string }
         Returns: undefined

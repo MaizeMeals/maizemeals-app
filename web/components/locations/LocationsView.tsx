@@ -16,6 +16,7 @@ import { HEADER_HEIGHT } from "@/components/layout/constants";
 import type { LocationSummary } from "@/types/location-summary";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDayMenu } from "@/hooks/use-day-menu";
+import { useFavoriteFoods } from "@/hooks/use-favorite-foods";
 import { computeHallMatches, type HallMatch } from "@/lib/day-menu/match";
 import { easternMinutes, easternToday } from "@/lib/day-menu/scoring";
 
@@ -99,12 +100,13 @@ export default function LocationsView() {
 
   // Hall Match Score: personalized against today's menu (guests use local prefs).
   const { menu: todayMenu } = useDayMenu(easternToday());
+  const { favorites } = useFavoriteFoods();
   const matches = useMemo(
     () =>
       todayMenu && !prefsLoading
-        ? computeHallMatches(todayMenu, preferences, easternMinutes())
+        ? computeHallMatches(todayMenu, preferences, easternMinutes(), new Set(favorites.keys()))
         : new Map<string, HallMatch>(),
-    [todayMenu, preferences, prefsLoading],
+    [todayMenu, preferences, prefsLoading, favorites],
   );
   const hasMatches = matches.size > 0;
   const [sortMode, setSortMode] = useState<SortMode>("match");

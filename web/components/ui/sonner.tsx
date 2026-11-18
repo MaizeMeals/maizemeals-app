@@ -13,6 +13,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       position="bottom-center"
       offset={{ bottom: "1.25rem" }}
+      // Phones: sit above the bottom tab bar (--bottom-nav-h is 0 when hidden).
+      mobileOffset={{ bottom: "calc(var(--bottom-nav-h, 0px) + 0.75rem)" }}
       className="toaster group"
       toastOptions={{
         classNames: {

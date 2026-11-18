@@ -53,6 +53,8 @@ export function computeHallMatches(
   menu: DayMenu,
   prefs: ScoringPrefs,
   nowMinutes: number,
+  /** Saved favorite dishes (foodKey) — treated as near-perfect fits. */
+  favoriteKeys: ReadonlySet<string> = new Set(),
 ): Map<string, HallMatch> {
   const byHall = new Map<string, DayMenuItem[]>();
   for (const it of menu.items) {
@@ -74,7 +76,10 @@ export function computeHallMatches(
 
     const eligible = mealItems
       .filter((it) => passesFilters(it, prefs.dietary_filters))
-      .map((it) => ({ it, s: itemFit(it, prefs) }))
+      .map((it) => {
+        const fit = itemFit(it, prefs);
+        return { it, s: favoriteKeys.has(it.key) ? Math.max(fit, 0.95) : fit };
+      })
       .sort((a, b) => b.s - a.s);
 
     if (eligible.length === 0) {
@@ -100,6 +105,8 @@ export function computeHallMatches(
 
     // Reasons, most persuasive first; the UI shows the first two.
     const reasons: string[] = [];
+    const favorite = eligible.find(({ it }) => favoriteKeys.has(it.key));
+    if (favorite) reasons.push(`Favorite: ${favorite.it.name}`);
     const usual = eligible.find(({ it }) => boosted[it.id]);
     if (usual) reasons.push(`Your usual: ${usual.it.name}`);
     const bestRated = rated

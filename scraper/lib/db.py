@@ -135,43 +135,61 @@ def upsert_items(client, items, hall_uuid, meal_event_data):
 
 def upsert_operating_hours(client, hall_uuid, schedule, date_str):
     """
-    Saves the opening/closing times for a location.
-    Deduplicates events to prevent 'ON CONFLICT' batch errors.
+    Replaces a location's shifts for one date.
+
+    Keeps split shifts (e.g. Lunch 11-1 and Lunch 2-4). Rows are replaced
+    (delete + insert) so a shift that moved or disappeared doesn't linger.
+
+    Compatibility: until supabase/pending/split_shift_hours.sql is applied,
+    operating_hours is unique on (hall, date, event_name). In that case the
+    insert of split shifts fails with 23505 and we fall back to one row per
+    shift name (the old behaviour), so this works before and after the
+    migration.
     """
     if not schedule:
         return
 
-    # 1. Deduplicate using a dictionary
-    # Key = event_name (e.g., "Lunch")
-    # Value = The data payload
-    unique_map = {}
+    def to_time(iso):
+        return iso.split('T')[1].split('-')[0].split('+')[0].replace('Z', '')
 
+    rows = {}
     for event in schedule:
-        # Extract HH:MM:SS
-        start_t = event['start_time'].split('T')[1].split('-')[0]
-        end_t = event['end_time'].split('T')[1].split('-')[0]
-
-        event_name = event['meal'].title() # "Lunch", "Open", "Standard"
-
-        # If a location has split hours (e.g. Lunch 11-1 and Lunch 2-4),
-        # we strictly only keep the LAST one found to satisfy the Unique Constraint.
-        # Ideally, the API returns distinct names, but this prevents the crash.
-        unique_map[event_name] = {
+        start_t = to_time(event['start_time'])
+        end_t = to_time(event['end_time'])
+        event_name = event['meal'].title()  # "Lunch", "Open", "Standard"
+        rows[(event_name, start_t)] = {
             "dining_hall_id": hall_uuid,
             "date": date_str,
             "event_name": event_name,
             "start_time": start_t,
-            "end_time": end_t
+            "end_time": end_t,
         }
-
-    # 2. Convert back to list
-    payload = list(unique_map.values())
+    payload = sorted(rows.values(), key=lambda r: r["start_time"])
 
     try:
-        client.table("operating_hours").upsert(
-            payload,
-            on_conflict="dining_hall_id, date, event_name"
-        ).execute()
+        client.table("operating_hours").delete().match({
+            "dining_hall_id": hall_uuid,
+            "date": date_str,
+        }).execute()
+    except Exception as e:
+        print(f"   ❌ Error clearing hours: {e}")
+        return
+
+    try:
+        client.table("operating_hours").insert(payload).execute()
         print(f"   🕒 Saved hours for {len(payload)} shifts")
+        return
+    except Exception as e:
+        if "23505" not in str(e):
+            print(f"   ❌ Error saving hours: {e}")
+            return
+
+    # Old unique constraint: keep the last shift per name.
+    by_name = {}
+    for row in payload:
+        by_name[row["event_name"]] = row
+    try:
+        client.table("operating_hours").insert(list(by_name.values())).execute()
+        print(f"   🕒 Saved hours for {len(by_name)} shifts (split shifts merged; apply split_shift_hours.sql)")
     except Exception as e:
         print(f"   ❌ Error saving hours: {e}")

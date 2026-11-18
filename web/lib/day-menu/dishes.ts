@@ -49,8 +49,23 @@ export type DishQuery = {
   nowMinutes: number | null;
 };
 
-function shiftFor(hall: DayMenuHall, meal: string) {
-  return hall.hours.find((h) => mealForShift(h.name) === meal) ?? null;
+/**
+ * The shift for `meal` at `hall`. Halls can split a meal into several shifts
+ * (e.g. Lunch 11–1 and 2–4): prefer the one running now, then the next one,
+ * then the latest that already ended.
+ */
+function shiftFor(hall: DayMenuHall, meal: string, nowMinutes: number | null = null) {
+  const shifts = hall.hours.filter((h) => mealForShift(h.name) === meal);
+  if (shifts.length <= 1 || nowMinutes === null) return shifts[0] ?? null;
+  let next: (typeof shifts)[number] | null = null;
+  let last: (typeof shifts)[number] | null = null;
+  for (const sh of shifts) {
+    const [s, e] = shiftRange(sh);
+    if (nowMinutes >= s && nowMinutes < e) return sh;
+    if (s > nowMinutes && (!next || s < shiftRange(next)[0])) next = sh;
+    if (e <= nowMinutes && (!last || e > shiftRange(last)[1])) last = sh;
+  }
+  return next ?? last ?? shifts[0];
 }
 
 function statusFor(window: { start: string; end: string } | null, nowMinutes: number | null): OfferingStatus {
@@ -94,7 +109,7 @@ export function buildDishes(menu: DayMenu, prefs: ScoringPrefs, q: DishQuery): D
     if (rel === 0) continue;
 
     const meal = q.meal !== "Any" ? q.meal : pickMeal(item, hall, q.nowMinutes);
-    const shift = shiftFor(hall, meal);
+    const shift = shiftFor(hall, meal, q.nowMinutes);
     const window = shift ? { start: shift.start, end: shift.end } : null;
     const offering: Offering = {
       item,
@@ -157,7 +172,7 @@ function pickMeal(item: DayMenuItem, hall: DayMenuHall, nowMinutes: number | nul
   if (nowMinutes === null) return meals[0];
   let upcoming: { meal: string; start: number } | null = null;
   for (const meal of meals) {
-    const shift = shiftFor(hall, meal);
+    const shift = shiftFor(hall, meal, nowMinutes);
     if (!shift) continue;
     const [s, e] = shiftRange(shift);
     if (nowMinutes >= s && nowMinutes < e) return meal;

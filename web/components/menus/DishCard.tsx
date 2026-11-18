@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronRight, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { FavoriteButton } from "./FavoriteButton";
 import { DietaryTag } from "@/components/locations/slug/DietaryTags";
 import type { Dish, Offering } from "@/lib/day-menu/dishes";
 import { formatClock, itemTags } from "@/lib/day-menu/scoring";
@@ -108,12 +109,15 @@ export function DishCard({
       <header className="px-4 pb-2 pt-3">
         <div className="flex items-start justify-between gap-3">
           <h3 className="type-card-title">{dish.name}</h3>
+          <div className="-mr-2 -mt-1 flex shrink-0 items-center gap-1">
           {dish.bestRating && (
             <Badge variant="maize-soft" className="shrink-0 gap-1 px-1.5 font-bold">
               <Star className="h-3 w-3 fill-maize text-maize" aria-hidden />
               {dish.bestRating.value.toFixed(1)}
             </Badge>
           )}
+          <FavoriteButton name={dish.name} />
+          </div>
         </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           {tags.map((t) => (

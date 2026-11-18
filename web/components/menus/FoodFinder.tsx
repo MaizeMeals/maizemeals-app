@@ -29,6 +29,8 @@ import {
 } from "@/lib/day-menu/scoring";
 import type { DayMenuItem } from "@/lib/day-menu/types";
 import { DishCard } from "./DishCard";
+import { FavoritesSection } from "./FavoritesSection";
+import { useFavoriteFoods } from "@/hooks/use-favorite-foods";
 
 const PAGE = 30;
 const DAYS_AHEAD = 6;
@@ -53,6 +55,7 @@ export function FoodFinder() {
   const searchParams = useSearchParams();
   const { track } = useAnalytics();
   const { preferences, loading: prefsLoading } = usePreferences();
+  const { favorites } = useFavoriteFoods();
 
   const today = easternToday();
   const dates = useMemo(
@@ -149,6 +152,17 @@ export function FoodFinder() {
 
   useEffect(() => setLimit(PAGE), [filters, date, effectiveMeal, includeRetail]);
 
+  // Without a search, favorites get their own section above the ranked list.
+  const showFavorites = !query.trim() && favorites.size > 0;
+  const favoriteDishes = useMemo(
+    () => (showFavorites ? dishes.filter((d) => favorites.has(d.key)) : []),
+    [showFavorites, dishes, favorites],
+  );
+  const listDishes = useMemo(
+    () => (showFavorites ? dishes.filter((d) => !favorites.has(d.key)) : dishes),
+    [showFavorites, dishes, favorites],
+  );
+
   const toggleDietary = (id: string) =>
     setFilters((f) => ({
       ...f,
@@ -234,6 +248,10 @@ export function FoodFinder() {
           </div>
         )}
 
+        {showFavorites && !loading && menu && (
+          <FavoritesSection favorites={favorites} dishes={favoriteDishes} date={date} isToday={isToday} />
+        )}
+
         <section className="mt-4" aria-live="polite" data-testid="food-results">
           {loading || !prefsApplied ? (
             <div className="flex items-center justify-center gap-2 py-20 text-muted-foreground">
@@ -246,7 +264,7 @@ export function FoodFinder() {
               title="No menus posted"
               body="Dining halls haven't published menus for this day yet — breaks and holidays often have none."
             />
-          ) : dishes.length === 0 ? (
+          ) : listDishes.length === 0 && favoriteDishes.length === 0 ? (
             <NoResults
               title={query ? `No “${query}” ${isToday ? "today" : "that day"}` : "Nothing matches"}
               body="Try another meal or day, include cafés & markets, or loosen your filters."
@@ -254,21 +272,22 @@ export function FoodFinder() {
           ) : (
             <>
               <p className="mb-3 text-xs font-medium text-muted-foreground">
-                {dishes.length} {dishes.length === 1 ? "dish" : "dishes"}
+                {showFavorites ? "Everything else · " : ""}
+                {listDishes.length} {listDishes.length === 1 ? "dish" : "dishes"}
                 {query ? "" : " · ranked for your preferences"}
               </p>
               <div className="space-y-3">
-                {dishes.slice(0, limit).map((dish) => (
+                {listDishes.slice(0, limit).map((dish) => (
                   <DishCard key={dish.key} dish={dish} date={date} isToday={isToday} />
                 ))}
               </div>
-              {dishes.length > limit && (
+              {listDishes.length > limit && (
                 <Button
                   variant="outline"
                   className="mt-4 w-full rounded-full"
                   onClick={() => setLimit((l) => l + PAGE)}
                 >
-                  Show more ({dishes.length - limit})
+                  Show more ({listDishes.length - limit})
                 </Button>
               )}
             </>

@@ -49,6 +49,15 @@ export type DayMenu = {
   items: DayMenuItem[];
 };
 
+/** POST /menus/favorites → next time (within a week) a favorite is served. */
+export type UpcomingFavorite = {
+  key: string;
+  name: string;
+  date: string;
+  meal: string;
+  halls: { name: string; slug: string; itemId: string }[];
+};
+
 export const MEAL_ORDER = ["Breakfast", "Brunch", "Lunch", "Dinner", "Late Night", "All Day"] as const;
 
 export function mealRank(meal: string): number {
