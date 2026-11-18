@@ -140,7 +140,7 @@ def upsert_operating_hours(client, hall_uuid, schedule, date_str):
     Keeps split shifts (e.g. Lunch 11-1 and Lunch 2-4). Rows are replaced
     (delete + insert) so a shift that moved or disappeared doesn't linger.
 
-    Compatibility: until supabase/pending/split_shift_hours.sql is applied,
+    Compatibility: before migration 20261118200425_split_shift_hours,
     operating_hours is unique on (hall, date, event_name). In that case the
     insert of split shifts fails with 23505 and we fall back to one row per
     shift name (the old behaviour), so this works before and after the
@@ -190,6 +190,6 @@ def upsert_operating_hours(client, hall_uuid, schedule, date_str):
         by_name[row["event_name"]] = row
     try:
         client.table("operating_hours").insert(list(by_name.values())).execute()
-        print(f"   🕒 Saved hours for {len(by_name)} shifts (split shifts merged; apply split_shift_hours.sql)")
+        print(f"   🕒 Saved hours for {len(by_name)} shifts (split shifts merged — old unique constraint)")
     except Exception as e:
         print(f"   ❌ Error saving hours: {e}")
