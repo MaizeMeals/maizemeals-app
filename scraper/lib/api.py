@@ -1,4 +1,5 @@
 import os
+import time
 import cloudscraper
 import re
 from pathlib import Path
@@ -22,6 +23,120 @@ assert(BASE_URL)
 # Initialize Scraper
 scraper = cloudscraper.create_scraper()
 
+# Three tries total (not three extra retries). Sleeps between tries follow
+# the first steps of this 1s, 2s, 4s series: 1s after the first failure and
+# 2s after the second. The 4s step is used only when attempts is raised.
+API_ATTEMPTS = 3
+API_BACKOFF_SECONDS = (1, 2, 4)
+
+
+class APIHTTPError(Exception):
+    """Non-retryable M-Dining HTTP error (4xx other than 429).
+
+    The message is only the status code, so logs do not include the request
+    URL or API key.
+    """
+
+    def __init__(self, status_code):
+        super().__init__(f"HTTP {status_code}")
+        self.status_code = int(status_code)
+
+
+class RetryableHTTPStatus(Exception):
+    """Retryable M-Dining HTTP status (429 or 5xx).
+
+    The message is only the status code, so logs do not include the request
+    URL or API key.
+    """
+
+    def __init__(self, status_code):
+        super().__init__(f"HTTP {status_code}")
+        self.status_code = int(status_code)
+
+
+def is_retryable_status(status_code):
+    """True for HTTP 429 and 5xx. Other 4xx responses are not retried."""
+    try:
+        status = int(status_code)
+    except (TypeError, ValueError):
+        return False
+    return status == 429 or 500 <= status <= 599
+
+
+def is_retryable_exception(exc):
+    """Retry transport errors, HTTP 429, and 5xx. Do not retry other 4xx."""
+    status = getattr(exc, "status_code", None)
+    if status is None:
+        response = getattr(exc, "response", None)
+        status = getattr(response, "status_code", None)
+    if status is None:
+        return True
+    return is_retryable_status(status)
+
+
+def backoff_seconds(failed_attempt_index, backoff=API_BACKOFF_SECONDS):
+    """Seconds to wait after a failed attempt before the next try.
+
+    Index 0, 1, 2 maps to about 1s, 2s, 4s.
+    """
+    if failed_attempt_index < len(backoff):
+        return backoff[failed_attempt_index]
+    return backoff[-1]
+
+
+def call_with_retries(fn, *, attempts=API_ATTEMPTS, backoff=API_BACKOFF_SECONDS, sleep=None):
+    """Call ``fn`` up to ``attempts`` times.
+
+    Retries exceptions, HTTP 429, and HTTP 5xx. Does not retry other 4xx.
+    Sleeps live in this helper (default ``time.sleep``) so tests can pass
+    a fake sleeper or patch ``time.sleep``. With the default 3 attempts the
+    waits between tries are 1s then 2s.
+    """
+    if attempts < 1:
+        raise ValueError("attempts must be at least 1")
+    if sleep is None:
+        sleep = time.sleep
+
+    for attempt in range(attempts):
+        try:
+            return fn()
+        except Exception as exc:
+            if not is_retryable_exception(exc) or attempt >= attempts - 1:
+                raise
+            delay = backoff_seconds(attempt, backoff)
+            status = getattr(exc, "status_code", None)
+            if status is None:
+                response = getattr(exc, "response", None)
+                status = getattr(response, "status_code", None)
+            label = f"HTTP {status}" if status else type(exc).__name__
+            # Log the status or exception type only. Exception text can
+            # contain the request URL, including the API key.
+            print(
+                f"API request failed ({label}); retrying in {delay}s "
+                f"(attempt {attempt + 1} of {attempts})"
+            )
+            sleep(delay)
+
+
+def _request_json(endpoint, params):
+    """GET ``endpoint`` and return parsed JSON, retrying transient failures.
+
+    Raises APIHTTPError for a non-retryable HTTP status, RetryableHTTPStatus
+    when 429/5xx persists, or the underlying exception for other failures.
+    """
+
+    def attempt():
+        response = scraper.get(endpoint, params=params)
+        status = int(getattr(response, "status_code", 0) or 0)
+        if is_retryable_status(status):
+            raise RetryableHTTPStatus(status)
+        if status >= 400:
+            raise APIHTTPError(status)
+        return response.json()
+
+    return call_with_retries(attempt)
+
+
 def fetch_locations():
     """
     Fetches the list of all dining locations (Halls, Cafes, Markets).
@@ -36,14 +151,7 @@ def fetch_locations():
     }
 
     print("Fetching location list...")
-
-    try:
-        response = scraper.get(endpoint, params=params)
-        response.raise_for_status()
-        data = response.json()
-    except Exception as e:
-        print(f"Error fetching locations: {e}")
-        return []
+    data = _request_json(endpoint, params)
 
     parsed_locations = []
 
@@ -84,11 +192,15 @@ def fetch_meal_hours(location_name: str, date_str: str):
 
     Args:
         location_name (str): e.g., "Twigs At Oxford"
-        date_str (str): Format "MM-DD-YYYY" (e.g., "09-02-2026")
+        date_str (str): Format "DD-MM-YYYY" (e.g., "09-02-2026" is 9 February 2026)
 
     Returns:
         list: A list of dicts with meal times, e.g.:
               [{'meal': 'Breakfast', 'start': '2026-02-09T07:00:00-05:00', 'end': '...'}]
+              An empty list means the request succeeded and the location is closed.
+
+    Raises:
+        Exception: When the hours request fails. That is not a closed day.
     """
     endpoint = urljoin(BASE_URL, "dining/meal-hours")
 
@@ -99,14 +211,7 @@ def fetch_meal_hours(location_name: str, date_str: str):
     }
 
     print(f"Fetching hours for {location_name} on {date_str}...")
-
-    try:
-        response = scraper.get(endpoint, params=params)
-        response.raise_for_status()
-        data = response.json()
-    except Exception as e:
-        print(f"Error fetching hours: {e}")
-        return []
+    data = _request_json(endpoint, params)
 
     raw_hours = data.get('hours', [])
     schedule = []
@@ -131,11 +236,13 @@ def fetch_menu_data(location_name: str, date_str: str, meal_name: str):
 
     Args:
         location_name (str): e.g., "Bursley Dining Hall"
-        date_str (str): Format "DD-MM-YYYY" (e.g., "09-02-2026")
+        date_str (str): Format "DD-MM-YYYY" (e.g., "09-02-2026" is 9 February 2026)
         meal_name (str): "BREAKFAST", "BRUNCH", "LUNCH", "DINNER"
 
     Returns:
-        list: A list of parsed item dictionaries ready for processing.
+        list: Parsed item dictionaries. An empty list means the request
+        succeeded and this meal has no items. Keep the existing menu when
+        this function raises; a failure is not an empty menu.
     """
 
     # 1. Construct the Full URL correctly
@@ -150,14 +257,7 @@ def fetch_menu_data(location_name: str, date_str: str, meal_name: str):
     }
 
     print(f"Fetching {meal_name} for {location_name} on {date_str}...")
-
-    try:
-        response = scraper.get(endpoint, params=params)
-        response.raise_for_status()
-        data = response.json()
-    except Exception as e:
-        print(f"Error fetching data: {e}")
-        return []
+    data = _request_json(endpoint, params)
 
     # If the hall is closed or data is missing, 'menu' might be null or missing
     if not data.get('menu'):
