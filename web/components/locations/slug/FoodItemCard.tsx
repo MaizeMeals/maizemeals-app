@@ -7,6 +7,7 @@ import { logFoodItem } from "@/app/actions/macro-tracker"
 import { LogFoodDialog } from "@/components/nutrition/LogFoodDialog"
 import type { Item } from "@/types/dining"
 import { getDynamicTags } from "@/lib/filter-utils"
+import { Badge } from "@/components/ui/badge"
 import { Stars } from "@/components/locations/detail-panel/Stars"
 import { MScaleIndicator } from "./MScaleIndicator"
 import { CarbonFootprint } from "./CarbonFootprint"
@@ -132,12 +133,12 @@ export function FoodItemCard({ item, onClick, highlight, mealType }: FoodItemCar
           {item.avg_rating ? (
             <div className="flex items-center gap-2">
               <Stars rating={item.avg_rating} />
-              <span className="font-semibold tabular-nums text-foreground">
+              <Badge variant="maize-soft" shape="pill" className="px-1.5 py-0 font-semibold tabular-nums">
                 {item.avg_rating.toFixed(1)}
-                {(item.review_count ?? 0) > 0 ? (
-                  <span className="font-normal text-muted-foreground"> ({item.review_count})</span>
-                ) : null}
-              </span>
+              </Badge>
+              {(item.review_count ?? 0) > 0 ? (
+                <span className="font-normal text-muted-foreground">({item.review_count})</span>
+              ) : null}
             </div>
           ) : (
             <span className="text-xs text-muted-foreground">No ratings</span>

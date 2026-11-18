@@ -83,7 +83,7 @@ export function MacroHistogram({
         </defs>
 
         {/* Layer 1: Background Bars (Inactive Gray) */}
-        <g className="fill-slate-200 dark:fill-slate-800">
+        <g className="fill-border">
           {bars.map((bar, i) => (
             <rect
               key={`bg-${i}`}
@@ -111,7 +111,7 @@ export function MacroHistogram({
         </g>
 
         {/* Optional: Bottom Baseline for structure */}
-        <line x1="0" y1="100" x2="100" y2="100" stroke="currentColor" strokeWidth="0.5" className="text-slate-200 dark:text-slate-800" />
+        <line x1="0" y1="100" x2="100" y2="100" stroke="currentColor" strokeWidth="0.5" className="text-border" />
       </svg>
     </div>
   )

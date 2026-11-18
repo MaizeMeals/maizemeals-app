@@ -55,7 +55,7 @@ export function Hero() {
             to <span className="text-maize">eating</span> on campus.
           </h1>
 
-            <p className="max-w-xl mx-auto text-lg md:text-xl text-slate-300 mb-10 leading-relaxed">
+            <p className="max-w-xl mx-auto text-lg md:text-xl text-white/80 mb-10 leading-relaxed">
               The unofficial <span className="font-semibold text-maize">companion</span> for U-M dining. View real-time menus, track nutrition, and rate food items.
             </p>
 

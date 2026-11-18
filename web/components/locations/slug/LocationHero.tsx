@@ -4,9 +4,9 @@ import Link from "next/link"
 import { MapPin, Clock, Heart, Share2, Info, ChevronLeft } from "lucide-react"
 import { useUserLocation } from "@/hooks/use-user-location"
 import { calculateDistance, formatDistance } from "@/lib/distance"
-import { getTypeForDisplay, cleanLocationName } from "@/lib/dining-utils"
-
-import { STATUS_COLORS } from "@/lib/dining-utils"
+import { getTypeForDisplay, cleanLocationName, STATUS_COLORS } from "@/lib/dining"
+import { Badge } from "@/components/ui/badge"
+import { toast } from "@/lib/toast"
 
 interface LocationHeroProps {
   name: string
@@ -23,15 +23,6 @@ interface LocationHeroProps {
     details: string
   }
 }
-
-const Badge = ({ children, color = "gray" }: { children: React.ReactNode; color?: string }) => {
-  const colorClass = STATUS_COLORS[color] || STATUS_COLORS["gray"];
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${colorClass}`}>
-      {children}
-    </span>
-  );
-};
 
 export function LocationHero({ name, type, imageUrl, address, latitude, longitude, status }: LocationHeroProps) {
   const { coords } = useUserLocation()
@@ -63,8 +54,17 @@ export function LocationHero({ name, type, imageUrl, address, latitude, longitud
     }
   }
 
-  const handleInfo = () => {
-      alert(`${name}\n${address || 'Address not available'}\n${status.text}`);
+  const handleInfo = async () => {
+    const text = `${name}\n${address || "Address not available"}\n${status.text}`;
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard unavailable");
+      }
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard", { description: text });
+    } catch {
+      toast.error("Could not copy to clipboard", { description: text });
+    }
   }
 
   const locationName = cleanLocationName(name, type);
@@ -91,23 +91,23 @@ export function LocationHero({ name, type, imageUrl, address, latitude, longitud
           <div className="min-w-0 pr-2">
             <Link
               href="/locations"
-              className="inline-flex items-center gap-0.5 mb-3 text-sm font-semibold text-slate-100 drop-shadow-md transition-colors hover:text-maize focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
+              className="inline-flex items-center gap-0.5 mb-3 text-sm font-semibold text-white drop-shadow-md transition-colors hover:text-maize focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
             >
               <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
               See all locations
             </Link>
             <div className="flex items-center gap-2 mb-2">
-              <Badge color={status.color}>
+              <Badge variant={STATUS_COLORS[status.color] ?? "muted"} shape="pill" className="font-bold">
                 {status.text}
               </Badge>
-              <span className="text-slate-300 text-xs font-medium tracking-wide uppercase">
+              <span className="text-white/80 text-xs font-medium tracking-wide uppercase">
                 {getTypeForDisplay(type)}
               </span>
             </div>
             <h1 className="text-3xl md:text-5xl font-heading font-bold text-white mb-2 leading-tight shadow-sm drop-shadow-md">
               {locationName}
             </h1>
-            <div className="flex items-center gap-4 text-slate-200 text-sm font-medium">
+            <div className="flex items-center gap-4 text-white/90 text-sm font-medium">
               <div className="flex items-center gap-1">
                 <MapPin className="w-4 h-4 text-maize" />
                 <span>{locationText}</span>

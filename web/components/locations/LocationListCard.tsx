@@ -87,7 +87,7 @@ export function LocationListCard({ data, selected, onSelectVenue }: Props) {
               {/* LEFT: Visual Anchor */}
               <div className="shrink-0 relative">
                 {isDining && venue.image_url ? (
-                  <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-border/50 shadow-sm">
+                  <div className="relative h-16 w-16 overflow-hidden rounded-xl border border-border/50 shadow-sm">
                     <Image
                       src={`/images/dining_halls/${venue.image_url}`}
                       alt={venue.name}
@@ -97,7 +97,7 @@ export function LocationListCard({ data, selected, onSelectVenue }: Props) {
                   </div>
                 ) : (
                   <div className={cn(
-                    "flex h-12 w-12 items-center justify-center rounded-lg border shadow-sm transition-colors",
+                    "flex h-12 w-12 items-center justify-center rounded-xl border shadow-sm transition-colors",
                     venue.isOpen
                       ? "bg-card border-primary/35 text-primary"
                       : "bg-muted border-border text-muted-foreground"
@@ -108,10 +108,14 @@ export function LocationListCard({ data, selected, onSelectVenue }: Props) {
 
                 {/* Overlaid "Popular" Badge for busy places */}
                 {isDining && venue.isOpen && venue.capacity && venue.capacity.percentage > 70 && (
-                  <div className="absolute -bottom-1 -right-1 bg-destructive text-destructive-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-md flex items-center gap-0.5 border border-background">
-                    <TrendingUp className="w-2 h-2" />
+                  <Badge
+                    variant="danger"
+                    shape="pill"
+                    className="absolute -bottom-1 -right-1 gap-0.5 border-background px-1.5 py-0 text-[9px] font-bold shadow-md"
+                  >
+                    <TrendingUp className="h-2 w-2" />
                     BUSY
-                  </div>
+                  </Badge>
                 )}
               </div>
 
@@ -124,13 +128,13 @@ export function LocationListCard({ data, selected, onSelectVenue }: Props) {
                     {displayLabel}
                   </span>
 
-                  {/* The Status Badge (Source of Truth) */}
-                  <div className={cn(
-                    "text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider",
-                    STATUS_COLORS[venue.statusColor] // Uses strict tailwind mapping
-                  )}>
+                  <Badge
+                    variant={STATUS_COLORS[venue.statusColor]}
+                    shape="pill"
+                    className="px-2 py-0 text-[10px] font-bold uppercase tracking-wider"
+                  >
                     {venue.statusLabel}
-                  </div>
+                  </Badge>
                 </div>
 
                 {/* Row 2: Details (Time or Rating) */}
@@ -148,10 +152,10 @@ export function LocationListCard({ data, selected, onSelectVenue }: Props) {
                     <div className="flex items-center gap-3">
                       {rating ? (
                         <>
-                          <div className="flex items-center text-primary font-medium bg-primary/10 px-1.5 rounded-md">
-                            <Star className="w-3 h-3 mr-1 fill-primary" />
+                          <Badge variant="maize-soft" shape="pill" className="gap-1 px-1.5 py-0 font-medium">
+                            <Star className="h-3 w-3 fill-current" />
                             {rating}
-                          </div>
+                          </Badge>
                           <span className="text-[10px] text-muted-foreground">
                             {reviewCount > 0 ? `${reviewCount} review${reviewCount === 1 ? "" : "s"}` : "Avg. Rating"}
                           </span>

@@ -5,6 +5,7 @@ import { MapPin, Clock, Phone, Loader2, ChevronDown, ChevronUp, Globe } from "lu
 import { format } from "date-fns";
 
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { STATUS_COLORS, CAPACITY_COLORS, CAPACITY_BG_COLORS, formatTime } from "@/lib/dining";
 import type { OperatingHour } from "@/types/dining";
 import type { LocationSummary } from "@/types/location-summary";
@@ -74,14 +75,14 @@ export function OverviewTab({ activeVenue, loading, weeklyHours }: Props) {
               <button
                 type="button"
                 onClick={() => setScheduleExpanded((e) => !e)}
-                className={cn(
-                  "w-full text-left font-medium text-sm flex items-center justify-between gap-2 rounded-md hover:bg-muted/50 transition-colors -mx-1 px-1 py-0.5",
-                  STATUS_COLORS[activeVenue.statusColor]?.split(" ")[1]
-                )}
+                className="flex w-full items-center justify-between gap-2 rounded-md -mx-1 px-1 py-0.5 text-left text-sm font-medium transition-colors hover:bg-muted/50"
               >
-                <span>
+                <Badge
+                  variant={STATUS_COLORS[activeVenue.statusColor] ?? "muted"}
+                  shape="pill"
+                >
                   {activeVenue.isOpen ? "Open" : "Closed"}
-                </span>
+                </Badge>
                 <span className="flex items-center gap-1 text-muted-foreground font-normal">
                   {scheduleExpanded ? (
                     <>
