@@ -13,7 +13,53 @@ export type DiningStatus = {
   details: string;
 };
 
-export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): DiningStatus {
+function clockParts(time: string): { hours: number; minutes: number; totalMinutes: number } {
+  const [hours, minutes] = time.split(":").map(Number);
+  return { hours, minutes, totalMinutes: hours * 60 + minutes };
+}
+
+/** Local wall-clock bounds of a shift on `day`. Does not mutate `day`.
+ * Times are "HH:MM" or "HH:MM:SS". When end minutes <= start minutes,
+ * including 00:00–00:00, `end` is on the next calendar day.
+ * 00:00–00:00 is a 24-hour window starting at `day` 00:00.
+ */
+export function shiftBoundsOnDay(
+  startTime: string,
+  endTime: string,
+  day: Date,
+): { start: Date; end: Date } {
+  const startParts = clockParts(startTime);
+  const endParts = clockParts(endTime);
+
+  const start = new Date(day);
+  start.setHours(startParts.hours, startParts.minutes, 0, 0);
+
+  const end = new Date(day);
+  end.setHours(endParts.hours, endParts.minutes, 0, 0);
+
+  if (endParts.totalMinutes <= startParts.totalMinutes) {
+    end.setDate(end.getDate() + 1);
+  }
+
+  return { start, end };
+}
+
+type AnchoredShift = { shift: OperatingHour; day: Date };
+
+/**
+ * Live status for `shifts` on `dateStr` (today when omitted).
+ * Same-day windows whose end is at or before the start run past midnight
+ * (22:00–02:00 is open at 23:00; 00:00–00:00 is open all day).
+ * Callers must pass prior-day shifts to recognize a shift that started
+ * yesterday and is still open after midnight. Those rows are anchored on
+ * the previous calendar day. Closed only when the instant is before start
+ * or strictly after end (the exact end timestamp is still open).
+ */
+export function determineHallStatus(
+  shifts: OperatingHour[],
+  dateStr?: string,
+  priorDayShifts?: OperatingHour[],
+): DiningStatus {
   const now = new Date();
   let estNow = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
 
@@ -33,48 +79,63 @@ export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): 
     }
   }
 
-  let bestShift: OperatingHour | null = null;
+  const requestedDay = new Date(estNow);
+  const priorDay = new Date(estNow);
+  priorDay.setDate(priorDay.getDate() - 1);
 
-  for (const s of shifts) {
-    const [eh, em] = s.end_time.split(':').map(Number);
-    const eDate = new Date(estNow); eDate.setHours(eh, em, 0);
+  const anchored: AnchoredShift[] = [
+    ...(priorDayShifts ?? []).map((shift) => ({ shift, day: priorDay })),
+    ...shifts.map((shift) => ({ shift, day: requestedDay })),
+  ];
 
-    const [sh, sm] = s.start_time.split(':').map(Number);
-    const sDate = new Date(estNow); sDate.setHours(sh, sm, 0);
+  let best: AnchoredShift | null = null;
 
-    if (estNow < eDate) {
-      if (!bestShift) {
-        bestShift = s;
+  for (const candidate of anchored) {
+    const { start: sDate, end: eDate } = shiftBoundsOnDay(
+      candidate.shift.start_time,
+      candidate.shift.end_time,
+      candidate.day,
+    );
+
+    // Exact end is still open; drop the shift only once instant > end.
+    if (estNow <= eDate) {
+      if (!best) {
+        best = candidate;
       } else {
-        const sPriority = getPriority(s.event_name || '');
-        const bestPriority = getPriority(bestShift.event_name || '');
+        const sPriority = getPriority(candidate.shift.event_name || '');
+        const bestPriority = getPriority(best.shift.event_name || '');
 
-        const [bh, bm] = bestShift.start_time.split(':').map(Number);
-        const bDate = new Date(estNow); bDate.setHours(bh, bm, 0);
+        const bDate = shiftBoundsOnDay(
+          best.shift.start_time,
+          best.shift.end_time,
+          best.day,
+        ).start;
 
         const isSActive = estNow >= sDate;
         const isBestActive = estNow >= bDate;
 
         if (isSActive && !isBestActive) {
-          bestShift = s;
+          best = candidate;
           continue;
         }
         if (!isSActive && isBestActive) continue;
 
         if (isSActive && isBestActive) {
-          if (sPriority < bestPriority) bestShift = s;
+          if (sPriority < bestPriority) best = candidate;
           continue;
         }
 
         if (!isSActive && !isBestActive) {
-          if (sDate < bDate) bestShift = s;
-          else if (sDate.getTime() === bDate.getTime() && sPriority < bestPriority) bestShift = s;
+          if (sDate < bDate) best = candidate;
+          else if (sDate.getTime() === bDate.getTime() && sPriority < bestPriority) best = candidate;
         }
       }
     }
   }
 
-  const targetShift = bestShift || shifts[shifts.length - 1];
+  const target = best ?? (shifts.length
+    ? { shift: shifts[shifts.length - 1], day: requestedDay }
+    : null);
 
   let status: DiningStatus = {
     isOpen: false,
@@ -85,12 +146,13 @@ export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): 
     details: "Check Schedule"
   };
 
-  if (targetShift) {
-    const [eh, em] = targetShift.end_time.split(':').map(Number);
-    const eDate = new Date(estNow); eDate.setHours(eh, em, 0);
-
-    const [sh, sm] = targetShift.start_time.split(':').map(Number);
-    const sDate = new Date(estNow); sDate.setHours(sh, sm, 0);
+  if (target) {
+    const targetShift = target.shift;
+    const { start: sDate, end: eDate } = shiftBoundsOnDay(
+      targetShift.start_time,
+      targetShift.end_time,
+      target.day,
+    );
 
     let eventName = targetShift.event_name || 'Dining';
     if (eventName.includes('24/7') || eventName.includes('Kiosk')) eventName = 'Market';
@@ -122,9 +184,15 @@ export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): 
       const minutesLeft = (eDate.getTime() - estNow.getTime()) / 60000;
       const closesAtText = formatTime(targetShift.end_time);
 
-      const nextShiftStartsImmediately = shifts.some(
-        (s) => s !== targetShift && s.start_time === targetShift.end_time
-      );
+      const nextShiftStartsImmediately = anchored.some((other) => {
+        if (other.shift === targetShift) return false;
+        const otherStart = shiftBoundsOnDay(
+          other.shift.start_time,
+          other.shift.end_time,
+          other.day,
+        ).start;
+        return otherStart.getTime() === eDate.getTime();
+      });
       const showClosingSoon = minutesLeft < 30 && !nextShiftStartsImmediately;
 
       if (showClosingSoon) {

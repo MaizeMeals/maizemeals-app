@@ -22,17 +22,28 @@ export function useCampusLocations() {
 
       if (!rawLocations) return;
 
-      // 2. Fetch Hours for Today
-      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-      const { data: hoursData } = await supabase
-        .from('operating_hours')
-        .select('*')
-        .eq('date', today);
+      // 2. Fetch hours for today and yesterday (overnight shifts that started yesterday).
+      const nyNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      const today = nyNow.toLocaleDateString('en-CA');
+      const yesterdayDate = new Date(nyNow);
+      yesterdayDate.setDate(nyNow.getDate() - 1);
+      const yesterday = yesterdayDate.toLocaleDateString('en-CA');
+
+      const [{ data: hoursData }, { data: priorHoursData }] = await Promise.all([
+        supabase.from('operating_hours').select('*').eq('date', today),
+        supabase.from('operating_hours').select('*').eq('date', yesterday),
+      ]);
 
       const hoursMap = new Map();
       hoursData?.forEach(h => {
         if (!hoursMap.has(h.dining_hall_id)) hoursMap.set(h.dining_hall_id, []);
         hoursMap.get(h.dining_hall_id).push(h);
+      });
+
+      const priorHoursMap = new Map();
+      priorHoursData?.forEach(h => {
+        if (!priorHoursMap.has(h.dining_hall_id)) priorHoursMap.set(h.dining_hall_id, []);
+        priorHoursMap.get(h.dining_hall_id).push(h);
       });
 
       // 3. Conditionally Fetch Capacity
@@ -60,7 +71,8 @@ export function useCampusLocations() {
       // 4. Merge & Shape (avg_rating and review_count come from dining_halls, auto-updated by DB)
       const processed = rawLocations.map(loc => {
         const hours = hoursMap.get(loc.id) || [];
-        const statusCalc = determineHallStatus(hours);
+        const priorHours = priorHoursMap.get(loc.id) || [];
+        const statusCalc = determineHallStatus(hours, undefined, priorHours);
 
         const hasContact =
           loc.address != null ||
