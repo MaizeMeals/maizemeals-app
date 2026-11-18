@@ -5,8 +5,8 @@ This is a student-focused dining companion app for the University of Michigan. I
 
 ## Tech Stack
 - **Monorepo Structure:**
-  - `/web`: Next.js 14+ (App Router), TypeScript, Tailwind CSS, shadcn/ui.
-  - `/scraper`: Python 3.x, BeautifulSoup4, cloudscraper, Supabase Python Client.
+  - `/web`: Next.js 16 (App Router), TypeScript, Tailwind CSS, shadcn/ui.
+  - `/scraper`: Python 3.x, cloudscraper (HTTP client for the M-Dining JSON API), python-dotenv, Supabase Python Client. `requirements.txt` also lists beautifulsoup4; the scraper parses JSON responses.
   - `/supabase`: SQL Migrations and local config.
 - **Database:** Supabase (PostgreSQL).
 - **Auth:** Supabase Auth (Google OAuth, restricted to `@umich.edu`).
@@ -20,7 +20,7 @@ This is a student-focused dining companion app for the University of Michigan. I
 - **Schema:** The `items` table has a `dining_hall_id`. Unique Constraint: `unique(dining_hall_id, name)`.
 
 ### 2. Scraping Strategy
-- **Method:** We use `cloudscraper` to bypass Cloudflare 403 Forbidden errors.
+- **Method:** We call the M-Dining JSON API. `cloudscraper` is the HTTP client (it can get past a Cloudflare 403).
 - **Identification:** We identify dining halls by their **URL Slug** (e.g., `bursley`, `mosher-jordan`), NOT by the internal M-Dining ID.
 - **Upsert Logic:** Scrapers must first check if an item exists (`select id from items where name=X and dining_hall_id=Y`) before inserting to prevent duplicates.
 
@@ -42,9 +42,9 @@ This is a student-focused dining companion app for the University of Michigan. I
 - **Images:** heavily compress images on the client (`browser-image-compression`) before uploading to Supabase Storage to save space.
 
 ### Scraper (`/scraper`)
-- **Libraries:** Use `cloudscraper` for requests, `bs4` for parsing.
+- **Libraries:** Use `cloudscraper` for HTTP requests and parse the M-Dining JSON body.
 - **Error Handling:** Never crash the whole script on one bad item. Log and continue.
-- **Environment:** Requires `SUPABASE_SERVICE_ROLE_KEY` (Legacy/Long-lived key) for write access.
+- **Environment:** Requires `SUPABASE_URL` and `SUPABASE_KEY` (service role) for write access. Both the web dev server and the scraper load the repo-root `.env`.
 
 ## Common commands
 - **Start Web:** `npm run dev` (in `/web`)
