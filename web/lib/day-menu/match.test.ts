@@ -34,7 +34,7 @@ function item(id: string, hallId: string, overrides: Partial<DayMenuItem> = {}):
     station: "Entree",
     tags: [],
     servingSize: null,
-    macros: { calories: 220, protein: 12, carbs: 24, fat: 7, fiber: 3 },
+    macros: { calories: 220, protein: 12, carbs: 24, fat: 7, fiber: 3, satFat: 0, sodium: 0, sugars: 0 },
     mScale: 3,
     avgRating: 0,
     reviewCount: 0,

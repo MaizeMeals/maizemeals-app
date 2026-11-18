@@ -108,6 +108,9 @@ async function loadDayMenu(date: string): Promise<DayMenu> {
         carbs: num(m, "Total Carbohydrate"),
         fat: num(m, "Total Fat"),
         fiber: num(m, "Dietary Fiber"),
+        satFat: num(m, "Saturated Fat"),
+        sodium: num(m, "Sodium"),
+        sugars: num(m, "Sugars"),
       },
       mScale: it.nutrition_score,
       avgRating: it.avg_rating ?? 0,
@@ -136,8 +139,10 @@ async function loadDayMenu(date: string): Promise<DayMenu> {
  * Cached per date (menus change once a day when the scraper runs; ratings
  * drift slowly). Revalidate with revalidateTag("day-menu") after a scrape.
  */
+// Bump the key ("day-menu-vN") whenever the DayMenu shape changes: the data
+// cache survives deploys, so old-shape entries would otherwise be served.
 export function getDayMenu(date: string): Promise<DayMenu> {
-  return unstable_cache(() => loadDayMenu(date), ["day-menu", date], {
+  return unstable_cache(() => loadDayMenu(date), ["day-menu-v2", date], {
     revalidate: 600,
     tags: ["day-menu", `day-menu:${date}`],
   })();

@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Loader2, X } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { DetailDrawer, ItemDetailSidebar } from "@/components/locations/slug/DetailDrawer";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { createClient } from "@/lib/supabase/client";
-import { appGhostIconButtonClassName, appSurfaceOutlineButtonClassName } from "@/lib/button-styles";
+import { appSurfaceOutlineButtonClassName } from "@/lib/button-styles";
 import { cn } from "@/lib/utils";
 import type { ItemWithPhotos } from "@/types/dining";
 
@@ -20,6 +19,12 @@ export type DishSelection = {
   /** YYYY-MM-DD; only added to the hall link when it isn't today. */
   date: string;
   isToday: boolean;
+  /**
+   * The dish as Find food already has it (full label, no photos). The drawer
+   * opens with this immediately and swaps in the fetched record in place, so
+   * the sheet animates open once instead of placeholder → close → reopen.
+   */
+  provisional: ItemWithPhotos;
 };
 
 type DishItemState = { item: ItemWithPhotos | null; loading: boolean; error: string | null };
@@ -34,7 +39,7 @@ export function useDishItem(selection: DishSelection | null): DishItemState {
       return;
     }
     let cancelled = false;
-    setState((s) => ({ item: s.item?.id === selection.itemId ? s.item : null, loading: true, error: null }));
+    setState({ item: selection.provisional, loading: true, error: null });
     createClient()
       .from("items")
       .select("*, photos ( storage_path, is_approved )")
@@ -43,7 +48,9 @@ export function useDishItem(selection: DishSelection | null): DishItemState {
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error || !data) {
-          setState({ item: null, loading: false, error: "Couldn't load this dish. Try again." });
+          // Keep showing the provisional dish; only photos are missing.
+          console.error("[DishDetail] item load failed", error);
+          setState((s) => ({ ...s, loading: false, error: "Couldn't load photos for this dish." }));
           return;
         }
         // Same shape the hall page builds: approved photos only.
@@ -86,44 +93,19 @@ function ViewHallMenuButton({ selection }: { selection: DishSelection }) {
   );
 }
 
-function Placeholder({
-  state,
-  selection,
-  onClose,
-}: {
-  state: DishItemState;
-  selection: DishSelection;
-  onClose?: () => void;
-}) {
-  return (
-    <div className="relative flex h-full min-h-[40vh] flex-col items-center justify-center gap-3 p-6 text-center text-muted-foreground">
-      {onClose && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn("absolute right-3 top-3", appGhostIconButtonClassName)}
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      )}
-      {state.loading ? (
-        <Loader2 className="h-6 w-6 animate-spin" aria-label="Loading dish" />
-      ) : (
-        <>
-          <p>{state.error}</p>
-          <ViewHallMenuButton selection={selection} />
-        </>
-      )}
-    </div>
-  );
-}
-
 const returnPath = () =>
   typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/menus";
 
-/** Phones/tablets (< lg): the hall menu's bottom sheet. Render only below lg. */
+/** The fetched record once it's for this selection, else the provisional dish. */
+function displayItem(selection: DishSelection, state: DishItemState): ItemWithPhotos {
+  return state.item && state.item.id === selection.itemId ? state.item : selection.provisional;
+}
+
+/**
+ * Phones/tablets (< lg): the hall menu's bottom sheet. Render only below lg.
+ * Always one DetailDrawer instance — content updates in place when the fetch
+ * resolves, so the sheet animates open exactly once.
+ */
 export function DishDrawer({
   selection,
   state,
@@ -136,25 +118,15 @@ export function DishDrawer({
   onStartReview: (item: ItemWithPhotos) => void;
 }) {
   if (!selection) return null;
-  if (state.item && state.item.id === selection.itemId) {
-    return (
-      <DetailDrawer
-        item={state.item}
-        isOpen
-        onClose={(open) => !open && onClose()}
-        onStartReview={onStartReview}
-        reviewsReturnPath={returnPath()}
-        extraAction={<ViewHallMenuButton selection={selection} />}
-      />
-    );
-  }
   return (
-    <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="h-[50vh] rounded-t-3xl p-0">
-        <SheetTitle className="sr-only">Dish details</SheetTitle>
-        <Placeholder state={state} selection={selection} />
-      </SheetContent>
-    </Sheet>
+    <DetailDrawer
+      item={displayItem(selection, state)}
+      isOpen
+      onClose={(open) => !open && onClose()}
+      onStartReview={onStartReview}
+      reviewsReturnPath={returnPath()}
+      extraAction={<ViewHallMenuButton selection={selection} />}
+    />
   );
 }
 
@@ -173,16 +145,13 @@ export function DishSidebar({
   onClose: () => void;
   onStartReview: (item: ItemWithPhotos) => void;
 }) {
-  if (state.item && state.item.id === selection.itemId) {
-    return (
-      <ItemDetailSidebar
-        item={state.item}
-        onClose={onClose}
-        onStartReview={onStartReview}
-        reviewsReturnPath={returnPath()}
-        extraAction={<ViewHallMenuButton selection={selection} />}
-      />
-    );
-  }
-  return <Placeholder state={state} selection={selection} onClose={onClose} />;
+  return (
+    <ItemDetailSidebar
+      item={displayItem(selection, state)}
+      onClose={onClose}
+      onStartReview={onStartReview}
+      reviewsReturnPath={returnPath()}
+      extraAction={<ViewHallMenuButton selection={selection} />}
+    />
+  );
 }

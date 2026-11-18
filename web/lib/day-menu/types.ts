@@ -33,6 +33,9 @@ export type DayMenuItem = {
     carbs: number;
     fat: number;
     fiber: number;
+    satFat: number;
+    sodium: number;
+    sugars: number;
   };
   /** M-Scale (1–6), null when unscored. */
   mScale: number | null;

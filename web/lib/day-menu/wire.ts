@@ -1,20 +1,26 @@
 import { foodKey, type DayMenu, type DayMenuHall, type DayMenuItem } from "./types";
 
 /**
- * Compact transport format for GET /menus/offerings (~40% smaller gzipped
+ * Compact transport format for GET /menus/offerings (much smaller gzipped
  * than the plain DayMenu JSON, which matters on dining-hall signal). Only the
  * HTTP boundary uses it: the server encodes with `toWire`, `useDayMenu`
  * decodes with `fromWire`, and everything else works with `DayMenu`.
  *
- * Item tuple:
- *   [id, hallIndex, name, station, tags, [cal, protein, carbs, fat, fiber],
- *    mScale, avgRating, reviewCount, meals]
+ * Item tuple (v2):
+ *   [id, hallIndex, name, station, tags,
+ *    [cal, protein, carbs, fat, fiber, satFat, sodium, sugars],
+ *    mScale, avgRating, reviewCount, meals, servingSize]
+ * - v2 adds satFat/sodium/sugars + servingSize so the item drawer can render
+ *   the full nutrition label instantly (no second pop while loading).
  * - `key` is recomputed from `name` (foodKey(normalized_name) === foodKey(name)).
- * - carbon-footprint tags and serving size aren't sent (unused by these views).
+ * - carbon-footprint tags aren't sent (unused by these views).
  * - hall ids are replaced by an index into `halls`.
+ * `fromWire` still accepts v1 (e.g. an offline copy cached by the service worker).
  */
 
-export const WIRE_VERSION = 1;
+export const WIRE_VERSION = 2;
+
+type Macros = [number, number, number, number, number, number?, number?, number?];
 
 type WireItem = [
   id: string,
@@ -22,15 +28,16 @@ type WireItem = [
   name: string,
   station: string | null,
   tags: string[],
-  macros: [number, number, number, number, number],
+  macros: Macros,
   mScale: number | null,
   avgRating: number,
   reviewCount: number,
   meals: string[],
+  servingSize?: string | null,
 ];
 
 export type DayMenuWire = {
-  v: typeof WIRE_VERSION;
+  v: 1 | 2;
   date: string;
   generatedAt: string;
   halls: DayMenuHall[];
@@ -48,7 +55,7 @@ export function toWire(menu: DayMenu): DayMenuWire {
     halls: menu.halls,
     items: menu.items
       .filter((it) => hallIndex.has(it.hallId))
-      .map((it) => [
+      .map((it): WireItem => [
         it.id,
         hallIndex.get(it.hallId)!,
         it.name,
@@ -60,27 +67,40 @@ export function toWire(menu: DayMenu): DayMenuWire {
           round1(it.macros.carbs),
           round1(it.macros.fat),
           round1(it.macros.fiber),
+          round1(it.macros.satFat),
+          round1(it.macros.sodium),
+          round1(it.macros.sugars),
         ],
         it.mScale,
         round1(it.avgRating),
         it.reviewCount,
         it.meals,
+        it.servingSize,
       ]),
   };
 }
 
 export function fromWire(wire: DayMenuWire): DayMenu {
-  if (wire.v !== WIRE_VERSION) throw new Error(`Unsupported menu format v${wire.v}`);
+  if (wire.v !== 1 && wire.v !== 2) throw new Error(`Unsupported menu format v${String(wire.v)}`);
   const items: DayMenuItem[] = wire.items.map(
-    ([id, hall, name, station, tags, [calories, protein, carbs, fat, fiber], mScale, avgRating, reviewCount, meals]) => ({
+    ([id, hall, name, station, tags, m, mScale, avgRating, reviewCount, meals, servingSize]) => ({
       id,
       hallId: wire.halls[hall].id,
       name,
       key: foodKey(name),
       station,
       tags,
-      servingSize: null,
-      macros: { calories, protein, carbs, fat, fiber },
+      servingSize: servingSize ?? null,
+      macros: {
+        calories: m[0],
+        protein: m[1],
+        carbs: m[2],
+        fat: m[3],
+        fiber: m[4],
+        satFat: m[5] ?? 0,
+        sodium: m[6] ?? 0,
+        sugars: m[7] ?? 0,
+      },
       mScale,
       avgRating,
       reviewCount,

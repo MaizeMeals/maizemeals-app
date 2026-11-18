@@ -36,7 +36,7 @@ function item(overrides: Partial<DayMenuItem> = {}): DayMenuItem {
     station: "Hot Line",
     tags: [],
     servingSize: null,
-    macros: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+    macros: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, satFat: 0, sodium: 0, sugars: 0 },
     mScale: 1,
     avgRating: 1,
     reviewCount: 1,
@@ -136,7 +136,7 @@ describe("itemFit", () => {
     const typical = itemFit(
       item({
         id: "chili",
-        macros: { calories: 320, protein: 15, carbs: 28, fat: 9, fiber: 4 },
+        macros: { calories: 320, protein: 15, carbs: 28, fat: 9, fiber: 4, satFat: 0, sodium: 0, sugars: 0 },
         mScale: 4,
         avgRating: 4,
         reviewCount: 8,

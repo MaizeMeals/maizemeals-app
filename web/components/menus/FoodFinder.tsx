@@ -176,7 +176,14 @@ export function FoodFinder() {
 
   const openOffering = (o: Offering) => {
     track("find_food_item_opened", { hall: o.hall.slug, food_key: o.item.key });
-    setSelection({ itemId: o.item.id, hallName: o.hall.name, hallSlug: o.hall.slug, date, isToday });
+    setSelection({
+      itemId: o.item.id,
+      hallName: o.hall.name,
+      hallSlug: o.hall.slug,
+      date,
+      isToday,
+      provisional: asScoringItem(o.item),
+    });
   };
 
   const toggleDietary = (id: string) =>
