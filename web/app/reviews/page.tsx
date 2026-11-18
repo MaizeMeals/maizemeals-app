@@ -41,8 +41,8 @@ function safeMenuReturnPath(raw: string | null): string | null {
 
 type SortMode = "newest" | "highest" | "lowest";
 
+/** Public reviewer identity (`reviewer_profiles` view; owner-only `user_profiles` is private). */
 type ReviewProfile = {
-  uniqname: string | null;
   avatar_url: string | null;
   display_name: string | null;
 };
@@ -59,7 +59,7 @@ type ReviewRow = {
   created_at: string | null;
   edited_at: string | null;
   user_id: string;
-  user_profiles: ReviewProfile | null;
+  reviewer_profiles: ReviewProfile | null;
   photos: ReviewPhoto[] | null;
 };
 
@@ -76,8 +76,7 @@ const USER_RATINGS_SELECT = `
   created_at,
   edited_at,
   user_id,
-  user_profiles (
-    uniqname,
+  reviewer_profiles (
     avatar_url,
     display_name
   ),
@@ -456,13 +455,11 @@ function ItemReviewsContent() {
 
       <ul className="space-y-4">
         {sortedReviews.map((r) => {
-          const p = r.user_profiles;
+          const p = r.reviewer_profiles;
           const isOwn = currentUserId !== null && r.user_id === currentUserId;
           const label = isOwn
             ? "You"
-            : p?.display_name?.trim() ||
-              p?.uniqname?.trim() ||
-              "Student";
+            : p?.display_name?.trim() || "Student";
           const avatarUrl = p?.avatar_url?.trim() || null;
           const displayPhoto = pickDisplayPhoto(r.photos, isOwn);
           const thumbUrl = displayPhoto

@@ -8,6 +8,18 @@ import { withSearchParams } from '@/lib/redirect-query'
 import { syncUserProfileIdentity } from '@/lib/sync-user-profile-identity'
 
 const AUTH_RETURN_COOKIE = 'auth_return_next'
+const UMICH_ONLY_MESSAGE = 'MaizeMeals is only available to @umich.edu Google accounts.'
+const GENERIC_FAILURE_MESSAGE = 'Sign-in failed. Please try again.'
+
+function isUmichEmail(email: string | undefined | null): boolean {
+  return (email?.split('@')[1] ?? '').toLowerCase() === 'umich.edu'
+}
+
+function loginErrorRedirect(origin: string, message: string) {
+  const url = new URL('/login', origin)
+  url.searchParams.set('error', message)
+  return NextResponse.redirect(url)
+}
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -18,6 +30,14 @@ export async function GET(request: Request) {
 
   const posthog = getPostHogClient()
 
+  // Supabase redirects here with ?error=... when sign-up is rejected, e.g. by
+  // the @umich.edu trigger on auth.users ("Database error saving new user").
+  const providerError = searchParams.get('error_description') ?? searchParams.get('error')
+  if (!code && providerError) {
+    const rejectedSignup = /database error saving new user|umich/i.test(providerError)
+    return loginErrorRedirect(origin, rejectedSignup ? UMICH_ONLY_MESSAGE : GENERIC_FAILURE_MESSAGE)
+  }
+
   if (code) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
@@ -27,6 +47,14 @@ export async function GET(request: Request) {
         cookieStore.delete(AUTH_RETURN_COOKIE)
       }
       const { data: { user } } = await supabase.auth.getUser()
+
+      // `hd=umich.edu` on the OAuth request is only a hint to Google; enforce
+      // the domain server-side too (the database trigger is the hard lock).
+      if (user && !isUmichEmail(user.email)) {
+        await supabase.auth.signOut()
+        await posthog.shutdown()
+        return loginErrorRedirect(origin, UMICH_ONLY_MESSAGE)
+      }
 
       if (user) {
         const profileSync = await syncUserProfileIdentity(supabase, user)
@@ -71,5 +99,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+  return loginErrorRedirect(origin, GENERIC_FAILURE_MESSAGE)
 }
