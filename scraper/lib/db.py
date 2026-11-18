@@ -61,8 +61,15 @@ def upsert_dining_hall(client, loc_data):
         print(f"❌ Error upserting hall {loc_data['name']}: {e}")
 
 def upsert_items(client, items, hall_uuid, meal_event_data):
+    """Insert items and the menu events that point at them.
+
+    Returns the number of item rows reported by the items-table upsert,
+    after items have been deduped by name. The scraper adds these return
+    values to get the run's saved-item count. Returns 0 when there is
+    nothing to save or the write fails.
+    """
     if not items:
-        return
+        return 0
 
     # FIX 2: Deduplicate Items List
     unique_items_map = {}
@@ -104,7 +111,7 @@ def upsert_items(client, items, hall_uuid, meal_event_data):
         # Check if data was returned
         if not item_res.data:
             print(f"   ⚠️ No data returned from upsert for {meal_event_data['meal']}")
-            return
+            return 0
 
         saved_items = item_res.data
 
@@ -129,9 +136,11 @@ def upsert_items(client, items, hall_uuid, meal_event_data):
         ).execute()
 
         print(f"   ✅ Saved {len(saved_items)} items for {meal_name}")
+        return len(saved_items)
 
     except Exception as e:
         print(f"   ❌ Error saving items: {e}")
+        return 0
 
 def upsert_operating_hours(client, hall_uuid, schedule, date_str):
     """
