@@ -159,3 +159,25 @@ export function determineHallStatus(shifts: OperatingHour[], dateStr?: string): 
 
   return status;
 }
+
+/**
+ * Clock bounds for a shift on `day`.
+ * When end minutes are less than or equal to start minutes (including 00:00–00:00),
+ * `end` falls on the next calendar day. Does not mutate `day`.
+ */
+export function shiftBoundsOnDay(
+  startTime: string,
+  endTime: string,
+  day: Date,
+): { start: Date; end: Date } {
+  const [startHour, startMinute] = startTime.split(":").map(Number);
+  const [endHour, endMinute] = endTime.split(":").map(Number);
+  const start = new Date(day.getTime());
+  start.setHours(startHour, startMinute, 0, 0);
+  const end = new Date(day.getTime());
+  end.setHours(endHour, endMinute, 0, 0);
+  if (endHour * 60 + endMinute <= startHour * 60 + startMinute) {
+    end.setDate(end.getDate() + 1);
+  }
+  return { start, end };
+}

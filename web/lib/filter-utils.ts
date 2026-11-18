@@ -8,11 +8,11 @@ export function normalizeDietaryTag(tag: string): string {
 
 /**
  * For each selected filter id, item tags that satisfy it (OR within the list).
- * Heuristic: halal/kosher searches include veg/vegan as no meat; vegetarian includes vegan.
+ * Halal and kosher match only their own tags. Vegetarian is also satisfied by vegan.
  */
 const DIETARY_FILTER_SATISFIED_BY: Record<string, readonly string[]> = {
-  halal: ["halal", "vegetarian", "vegan"],
-  kosher: ["kosher", "vegetarian", "vegan"],
+  halal: ["halal"],
+  kosher: ["kosher"],
   vegetarian: ["vegetarian", "vegan"],
   vegan: ["vegan"],
   glutenfree: ["glutenfree"],
