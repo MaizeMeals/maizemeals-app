@@ -19,6 +19,13 @@ const OPTIONS: { id: string; label: string }[] = [
   { id: "glutenfree", label: "Gluten-Free" },
 ];
 
+const OPTION_IDS = new Set(OPTIONS.map((option) => option.id));
+
+/** The sheet can be opened with a profile that still contains page-only chips. */
+function essentialsOnly(ids: readonly string[]): string[] {
+  return ids.filter((id) => OPTION_IDS.has(id));
+}
+
 type DietaryEssentialsSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -37,7 +44,7 @@ export function DietaryEssentialsSheet({
   );
 
   useEffect(() => {
-    if (open) setSelected(new Set(dietaryFilters));
+    if (open) setSelected(new Set(essentialsOnly(dietaryFilters)));
   }, [open, dietaryFilters]);
 
   const toggle = (id: string) => {
@@ -50,7 +57,7 @@ export function DietaryEssentialsSheet({
   };
 
   const handleSave = async () => {
-    await onSave([...selected]);
+    await onSave(essentialsOnly([...selected]));
     onOpenChange(false);
   };
 
