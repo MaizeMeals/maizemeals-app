@@ -6,12 +6,6 @@ import { Loader2, Plus } from "lucide-react"
 import { logFoodItem } from "@/app/actions/macro-tracker"
 import { LogFoodDialog } from "@/components/nutrition/LogFoodDialog"
 import type { Item } from "@/types/dining"
-import { getDynamicTags } from "@/lib/filter-utils"
-import { Badge } from "@/components/ui/badge"
-import { Stars } from "@/components/locations/detail-panel/Stars"
-import { MScaleIndicator } from "./MScaleIndicator"
-import { CarbonFootprint } from "./CarbonFootprint"
-import { DietaryTag } from "./DietaryTags"
 import { cn } from "@/lib/utils"
 import {
   dateInEasternTime,
@@ -21,9 +15,8 @@ import {
 } from "@/lib/nutrition"
 import { toast } from "@/lib/toast"
 import { useAnalytics } from "@/hooks/use-analytics"
-import { FavoriteButton } from "@/components/menus/FavoriteButton"
-import { AdditiveMarker } from "@/components/ingredients/AdditiveMarker"
 import { parseIngredientFlags } from "@/lib/ingredients"
+import { ItemSummary } from "@/components/menus/ItemSummary"
 
 interface FoodItemCardProps {
   item: Item
@@ -43,12 +36,6 @@ export function FoodItemCard({ item, onClick, highlight, mealType }: FoodItemCar
   const defaultMeal = menuMealToFoodLogMeal(mealType)
   const macros = macroSummaryFromNutrition(item.macronutrients)
   const hasNutrition = Object.values(macros).some((value) => value > 0)
-  const carbonTag = item.dietary_tags?.find(t => t.toLowerCase().startsWith("carbon"))
-  const dynamicTags = getDynamicTags(item)
-  const otherTags = Array.from(new Set([
-    ...(item.dietary_tags?.filter(t => !t.toLowerCase().startsWith("carbon")) || []),
-    ...dynamicTags,
-  ]))
 
   const clearPressTimer = () => {
     if (pressTimer.current) clearTimeout(pressTimer.current)
@@ -121,64 +108,34 @@ export function FoodItemCard({ item, onClick, highlight, mealType }: FoodItemCar
         onClick?.()
       }}
       className={cn(
-        "flex cursor-pointer select-none items-start justify-between border-b border-border bg-card p-4 transition-colors last:border-0 active:bg-accent",
+        "flex cursor-pointer select-none items-start border-b border-border bg-card p-4 transition-colors last:border-0 active:bg-accent",
         highlight && "ring-2 ring-inset ring-maize bg-maize/10",
       )}
     >
-      <div className="flex-1 pr-4">
-        <div className="mb-1 flex flex-wrap items-center gap-2">
-          <h4 className="text-base font-bold leading-tight text-foreground">{item.name}</h4>
-          <FavoriteButton name={item.name} size="sm" className="-my-1" />
-        </div>
-
-        <div className="mb-2 flex items-center gap-3 text-sm">
-          {item.avg_rating ? (
-            <div className="flex items-center gap-2">
-              <Stars rating={item.avg_rating} />
-              <Badge variant="maize-soft" shape="pill" className="px-1.5 py-0 font-semibold tabular-nums">
-                {item.avg_rating.toFixed(1)}
-              </Badge>
-              {(item.review_count ?? 0) > 0 ? (
-                <span className="font-normal text-muted-foreground">({item.review_count})</span>
-              ) : null}
-            </div>
-          ) : (
-            <span className="text-xs text-muted-foreground">No ratings</span>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5">
-          {carbonTag ? (
-            <CarbonFootprint level={carbonTag.toLowerCase().replace("carbon", "") as any} />
-          ) : null}
-          {otherTags.map(tag => <DietaryTag key={tag} tag={tag} />)}
-        </div>
-        <AdditiveMarker
-          categories={parseIngredientFlags(item.ingredient_flags, item.ingredients)?.categories}
-          className="mt-2"
-        />
-      </div>
-
-      <div className="flex shrink-0 flex-col items-end gap-2">
-        <MScaleIndicator score={item.nutrition_score} />
-        <LogFoodDialog
-          item={item}
-          defaultMeal={defaultMeal}
-          trigger={(
-            <button
-              type="button"
-              disabled={!hasNutrition || item.item_type === "station_header" || quickLogging}
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={(event) => event.stopPropagation()}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-maize/60 bg-maize text-blue shadow-sm transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label={`Add ${item.name} to Daily Log`}
-              title="Add to Daily Log (or hold the card to quick add)"
-            >
-              {quickLogging ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            </button>
-          )}
-        />
-      </div>
+      <ItemSummary
+        item={item}
+        additives={parseIngredientFlags(item.ingredient_flags, item.ingredients)?.categories}
+        className="w-full"
+        aside={(
+          <LogFoodDialog
+            item={item}
+            defaultMeal={defaultMeal}
+            trigger={(
+              <button
+                type="button"
+                disabled={!hasNutrition || item.item_type === "station_header" || quickLogging}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => event.stopPropagation()}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-maize/60 bg-maize text-blue shadow-sm transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label={`Add ${item.name} to Daily Log`}
+                title="Add to Daily Log (or hold the card to quick add)"
+              >
+                {quickLogging ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              </button>
+            )}
+          />
+        )}
+      />
     </div>
   )
 }

@@ -49,6 +49,77 @@ export type DishQuery = {
   nowMinutes: number | null;
 };
 
+/** Minutes-since-midnight range for each meal, from that day's dining hall hours. */
+export type MealWindows = Map<string, [number, number]>;
+
+/** Used when no dining hall posted hours (breaks): typical campus meal times. */
+const FALLBACK_WINDOWS: [string, [number, number]][] = [
+  ["Breakfast", [7 * 60, 10 * 60 + 30]],
+  ["Lunch", [11 * 60, 15 * 60]],
+  ["Dinner", [16 * 60 + 30, 20 * 60]],
+];
+/** A café counts as serving a meal when it is open at least this long during it. */
+const MIN_OVERLAP_MINUTES = 30;
+
+export function mealWindows(menu: DayMenu): MealWindows {
+  const windows: MealWindows = new Map();
+  for (const hall of menu.halls) {
+    if (!isDiningHall(hall)) continue;
+    for (const shift of hall.hours) {
+      const meal = mealForShift(shift.name);
+      if (meal === "All Day") continue;
+      const [s, e] = shiftRange(shift);
+      const cur = windows.get(meal);
+      windows.set(meal, cur ? [Math.min(cur[0], s), Math.max(cur[1], e)] : [s, e]);
+    }
+  }
+  return windows.size ? windows : new Map(FALLBACK_WINDOWS);
+}
+
+/** A café/market's posted hours for the day as one window (earliest open → latest close). */
+function openWindow(hall: DayMenuHall): { start: string; end: string } | null {
+  if (!hall.hours.length) return null;
+  let first = hall.hours[0];
+  let last = hall.hours[0];
+  for (const h of hall.hours) {
+    if (shiftRange(h)[0] < shiftRange(first)[0]) first = h;
+    if (shiftRange(h)[1] > shiftRange(last)[1]) last = h;
+  }
+  return { start: first.start, end: last.end };
+}
+
+/**
+ * Meals an item counts toward. Dining hall items keep their own meals; anything
+ * on an "All Day" menu (cafés, markets, grills) belongs to every meal its
+ * location is open for, so the meal tabs stay Breakfast / Lunch / Dinner.
+ */
+export function servingMeals(item: DayMenuItem, hall: DayMenuHall, windows: MealWindows): string[] {
+  if (!item.meals.includes("All Day")) return item.meals;
+  const meals = new Set(item.meals.filter((m) => m !== "All Day"));
+  const open = openWindow(hall);
+  if (open) {
+    const [os, oe] = shiftRange(open);
+    for (const [meal, [ws, we]] of windows) {
+      if (Math.min(oe, we) - Math.max(os, ws) >= MIN_OVERLAP_MINUTES) meals.add(meal);
+    }
+  }
+  return [...meals].sort((a, b) => mealRank(a) - mealRank(b));
+}
+
+/** "Café" / "Market" / "Grill" for non–dining hall locations. */
+export function locationKind(hall: DayMenuHall): string | null {
+  switch ((hall.type ?? "").toUpperCase()) {
+    case "CAFES":
+      return "Café";
+    case "MARKETS":
+      return "Market";
+    case "GRILLS":
+      return "Grill";
+    default:
+      return null;
+  }
+}
+
 /**
  * The shift for `meal` at `hall`. Halls can split a meal into several shifts
  * (e.g. Lunch 11–1 and 2–4): prefer the one running now, then the next one,
@@ -56,6 +127,8 @@ export type DishQuery = {
  */
 function shiftFor(hall: DayMenuHall, meal: string, nowMinutes: number | null = null) {
   const shifts = hall.hours.filter((h) => mealForShift(h.name) === meal);
+  // Cafés post one "All Day" shift; their window for any meal is their open hours.
+  if (shifts.length === 0 && !isDiningHall(hall)) return openWindow(hall);
   if (shifts.length <= 1 || nowMinutes === null) return shifts[0] ?? null;
   let next: (typeof shifts)[number] | null = null;
   let last: (typeof shifts)[number] | null = null;
@@ -98,12 +171,13 @@ export function buildDishes(menu: DayMenu, prefs: ScoringPrefs, q: DishQuery): D
   const halls = new Map(menu.halls.map((h) => [h.id, h]));
   const terms = q.query.toLowerCase().split(/\s+/).filter(Boolean);
   const groups = new Map<string, { offerings: Offering[]; relevance: number }>();
+  const windows = mealWindows(menu);
 
   for (const item of menu.items) {
     const hall = halls.get(item.hallId);
     if (!hall) continue;
     if (!q.includeRetail && !isDiningHall(hall)) continue;
-    if (q.meal !== "Any" && !item.meals.includes(q.meal)) continue;
+    if (q.meal !== "Any" && !servingMeals(item, hall, windows).includes(q.meal)) continue;
     if (!q.include(item)) continue;
     const rel = relevance(item, terms);
     if (rel === 0) continue;
@@ -181,14 +255,16 @@ function pickMeal(item: DayMenuItem, hall: DayMenuHall, nowMinutes: number | nul
   return upcoming?.meal ?? meals[0];
 }
 
-/** Meals present at dining halls on this date, in serving order. */
+/** Meal tabs for the date: real meals only (never "All Day"), in serving order. */
 export function mealsOnMenu(menu: DayMenu, includeRetail: boolean): string[] {
   const halls = new Map(menu.halls.map((h) => [h.id, h]));
+  const windows = mealWindows(menu);
   const set = new Set<string>();
   for (const it of menu.items) {
     const hall = halls.get(it.hallId);
     if (!hall || (!includeRetail && !isDiningHall(hall))) continue;
-    it.meals.forEach((m) => set.add(m));
+    servingMeals(it, hall, windows).forEach((m) => set.add(m));
   }
+  set.delete("All Day");
   return [...set].sort((a, b) => mealRank(a) - mealRank(b));
 }

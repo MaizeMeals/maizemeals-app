@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDishes, relevance } from "./dishes";
+import { buildDishes, mealsOnMenu, relevance, servingMeals, mealWindows } from "./dishes";
 import type { ScoringPrefs } from "./scoring";
 import type { DayMenu, DayMenuHall, DayMenuItem } from "./types";
 
@@ -169,5 +169,41 @@ describe("buildDishes", () => {
     expect(dishes[0]?.offerings.some((offering) => offering.status.kind !== "ended")).toBe(true);
     expect(dishes[1]?.offerings.every((offering) => offering.status.kind === "ended")).toBe(true);
     expect(dishes[1]?.score).toBeGreaterThan(dishes[0]?.score ?? 0);
+  });
+});
+
+describe("cafés in meal tabs", () => {
+  const dining = hall("bursley", "Bursley", [
+    { name: "Breakfast", start: "07:00:00", end: "10:30:00" },
+    { name: "Lunch", start: "11:00:00", end: "14:00:00" },
+    { name: "Dinner", start: "16:30:00", end: "20:00:00" },
+  ]);
+  const fireside = { ...hall("fireside", "Fireside Cafe", [{ name: "All Day", start: "11:00:00", end: "14:00:00" }]), type: "CAFES" };
+  const mojo = { ...hall("mojo", "Mojo", [{ name: "All Day", start: "08:00:00", end: "00:00:00" }]), type: "MARKETS" };
+  const m = menu(
+    [dining, fireside, mojo],
+    [
+      item({ id: "d1", hallId: "bursley", name: "Pasta", meals: ["Lunch", "Dinner"] }),
+      item({ id: "f1", hallId: "fireside", name: "Wrap", meals: ["All Day"] }),
+      item({ id: "m1", hallId: "mojo", name: "Cookie", meals: ["All Day"] }),
+    ],
+  );
+  const windows = mealWindows(m);
+
+  it("puts a café under the meals its hours overlap", () => {
+    expect(servingMeals(m.items[1], fireside, windows)).toEqual(["Lunch"]);
+    expect(servingMeals(m.items[2], mojo, windows)).toEqual(["Breakfast", "Lunch", "Dinner"]);
+    expect(servingMeals(m.items[0], dining, windows)).toEqual(["Lunch", "Dinner"]);
+  });
+
+  it("never offers an All Day tab", () => {
+    expect(mealsOnMenu(m, true)).toEqual(["Breakfast", "Lunch", "Dinner"]);
+    expect(mealsOnMenu(m, false)).toEqual(["Lunch", "Dinner"]);
+  });
+
+  it("lists café items for a meal with their open hours as the window", () => {
+    const dishes = buildDishes(m, NEUTRAL, { query: "", meal: "Breakfast", include: () => true, includeRetail: true, nowMinutes: null });
+    expect(dishes.map((d) => d.name)).toEqual(["Cookie"]);
+    expect(dishes[0].offerings[0].window).toEqual({ start: "08:00:00", end: "00:00:00" });
   });
 });

@@ -20,7 +20,8 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { appGhostTextButtonClassName } from "@/lib/button-styles"
-import type { Item, ItemWithPhotos, MenuData, StationGroup as StationGroupData } from "@/types/dining"
+import type { Item, ItemWithPhotos, MenuData, OperatingHour, StationGroup as StationGroupData } from "@/types/dining"
+import { formatTime } from "@/lib/dining"
 import { LocationSkeleton } from "@/components/locations/slug/LocationSkeleton"
 import { StickyHeader } from "@/components/locations/slug/StickyHeader"
 import { FilterState, INITIAL_FILTERS } from "@/components/locations/slug/filters/types"
@@ -196,6 +197,13 @@ export default function LocationPage() {
       dietary: prev.dietary,
     }))
   }
+
+  // Cafés and markets post a single "All Day" menu: no meal tabs, just show it.
+  const menuMeals = data?.menu ? Object.keys(data.menu) : []
+  const singleMenu = menuMeals.length === 1 ? menuMeals[0] : null
+  useEffect(() => {
+    if (singleMenu && activeTab !== singleMenu) setActiveTab(singleMenu)
+  }, [singleMenu, activeTab])
 
   const currentStationGroups = data?.menu?.[activeTab] || []
   const allItems = useMemo(() => currentStationGroups.flatMap((g) => g.items), [currentStationGroups])
@@ -422,13 +430,17 @@ export default function LocationPage() {
             loading={loading}
           />
 
-          {/* 3. Menu Tabs */}
-          <MenuTabs
-            meals={meals}
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            hours={data?.hours}
-          />
+          {/* 3. Menu Tabs (one menu, e.g. a café: show its hours instead) */}
+          {singleMenu === "All Day" ? (
+            <OpenHoursLine hours={data?.hours ?? []} />
+          ) : (
+            <MenuTabs
+              meals={meals}
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              hours={data?.hours}
+            />
+          )}
 
           {/* 4. Menu Content */}
           <main className="container mx-auto px-4 py-6 min-h-[500px]">
@@ -546,6 +558,24 @@ export default function LocationPage() {
           }}
         />
       )}
+    </div>
+  )
+}
+
+/** "Open today 8 AM – 3 PM" for single-menu locations (cafés, markets). */
+function OpenHoursLine({ hours }: { hours: OperatingHour[] }) {
+  const sorted = [...hours].sort((a, b) => a.start_time.localeCompare(b.start_time))
+  const first = sorted[0]
+  const last = [...hours].sort((a, b) => {
+    // Closing at midnight ("00:00") sorts last.
+    const end = (t: string) => (t.startsWith("00:") ? "24" + t.slice(2) : t)
+    return end(a.end_time).localeCompare(end(b.end_time))
+  }).at(-1)
+  return (
+    <div className="border-b border-border px-4 py-3 text-sm font-medium text-muted-foreground">
+      {first && last
+        ? `Open ${formatTime(first.start_time)} – ${formatTime(last.end_time)}`
+        : "No hours posted for this day"}
     </div>
   )
 }

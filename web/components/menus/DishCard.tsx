@@ -5,13 +5,9 @@ import Link from "next/link";
 import { ChevronRight, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { FavoriteButton } from "./FavoriteButton";
-import { AdditiveMarker } from "@/components/ingredients/AdditiveMarker";
-import { DietaryTag } from "@/components/locations/slug/DietaryTags";
-import type { Dish, Offering } from "@/lib/day-menu/dishes";
-import { formatClock, itemTags } from "@/lib/day-menu/scoring";
-
-const TAG_ORDER = ["vegan", "vegetarian", "halal", "kosher", "glutenfree", "spicy", "highprotein"];
+import { locationKind, type Dish, type Offering } from "@/lib/day-menu/dishes";
+import { asScoringItem, formatClock } from "@/lib/day-menu/scoring";
+import { ItemSummary } from "./ItemSummary";
 
 function formatDuration(mins: number): string {
   if (mins < 60) return `${mins} min`;
@@ -77,7 +73,8 @@ function OfferingRow({
             <StatusPill offering={offering} />
           </div>
           <p className="truncate text-xs text-muted-foreground">
-            {meal === "All Day" ? "All day" : meal}
+            {/* Cafés/markets: "Café · 7:30 AM–3 PM" (their open hours), not a meal. */}
+            {locationKind(hall) ?? meal}
             {timeText && ` · ${timeText}`}
             {item.station && ` · ${item.station}`}
           </p>
@@ -113,9 +110,6 @@ export function DishCard({
   onSelectOffering?: (offering: Offering) => void;
 }) {
   const { primary } = dish;
-  const tags = itemTags(primary)
-    .filter((t, i, arr) => TAG_ORDER.includes(t) && arr.indexOf(t) === i)
-    .sort((a, b) => TAG_ORDER.indexOf(a) - TAG_ORDER.indexOf(b));
   const [expanded, setExpanded] = useState(false);
   const shown = expanded ? dish.offerings : dish.offerings.slice(0, maxRows);
   const hidden = dish.offerings.length - shown.length;
@@ -123,30 +117,11 @@ export function DishCard({
   return (
     <article className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
       <header className="px-4 pb-2 pt-3">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="type-card-title">{dish.name}</h3>
-          <div className="-mr-2 -mt-1 flex shrink-0 items-center gap-1">
-          {dish.bestRating && (
-            <Badge variant="maize-soft" className="shrink-0 gap-1 px-1.5 font-bold">
-              <Star className="h-3 w-3 fill-maize text-maize" aria-hidden />
-              {dish.bestRating.value.toFixed(1)}
-            </Badge>
-          )}
-          <FavoriteButton name={dish.name} />
-          </div>
-        </div>
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          {tags.map((t) => (
-            <DietaryTag key={t} tag={t} />
-          ))}
-          {primary.macros.calories > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {Math.round(primary.macros.calories)} cal
-              {primary.macros.protein > 0 && ` · ${Math.round(primary.macros.protein)}g protein`}
-            </span>
-          )}
-        </div>
-        <AdditiveMarker categories={primary.additives} className="mt-1.5" />
+        <ItemSummary
+          item={asScoringItem(primary)}
+          additives={primary.additives}
+          rating={dish.bestRating ? { value: dish.bestRating.value } : null}
+        />
       </header>
       <ul className="divide-y divide-border/60 border-t border-border/60">
         {shown.map((o) => (

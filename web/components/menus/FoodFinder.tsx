@@ -41,7 +41,6 @@ import { useFavoriteFoods } from "@/hooks/use-favorite-foods";
 
 const PAGE = 30;
 const DAYS_AHEAD = 6;
-const ANY_MEAL = "Any meal";
 const CRAVINGS = ["Pizza", "Chicken", "Pasta", "Burger", "Tacos", "Salad", "Rice", "Cookie", "Eggs", "Soup"];
 
 function isWeekend(date: string): boolean {
@@ -113,33 +112,35 @@ export function FoodFinder() {
 
   const mealOptions = useMemo(() => (menu ? mealsOnMenu(menu, includeRetail) : []), [menu, includeRetail]);
   const effectiveMeal = useMemo(() => {
-    if (meal && (meal === ANY_MEAL || mealOptions.includes(meal))) return meal;
-    if (!mealOptions.length) return ANY_MEAL;
-    // Searching answers "where/when is it served?" — look across every meal.
-    if (query.trim()) return ANY_MEAL;
+    if (meal && mealOptions.includes(meal)) return meal;
     if (isToday) {
       const guess = defaultMealForNow(nowMinutes ?? 0, isWeekend(date));
       if (mealOptions.includes(guess)) return guess;
     }
-    return mealOptions.find((m) => m !== "All Day") ?? ANY_MEAL;
-  }, [meal, mealOptions, isToday, nowMinutes, date, query]);
+    return mealOptions[0] ?? null;
+  }, [meal, mealOptions, isToday, nowMinutes, date]);
 
-  const dishes = useMemo(() => {
+  const searching = query.trim().length > 0;
+
+  // Without a search: the selected meal. With one: every meal of the day,
+  // grouped, answering "where and when is it served?" (no "Any meal" tab).
+  const mealSections = useMemo(() => {
     if (!menu || !prefsApplied) return [];
     // Same predicate as the hall page (dietary + rating/M-Scale/macros); text
     // search is handled by buildDishes' relevance ranking instead.
     const nonSearch = { ...filters, search: "" };
     const include = (it: DayMenuItem) => filterItems([asScoringItem(it)], nonSearch).length > 0;
-    return buildDishes(menu, preferences, {
-      query,
-      meal: effectiveMeal === ANY_MEAL ? "Any" : effectiveMeal,
-      include,
-      includeRetail,
-      nowMinutes,
-    });
+    const meals = searching ? mealOptions : effectiveMeal ? [effectiveMeal] : [];
+    return meals
+      .map((m) => ({
+        meal: m,
+        dishes: buildDishes(menu, preferences, { query, meal: m, include, includeRetail, nowMinutes }),
+      }))
+      .filter((section) => !searching || section.dishes.length > 0);
     // nowMinutes intentionally omitted: recomputed when inputs change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [menu, preferences, prefsApplied, filters, query, effectiveMeal, includeRetail]);
+  }, [menu, preferences, prefsApplied, filters, query, searching, mealOptions, effectiveMeal, includeRetail]);
+  const dishes = useMemo(() => mealSections.flatMap((section) => section.dishes), [mealSections]);
 
   // Shareable URL (?q=&date=&meal=). history.replaceState, not router.replace,
   // so typing doesn't cause server round-trips; Next syncs useSearchParams.
@@ -252,8 +253,15 @@ export function FoodFinder() {
           </div>
           <QuickToggles selected={filters.dietary} onChange={toggleDietary} />
         </div>
-        {mealOptions.length > 0 && (
-          <MenuTabs meals={[...mealOptions, ANY_MEAL]} activeTab={effectiveMeal} onTabChange={setMeal} />
+        {mealOptions.length > 0 && effectiveMeal && (
+          // While searching, results cover the whole day, so the tabs step back.
+          <div
+            className={cn(searching && "pointer-events-none opacity-40")}
+            aria-disabled={searching || undefined}
+            title={searching ? "Search covers every meal" : undefined}
+          >
+            <MenuTabs meals={mealOptions} activeTab={searching ? "" : effectiveMeal} onTabChange={setMeal} />
+          </div>
         )}
       </div>
 
@@ -305,7 +313,9 @@ export function FoodFinder() {
             <>
               <p className="mb-3 text-xs font-medium text-muted-foreground">
                 {showFavorites ? "Everything else · " : ""}
-                {listDishes.length} {listDishes.length === 1 ? "dish" : "dishes"}
+                {searching
+                  ? `Served at ${mealSections.length} ${mealSections.length === 1 ? "meal" : "meals"} ${isToday ? "today" : "that day"}`
+                  : `${listDishes.length} ${listDishes.length === 1 ? "dish" : "dishes"}`}
                 {!query && !prefsLoading && !isGuest && " · ranked for your preferences"}
                 {!query && !prefsLoading && isGuest && (
                   <>
@@ -320,12 +330,38 @@ export function FoodFinder() {
                   </>
                 )}
               </p>
-              <div className="space-y-3">
-                {listDishes.slice(0, limit).map((dish) => (
-                  <DishCard key={dish.key} dish={dish} date={date} isToday={isToday} onSelectOffering={openOffering} />
-                ))}
-              </div>
-              {listDishes.length > limit && (
+              {searching ? (
+                <div className="space-y-6">
+                  {mealSections.map((section) => (
+                    <section key={section.meal} aria-label={section.meal}>
+                      <h2 className="mb-2 flex items-baseline gap-2 text-sm font-bold uppercase tracking-wide text-foreground">
+                        {section.meal}
+                        <span className="text-xs font-medium normal-case tracking-normal text-muted-foreground">
+                          {section.dishes.length} {section.dishes.length === 1 ? "dish" : "dishes"}
+                        </span>
+                      </h2>
+                      <div className="space-y-3">
+                        {section.dishes.slice(0, limit).map((dish) => (
+                          <DishCard
+                            key={dish.key}
+                            dish={dish}
+                            date={date}
+                            isToday={isToday}
+                            onSelectOffering={openOffering}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {listDishes.slice(0, limit).map((dish) => (
+                    <DishCard key={dish.key} dish={dish} date={date} isToday={isToday} onSelectOffering={openOffering} />
+                  ))}
+                </div>
+              )}
+              {!searching && listDishes.length > limit && (
                 <Button
                   variant="outline"
                   className="mt-4 w-full rounded-full"
