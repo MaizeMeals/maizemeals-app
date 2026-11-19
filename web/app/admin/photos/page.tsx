@@ -7,6 +7,7 @@ import { Loader2, Check, X, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader, PageShell } from "@/components/layout/page-shell";
 import { createClient } from "@/lib/supabase/client";
+import { authEntryHref } from "@/lib/auth-next-path";
 import { getItemPhotoPublicUrl } from "@/lib/item-photos";
 
 type PhotoRow = {
@@ -30,7 +31,12 @@ export default function AdminPhotosPage() {
     try {
       const res = await fetch("/api/admin/photos");
       if (res.status === 401) {
-        router.push("/login");
+        router.push(
+          authEntryHref(
+            "/login",
+            window.location.pathname + window.location.search + window.location.hash,
+          ),
+        );
         return;
       }
       if (res.status === 403) {
@@ -58,7 +64,12 @@ export default function AdminPhotosPage() {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user) {
-        router.push("/login");
+        router.push(
+          authEntryHref(
+            "/login",
+            window.location.pathname + window.location.search + window.location.hash,
+          ),
+        );
         return;
       }
       fetchPhotos();
