@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { SignInSuccessToast } from "@/components/auth/sign-in-success-toast";
 import { cn } from "@/lib/utils";
 import { PostHogProvider } from "@/app/providers";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { BottomNav } from "@/components/pwa/BottomNav";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
@@ -84,26 +85,28 @@ export default function RootLayout({
 
         )}
       >
-        <PostHogProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <ThemeColorSync />
-            <ConditionalHeader>
-              <Header />
-            </ConditionalHeader>
-            <main className="grow">{children}</main>
-            <ConditionalFooter />
-            <BottomNav />
-            <InstallPrompt />
-            <ServiceWorkerRegistrar />
-            <Toaster />
-            <SignInSuccessToast />
-          </ThemeProvider>
-        </PostHogProvider>
+        <QueryProvider>
+          <PostHogProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <ThemeColorSync />
+              <ConditionalHeader>
+                <Header />
+              </ConditionalHeader>
+              <main className="grow">{children}</main>
+              <ConditionalFooter />
+              <BottomNav />
+              <InstallPrompt />
+              <ServiceWorkerRegistrar />
+              <Toaster />
+              <SignInSuccessToast />
+            </ThemeProvider>
+          </PostHogProvider>
+        </QueryProvider>
       </body>
     </html>
   );

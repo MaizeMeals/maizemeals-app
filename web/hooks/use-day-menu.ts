@@ -1,42 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { catalogQuery } from "@/lib/catalog-query";
 import type { DayMenu } from "@/lib/day-menu/types";
 import { fromWire, type DayMenuWire } from "@/lib/day-menu/wire";
 
 type State = { menu: DayMenu | null; loading: boolean; error: string | null };
 
-/** In-memory cache so switching tabs/pages doesn't refetch the same day. */
-const memo = new Map<string, Promise<DayMenu>>();
-
-function fetchDayMenu(date: string): Promise<DayMenu> {
-  let p = memo.get(date);
-  if (!p) {
-    p = fetch(`/menus/offerings?date=${date}`).then(async (res) => {
-      if (!res.ok) throw new Error(`Menu request failed (${res.status})`);
-      return fromWire((await res.json()) as DayMenuWire);
-    });
-    p.catch(() => memo.delete(date));
-    memo.set(date, p);
-  }
-  return p;
+async function fetchDayMenu(date: string): Promise<DayMenu> {
+  const res = await fetch(`/menus/offerings?date=${date}`);
+  if (!res.ok) throw new Error(`Menu request failed (${res.status})`);
+  return fromWire((await res.json()) as DayMenuWire);
 }
 
 /** Public menu for every location on `date` (YYYY-MM-DD, Eastern). */
 export function useDayMenu(date: string | null): State {
-  const [state, setState] = useState<State>({ menu: null, loading: Boolean(date), error: null });
+  const query = useQuery({
+    queryKey: ["day-menu", date],
+    queryFn: () => fetchDayMenu(date as string),
+    enabled: Boolean(date),
+    ...catalogQuery,
+  });
 
-  useEffect(() => {
-    if (!date) return;
-    let cancelled = false;
-    setState((s) => ({ menu: s.menu?.date === date ? s.menu : null, loading: true, error: null }));
-    fetchDayMenu(date)
-      .then((menu) => !cancelled && setState({ menu, loading: false, error: null }))
-      .catch((err: Error) => !cancelled && setState({ menu: null, loading: false, error: err.message }));
-    return () => {
-      cancelled = true;
-    };
-  }, [date]);
-
-  return state;
+  return {
+    menu: query.data ?? null,
+    loading: Boolean(date) && query.isPending,
+    error: query.error instanceof Error ? query.error.message : null,
+  };
 }
