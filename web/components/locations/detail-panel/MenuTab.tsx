@@ -16,6 +16,7 @@ import { getStoragePhotoUrl } from "./PhotosDialog";
 import { FOOD_ITEM_PLACEHOLDER_IMAGE } from "@/lib/food-placeholder-image";
 import { usePreferences } from "@/hooks/use-preferences";
 import { itemMatchesDietaryFilters } from "@/lib/filter-utils";
+import { compareItemsBySmartPreferences, itemPreferenceScore } from "@/lib/preference-scoring";
 
 type Props = {
   loading: boolean;
@@ -58,19 +59,37 @@ export function MenuTab({ loading, menu, itemMetadata, venueSlug }: Props) {
       .filter((item) =>
         itemMatchesDietaryFilters(item, preferences.dietary_filters),
       )
+      // Picks should be meals, not sauces, rolls, or condiments.
+      .filter((item) => Number((item.macronutrients as Record<string, number> | null)?.["Calories"] ?? 0) >= 150)
       .sort((a, b) => {
          // Safely grab metadata or default to 0
          const metaA = itemMetadata[a.id] || { avgRating: 0, reviewCount: 0, photos: [] };
          const metaB = itemMetadata[b.id] || { avgRating: 0, reviewCount: 0, photos: [] };
 
-         // Sort by highest rating first, then by number of reviews to break ties
+         // Rated dishes first (highest, then most reviewed); the rest by
+         // Smart Preferences so a hall with no reviews still shows good picks.
          if (metaB.avgRating !== metaA.avgRating) {
             return metaB.avgRating - metaA.avgRating;
          }
-         return metaB.reviewCount - metaA.reviewCount;
+         if (metaB.reviewCount !== metaA.reviewCount) {
+            return metaB.reviewCount - metaA.reviewCount;
+         }
+         const pref = compareItemsBySmartPreferences(a, b, preferences);
+         // Smart Preferences ties alphabetically; prefer healthier, then more protein.
+         const scoreA = itemPreferenceScore(a, preferences);
+         const scoreB = itemPreferenceScore(b, preferences);
+         if (scoreA !== scoreB) return pref;
+         const mB = b.nutrition_score ?? 0;
+         const mA = a.nutrition_score ?? 0;
+         if (mB !== mA) return mB - mA;
+         const protein = (it: typeof a) => Number((it.macronutrients as Record<string, number> | null)?.["Protein"] ?? 0);
+         if (protein(b) !== protein(a)) return protein(b) - protein(a);
+         return pref;
       })
-      .slice(0, 4);
-  }, [menu, itemMetadata, preferences.dietary_filters]);
+      .slice(0, 5);
+  }, [menu, itemMetadata, preferences]);
+
+  const anyRated = highlights.some((item) => (itemMetadata?.[item.id]?.reviewCount ?? 0) > 0);
 
   return (
     <div className="p-5">
@@ -83,7 +102,7 @@ export function MenuTab({ loading, menu, itemMetadata, venueSlug }: Props) {
              <div className="flex justify-between items-center mb-4">
                <div className="flex items-center gap-1.5">
                  <Flame className="w-4 h-4 text-orange-500" />
-                 <h3 className="font-semibold text-sm">Top Rated Today</h3>
+                 <h3 className="font-semibold text-sm">{anyRated ? "Top rated today" : "Picks for you today"}</h3>
                </div>
                <Link
                  href={`/locations/${venueSlug}`}
@@ -105,7 +124,7 @@ export function MenuTab({ loading, menu, itemMetadata, venueSlug }: Props) {
 
                       const displayImage = getDisplayImageUrl(meta.photos[0]);
                       const imageFailed = failedImageIds.has(item.id);
-                      const showPlaceholder = imageFailed || !displayImage;
+                      const showPlaceholder = imageFailed || !displayImage || meta.photos.length === 0;
 
                       return (
                         <div
@@ -161,10 +180,10 @@ export function MenuTab({ loading, menu, itemMetadata, venueSlug }: Props) {
                                  {/* Rating Badge */}
                                  <div className="flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400">
                                    <Star className="w-3 h-3 fill-current" />
-                                   {meta.avgRating > 0 ? Number(meta.avgRating).toFixed(1) : "New"}
-                                   <span className="text-muted-foreground opacity-60">
-                                     ({meta.reviewCount})
-                                   </span>
+                                   {meta.avgRating > 0 ? Number(meta.avgRating).toFixed(1) : "No ratings yet"}
+                                   {meta.reviewCount > 0 ? (
+                                     <span className="text-muted-foreground opacity-60">({meta.reviewCount})</span>
+                                   ) : null}
                                  </div>
 
 

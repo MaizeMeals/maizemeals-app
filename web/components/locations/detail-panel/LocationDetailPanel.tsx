@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
-import { ArrowLeft, X, Heart, Share2, ChevronRight, ChevronDown } from "lucide-react";
+import { ArrowLeft, X, Heart, Share2, ChevronRight, ChevronDown, Navigation, Phone, UtensilsCrossed } from "lucide-react";
+import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 import { getLocationIcon, getTypeForDisplay } from "@/lib/dining";
@@ -15,6 +16,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import type { LocationSummary } from "@/types/location-summary";
 
 import { useLocationData } from "@/hooks/use-location-data";
+import { usePreferences } from "@/hooks/use-preferences";
+import { toast } from "@/lib/toast";
+import { appPrimaryButtonClassName } from "@/lib/button-styles";
+import { directionsUrl } from "./location-utils";
 
 import { Stars } from "./Stars";
 import { OverviewTab } from "./OverviewTab";
@@ -50,6 +55,36 @@ export function LocationDetailPanel({ data, initialVenueId, onActiveVenueChange,
   );
 
   const [venuePickerOpen, setVenuePickerOpen] = useState(false);
+  const [tab, setTab] = useState("overview");
+
+  // Save = favorite_location_ids (profile, or guest storage when signed out).
+  const { preferences, updatePreferences } = usePreferences();
+  const isSaved = preferences.favorite_location_ids.includes(activeVenue.id);
+  const toggleSaved = () => {
+    const next = isSaved
+      ? preferences.favorite_location_ids.filter((id) => id !== activeVenue.id)
+      : [...preferences.favorite_location_ids, activeVenue.id];
+    void updatePreferences({ favorite_location_ids: next });
+    toast.success(isSaved ? `Removed ${activeVenue.name} from saved places` : `Saved ${activeVenue.name}`);
+  };
+
+  const share = async () => {
+    const url = `${window.location.origin}/locations#${activeVenue.slug}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: activeVenue.name, text: `${activeVenue.name} on MaizeMeals`, url });
+      } catch {
+        // Cancelled share sheet: nothing to do.
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied");
+    } catch {
+      toast.error("Couldn't copy the link");
+    }
+  };
 
   const onActiveVenueChangeRef = useRef(onActiveVenueChange);
   onActiveVenueChangeRef.current = onActiveVenueChange;
@@ -136,20 +171,10 @@ export function LocationDetailPanel({ data, initialVenueId, onActiveVenueChange,
       <div className="absolute right-3 top-3 z-10 flex flex-col gap-2">
         <button
           type="button"
-          onClick={async (e) => {
+          onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (navigator.share) {
-              try {
-                await navigator.share({
-                  title: activeVenue.name,
-                  text: `Check out ${activeVenue.name}`,
-                  url: typeof window !== "undefined" ? window.location.href : "",
-                });
-              } catch (err) {
-                console.error("Share failed", err);
-              }
-            }
+            void share();
           }}
           className={cn(
             "rounded-full border p-2.5 shadow-lg backdrop-blur-md transition-all active:scale-95",
@@ -169,9 +194,15 @@ export function LocationDetailPanel({ data, initialVenueId, onActiveVenueChange,
               ? "border-white/20 bg-white/10 text-white hover:bg-white/20"
               : "border-border bg-background/90 text-foreground hover:bg-muted",
           )}
-          aria-label="Save"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleSaved();
+          }}
+          aria-label={isSaved ? "Remove from saved places" : "Save place"}
+          aria-pressed={isSaved}
         >
-          <Heart className="h-5 w-5" />
+          <Heart className={cn("h-5 w-5", isSaved && "fill-current text-red-500")} />
         </button>
       </div>
       {hasGallery && (
@@ -340,10 +371,33 @@ export function LocationDetailPanel({ data, initialVenueId, onActiveVenueChange,
             )}
             {reviewsSegment}
           </div>
+
+          {/* Primary actions: the menu first, then getting there. */}
+          <div className="mb-3 flex gap-2">
+            <Button asChild className={cn("flex-1 gap-2", appPrimaryButtonClassName)}>
+              <Link href={`/locations/${activeVenue.slug}`}>
+                <UtensilsCrossed className="h-4 w-4" aria-hidden />
+                View menu
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="gap-2">
+              <a href={directionsUrl(activeVenue)} target="_blank" rel="noopener noreferrer">
+                <Navigation className="h-4 w-4" aria-hidden />
+                Directions
+              </a>
+            </Button>
+            {activeVenue.contact?.phone ? (
+              <Button asChild variant="outline" size="icon" aria-label={`Call ${activeVenue.name}`}>
+                <a href={`tel:${activeVenue.contact.phone}`}>
+                  <Phone className="h-4 w-4" aria-hidden />
+                </a>
+              </Button>
+            ) : null}
+          </div>
         </div>
 
         {/* 3. TABS */}
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs value={tab} onValueChange={setTab} className="w-full">
           <div className="px-5 border-b border-border/40">
             <TabsList className="h-10 p-0 bg-transparent gap-6">
               <TabsTrigger
@@ -377,7 +431,12 @@ export function LocationDetailPanel({ data, initialVenueId, onActiveVenueChange,
             value="overview"
             className="p-0 animate-in fade-in-50 duration-300"
           >
-            <OverviewTab activeVenue={activeVenue} loading={loading} weeklyHours={locationDetails?.weeklyHours} />
+            <OverviewTab
+              activeVenue={activeVenue}
+              loading={loading}
+              weeklyHours={locationDetails?.weeklyHours}
+              onShowWeek={() => setTab("about")}
+            />
           </TabsContent>
 
           <TabsContent value="menu" className="p-0">
@@ -390,11 +449,16 @@ export function LocationDetailPanel({ data, initialVenueId, onActiveVenueChange,
           </TabsContent>
 
           <TabsContent value="reviews" className="p-0">
-            <ReviewsTab />
+            <ReviewsTab hallId={activeVenue.id} venueSlug={activeVenue.slug} />
           </TabsContent>
 
           <TabsContent value="about" className="p-0">
-            <AboutTab />
+            <AboutTab
+              activeVenue={activeVenue}
+              hall={locationDetails?.hall}
+              weeklyHours={locationDetails?.weeklyHours}
+              loading={loading}
+            />
           </TabsContent>
         </Tabs>
       </div>
