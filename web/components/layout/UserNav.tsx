@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { User as UserIcon, Settings, LogOut, ChevronDown, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AuthEntryLink } from "@/components/auth/AuthEntryLink";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { clearUserCaches } from "@/lib/pwa";
 import {
@@ -54,10 +55,10 @@ export function UserNav({ user, signOut, forceWhite = false, isAdmin = false }: 
               : appGhostTextButtonClassName,
           )}
         >
-          <Link href="/login">Log in</Link>
+          <AuthEntryLink entry="/login">Log in</AuthEntryLink>
         </Button>
         <Button asChild className={appPrimaryButtonClassName}>
-          <Link href="/signup">Sign up</Link>
+          <AuthEntryLink entry="/signup">Sign up</AuthEntryLink>
         </Button>
       </div>
     );

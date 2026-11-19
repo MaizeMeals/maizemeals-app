@@ -12,3 +12,22 @@ export function sanitizeAuthNextPath(raw: string | null): string {
   if (trimmed.includes('\n') || trimmed.includes('\r')) return '/'
   return trimmed.length > 2048 ? '/' : trimmed
 }
+
+function authPagePath(path: string): string {
+  const withoutHash = path.split('#')[0] ?? path
+  return withoutHash.split('?')[0] ?? withoutHash
+}
+
+/**
+ * Login or signup URL that returns to `current` (pathname, search, and hash).
+ * Staying on the auth pages themselves is not a return target.
+ */
+export function authEntryHref(
+  entry: '/login' | '/signup',
+  current: string | null,
+): string {
+  const next = sanitizeAuthNextPath(current)
+  const page = authPagePath(next)
+  if (next === '/' || page === '/login' || page === '/signup') return entry
+  return `${entry}?next=${encodeURIComponent(next)}`
+}

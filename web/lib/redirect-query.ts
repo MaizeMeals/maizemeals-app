@@ -10,5 +10,5 @@ export function withSearchParams(
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value)
   }
-  return url.pathname + url.search
+  return url.pathname + url.search + url.hash
 }
