@@ -13,6 +13,10 @@ type Props = {
   /** Find food opens the drawer before the full record arrives. */
   loading?: boolean;
   className?: string;
+  /** Inside a tab labelled "Ingredients". */
+  hideHeading?: boolean;
+  /** The surrounding header already shows allergen chips. */
+  hideAllergens?: boolean;
 };
 
 /** Allergen chips + any non-allergen notes ("Item is deep fried"). */
@@ -52,7 +56,7 @@ export function AllergenChips({
  * (seed oil, emulsifier, preservative, coloring, ...). Data: U-M NetNutrition
  * label + scraper/lib/ingredient_highlights.py.
  */
-export function IngredientsSection({ item, loading = false, className }: Props) {
+export function IngredientsSection({ item, loading = false, className, hideHeading = false, hideAllergens = false }: Props) {
   const flags = useMemo(
     () => parseIngredientFlags(item.ingredient_flags, item.ingredients),
     [item.ingredient_flags, item.ingredients],
@@ -75,10 +79,8 @@ export function IngredientsSection({ item, loading = false, className }: Props) 
   }, [item.ingredients, flags]);
 
   return (
-    <section aria-labelledby="ingredients-heading" className={cn("space-y-3", className)}>
-      <h3 id="ingredients-heading" className="type-section-title">
-        Ingredients
-      </h3>
+    <section aria-label="Ingredients" className={cn("space-y-3", className)}>
+      {hideHeading ? null : <h3 className="type-section-title">Ingredients</h3>}
 
       {loading && !item.ingredients ? (
         <div className="space-y-2" aria-label="Loading ingredients">
@@ -92,7 +94,7 @@ export function IngredientsSection({ item, loading = false, className }: Props) 
         </p>
       ) : (
         <>
-          <AllergenChips allergens={item.allergens} notes={item.label_notes} />
+          {hideAllergens ? null : <AllergenChips allergens={item.allergens} notes={item.label_notes} />}
 
           {counts.length > 0 ? (
             <div className="flex flex-wrap gap-x-3 gap-y-1.5" aria-label="Additives found">

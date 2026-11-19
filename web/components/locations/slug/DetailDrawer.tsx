@@ -1,16 +1,13 @@
 "use client"
 
-import { Star, X, Camera } from "lucide-react"
+import { Star, X, Camera, Plus } from "lucide-react"
 import { ItemWithPhotos } from "@/types/dining"
 import { getDynamicTags } from "@/lib/filter-utils"
 import { MScaleIndicator } from "./MScaleIndicator"
 import { CarbonFootprint } from "./CarbonFootprint"
 import { DietaryTag } from "./DietaryTags"
 import { Button } from "@/components/ui/button"
-import {
-  appDashedSecondaryButtonClassName,
-  appPrimaryButtonClassName,
-} from "@/lib/button-styles"
+import { appPrimaryButtonClassName } from "@/lib/button-styles"
 import { cn } from "@/lib/utils"
 import { Sheet, SheetContent, SheetClose, SheetTitle } from "@/components/ui/sheet"
 import Link from "next/link"
@@ -22,6 +19,8 @@ import { LogFoodDialog } from "@/components/nutrition/LogFoodDialog"
 import { AllergenChips, IngredientsSection } from "@/components/ingredients/IngredientsSection"
 import { AdditiveMarker } from "@/components/ingredients/AdditiveMarker"
 import { parseIngredientFlags } from "@/lib/ingredients"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ItemReviewsTab } from "./ItemReviewsTab"
 
 const AXIS_LOCK_PX = 10
 
@@ -347,11 +346,13 @@ export function ItemDetailPanel({
   ingredientsLoading = false,
 }: ItemDetailPanelProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const [tab, setTab] = useState("nutrition")
   const scrollBodyRef = useRef<HTMLDivElement>(null)
   const isSheet = variant === "sheet"
 
   useEffect(() => {
     setActiveImageIndex(0)
+    setTab("nutrition")
   }, [item.id])
 
   const carbonTag = item.dietary_tags?.find(t => t.toLowerCase().startsWith('carbon'))
@@ -411,7 +412,7 @@ export function ItemDetailPanel({
         <div
           className={cn(
             "relative min-h-0 w-full shrink-0 bg-muted",
-            isSheet ? "h-64" : "h-52",
+            isSheet ? "h-44" : "h-40",
           )}
         >
           <div
@@ -491,14 +492,14 @@ export function ItemDetailPanel({
           {/* --- Scrollable Content Body --- */}
           <div
             ref={scrollBodyRef}
-            className="min-h-0 flex-1 overflow-y-auto p-6"
+            className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-5"
             onPointerDown={
               isSheet && swipe
                 ? (e) => {
                     const t = e.target as HTMLElement
                     if (
                       t.closest(
-                        "button, a, input, textarea, select, [role='button'], [data-sheet-swipe-ignore]",
+                        "button, a, input, textarea, select, [role='button'], [role='tab'], [data-sheet-swipe-ignore]",
                       )
                     ) {
                       return
@@ -508,10 +509,9 @@ export function ItemDetailPanel({
                 : undefined
             }
           >
-
-          <div className="mb-6">
-            <div className="flex justify-between items-start gap-4 mb-2">
-              <h2 className="text-2xl font-bold text-foreground leading-tight">
+          <div className="mb-5">
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="text-2xl font-bold leading-tight text-foreground">
                 {item.name}
               </h2>
               <div
@@ -523,57 +523,31 @@ export function ItemDetailPanel({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 mb-4">
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               {hasReviews ? (
-                <>
-                  <div className="flex items-center gap-1 bg-maize/20 px-2 py-1 rounded-md">
-                    <Star className="w-4 h-4 fill-maize text-maize" />
-                    <span className="font-bold text-foreground">
-                      {(item.avg_rating ?? 0).toFixed(1)}
-                    </span>
-                  </div>
+                <button
+                  type="button"
+                  onClick={() => setTab("reviews")}
+                  className="flex items-center gap-1 rounded-md bg-maize/20 px-2 py-0.5 font-bold text-foreground"
+                  aria-label={`Rated ${(item.avg_rating ?? 0).toFixed(1)}; show reviews`}
+                >
+                  <Star className="h-4 w-4 fill-maize text-maize" aria-hidden />
+                  {(item.avg_rating ?? 0).toFixed(1)}
                   {(item.review_count ?? 0) > 0 ? (
-                    <span className="text-xs text-muted-foreground">
-                      ({item.review_count} review{(item.review_count ?? 0) === 1 ? "" : "s"})
-                    </span>
+                    <span className="font-normal text-muted-foreground">({item.review_count})</span>
                   ) : null}
-                  <Link href={reviewsHref} className="text-sm text-blue-600 hover:underline">
-                    See reviews
-                  </Link>
-                </>
+                </button>
               ) : (
-                onStartReview ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      appDashedSecondaryButtonClassName,
-                      "h-8 gap-2 text-xs",
-                    )}
-                    onClick={() => onStartReview(item)}
-                  >
-                    <Star className="w-3.5 h-3.5 text-muted-foreground" />
-                    Be the first to review
-                  </Button>
-                ) : (
-                  <Link href={`/review/new?item_id=${item.id}`}>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={cn(
-                        appDashedSecondaryButtonClassName,
-                        "h-8 gap-2 text-xs",
-                      )}
-                    >
-                      <Star className="w-3.5 h-3.5 text-muted-foreground" />
-                      Be the first to review
-                    </Button>
-                  </Link>
-                )
+                <span className="text-muted-foreground">No reviews yet</span>
               )}
+              {calories > 0 ? (
+                <span className="tabular-nums text-muted-foreground">
+                  {calories} cal · {protein}g protein · {carbs}g carbs · {fat}g fat
+                </span>
+              ) : null}
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               {carbonTag && (
                 <CarbonFootprint level={carbonTag.toLowerCase().replace('carbon', '') as any} />
               )}
@@ -582,90 +556,114 @@ export function ItemDetailPanel({
               ))}
             </div>
 
-            {/* At-a-glance: allergens + what's in it (full list below the label). */}
-            <AllergenChips allergens={item.allergens} className="mt-3" />
+            <AllergenChips allergens={item.allergens} notes={item.label_notes} className="mt-3" />
             <AdditiveMarker
               categories={parseIngredientFlags(item.ingredient_flags, item.ingredients)?.categories}
               max={4}
               className="mt-2 flex-wrap"
             />
+            {extraAction ? <div className="mt-3">{extraAction}</div> : null}
           </div>
 
-          <hr className="border-border mb-6" />
+          <Tabs value={tab} onValueChange={setTab}>
+            <TabsList className="grid h-10 w-full grid-cols-3">
+              <TabsTrigger value="nutrition">Nutrition</TabsTrigger>
+              <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
+              <TabsTrigger value="reviews">
+                Reviews{(item.review_count ?? 0) > 0 ? ` (${item.review_count})` : ""}
+              </TabsTrigger>
+            </TabsList>
 
-          {/* --- Nutrition Facts Label --- */}
-          <div className="border-2 border-foreground p-4 rounded-sm max-w-sm mx-auto bg-card text-card-foreground shadow-sm">
-            <h3 className="text-3xl font-black border-b-[10px] border-foreground pb-1 mb-1 leading-none">
-              Nutrition Facts
-            </h3>
+            <TabsContent value="nutrition" className="mt-5">
+              <div className="mx-auto max-w-sm rounded-sm border-2 border-foreground bg-card p-4 text-card-foreground shadow-sm">
+                <h3 className="mb-1 border-b-[10px] border-foreground pb-1 text-3xl font-black leading-none">
+                  Nutrition Facts
+                </h3>
 
-            <div className="flex justify-between items-baseline border-b-4 border-foreground pb-2 mb-2">
-              <span className="font-bold text-lg">Serving Size</span>
-              <span className="font-bold text-lg">{item.serving_size || "1 portion"}</span>
-            </div>
+                <div className="mb-2 flex items-baseline justify-between border-b-4 border-foreground pb-2">
+                  <span className="text-lg font-bold">Serving Size</span>
+                  <span className="text-lg font-bold">{item.serving_size || "1 portion"}</span>
+                </div>
 
-            <div className="flex justify-between items-baseline border-b-[4px] border-foreground pb-2 mb-2">
-              <div>
-                <div className="font-bold text-sm">Amount per serving</div>
-                <div className="font-black text-4xl">Calories</div>
+                <div className="mb-2 flex items-baseline justify-between border-b-[4px] border-foreground pb-2">
+                  <div>
+                    <div className="text-sm font-bold">Amount per serving</div>
+                    <div className="text-4xl font-black">Calories</div>
+                  </div>
+                  <div className="text-5xl font-black">{calories}</div>
+                </div>
+
+                <div className="space-y-0 text-sm">
+                  <div className="mb-1 flex justify-end border-b border-foreground pb-1 text-xs font-bold">
+                    % Daily Value*
+                  </div>
+                  <MacroRow label="Total Fat" amount={fat} unit="g" bold />
+                  <MacroRow label="Saturated Fat" amount={satFat} unit="g" indent />
+                  <MacroRow label="Sodium" amount={sodium} unit="mg" bold />
+                  <MacroRow label="Total Carbohydrate" amount={carbs} unit="g" bold />
+                  <MacroRow label="Dietary Fiber" amount={fiber} unit="g" indent />
+                  <MacroRow label="Total Sugars" amount={sugar} unit="g" indent />
+                  <MacroRow label="Protein" amount={protein} unit="g" bold largeBorder />
+                </div>
+
+                <div className="mt-2 text-[10px] leading-tight text-muted-foreground">
+                  * The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.
+                </div>
               </div>
-              <div className="text-5xl font-black">{calories}</div>
-            </div>
+            </TabsContent>
 
-            <div className="space-y-0 text-sm">
-              <div className="flex justify-end text-xs font-bold border-b border-foreground pb-1 mb-1">
-                 % Daily Value*
-              </div>
+            <TabsContent value="ingredients" className="mt-5">
+              <IngredientsSection item={item} loading={ingredientsLoading} hideHeading hideAllergens />
+            </TabsContent>
 
-              <MacroRow label="Total Fat" amount={fat} unit="g" bold />
-              <MacroRow label="Saturated Fat" amount={satFat} unit="g" indent />
-              <MacroRow label="Sodium" amount={sodium} unit="mg" bold />
-              <MacroRow label="Total Carbohydrate" amount={carbs} unit="g" bold />
-              <MacroRow label="Dietary Fiber" amount={fiber} unit="g" indent />
-              <MacroRow label="Total Sugars" amount={sugar} unit="g" indent />
-              <MacroRow label="Protein" amount={protein} unit="g" bold largeBorder />
-            </div>
+            <TabsContent value="reviews" className="mt-5">
+              <ItemReviewsTab
+                itemId={item.id}
+                reviewCount={item.review_count ?? 0}
+                reviewsHref={reviewsHref}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
 
-             <div className="mt-2 text-[10px] leading-tight text-muted-foreground">
-               * The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.
-             </div>
-          </div>
-
-          <IngredientsSection item={item} loading={ingredientsLoading} className="mx-auto mt-8 max-w-sm" />
-
-          <div className="mt-8 mb-3 text-center">
-             <LogFoodDialog item={item} />
-          </div>
-
-          <div className={cn("text-center", extraAction ? "mb-3" : "mb-20")}>
-             {onStartReview ? (
-               <Button
-                 size="lg"
-                 className={cn(
-                   "w-full gap-2 shadow-lg",
-                   appPrimaryButtonClassName,
-                 )}
-                 onClick={() => onStartReview(item)}
-               >
-                 <Camera className="w-5 h-5" />
-                 I ate this (Review)
-               </Button>
-             ) : (
-               <Link href={`/review/new?item_id=${item.id}`} className="inline-block w-full">
-                 <Button
-                   size="lg"
-                   className={cn(
-                     "w-full gap-2 shadow-lg",
-                     appPrimaryButtonClassName,
-                   )}
-                 >
-                   <Camera className="w-5 h-5" />
-                   I ate this (Review)
-                 </Button>
-               </Link>
-             )}
-          </div>
-          {extraAction ? <div className="mb-20 text-center">{extraAction}</div> : null}
+        {/* Actions stay visible: no scrolling past the label to log or review. */}
+        <div
+          className={cn(
+            "grid shrink-0 grid-cols-2 gap-3 border-t border-border bg-background px-5 pt-3",
+            isSheet ? "pb-[max(0.75rem,env(safe-area-inset-bottom))]" : "pb-3",
+          )}
+        >
+          <LogFoodDialog
+            item={item}
+            trigger={(
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full gap-2"
+                disabled={calories <= 0 || item.item_type === "station_header"}
+              >
+                <Plus className="h-5 w-5" />
+                Add to log
+              </Button>
+            )}
+          />
+          {onStartReview ? (
+            <Button
+              size="lg"
+              className={cn("w-full gap-2", appPrimaryButtonClassName)}
+              onClick={() => onStartReview(item)}
+            >
+              <Camera className="h-5 w-5" />
+              I ate this
+            </Button>
+          ) : (
+            <Button asChild size="lg" className={cn("w-full gap-2", appPrimaryButtonClassName)}>
+              <Link href={`/review/new?item_id=${item.id}`}>
+                <Camera className="h-5 w-5" />
+                I ate this
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
     </>
