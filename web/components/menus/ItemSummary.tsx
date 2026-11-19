@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +10,8 @@ import { FavoriteButton } from "@/components/menus/FavoriteButton";
 import { getDynamicTags } from "@/lib/filter-utils";
 import { macroSummaryFromNutrition, roundMacro } from "@/lib/nutrition";
 import { cn } from "@/lib/utils";
+import { avoidCount, ingredientInfo } from "@/lib/avoid";
+import { useAvoid } from "@/components/ingredients/avoid-context";
 import type { Item } from "@/types/dining";
 
 const TAG_ORDER = ["vegan", "vegetarian", "halal", "kosher", "glutenfree", "spicy", "highprotein", "highfiber"];
@@ -43,6 +47,9 @@ export function ItemSummary({
   className?: string;
 }) {
   const macros = macroSummaryFromNutrition(item.macronutrients);
+  // Avoiding something and this dish has no label: say so instead of implying it's safe.
+  const avoid = useAvoid();
+  const unknownIngredients = avoidCount(avoid) > 0 && !ingredientInfo(item).known;
   const shownRating =
     rating !== undefined
       ? rating
@@ -79,6 +86,9 @@ export function ItemSummary({
           ) : null}
         </div>
         <AdditiveMarker categories={additives} className="mt-1.5" />
+        {unknownIngredients ? (
+          <p className="mt-1.5 text-[11px] font-medium text-muted-foreground">Ingredients unknown</p>
+        ) : null}
       </div>
       <div className="flex shrink-0 flex-col items-end gap-2">
         <MScaleIndicator score={item.nutrition_score} />

@@ -1,5 +1,6 @@
 import { Item } from "@/types/dining";
 import { FilterState } from "@/components/locations/slug/filters/types";
+import { itemPassesAvoid, type AvoidPrefs } from "@/lib/avoid";
 
 /** Lowercase a-z only, for comparing DB labels to filter ids. */
 export function normalizeDietaryTag(tag: string): string {
@@ -80,9 +81,11 @@ export const getDynamicTags = (item: Item): string[] => {
   return tags;
 };
 
-export function filterItems(items: Item[], filters: FilterState): Item[] {
+/** `avoid`: saved allergen/additive Avoid choices (lib/avoid.ts). */
+export function filterItems(items: Item[], filters: FilterState, avoid?: AvoidPrefs | null): Item[] {
   return items.filter((item) => {
     if (!itemMatchesDietaryFilters(item, filters.dietary)) return false;
+    if (!itemPassesAvoid(item, avoid)) return false;
 
     // 1. Search
     if (

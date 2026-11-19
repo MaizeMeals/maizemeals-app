@@ -22,6 +22,7 @@ import {
 import { appGhostTextButtonClassName } from "@/lib/button-styles"
 import type { Item, ItemWithPhotos, MenuData, OperatingHour, StationGroup as StationGroupData } from "@/types/dining"
 import { formatTime } from "@/lib/dining"
+import { AvoidProvider } from "@/components/ingredients/avoid-context"
 import { LocationSkeleton } from "@/components/locations/slug/LocationSkeleton"
 import { StickyHeader } from "@/components/locations/slug/StickyHeader"
 import { FilterState, INITIAL_FILTERS } from "@/components/locations/slug/filters/types"
@@ -213,7 +214,7 @@ export default function LocationPage() {
     const groups = data.menu[activeTab] || []
     const filteredGroups = groups
       .map((group) => {
-        let filteredItems = filterItems(group.items, filters)
+        let filteredItems = filterItems(group.items, filters, preferences.avoid_ingredients)
         filteredItems = [...filteredItems].sort((a, b) =>
           compareItemsBySmartPreferences(a, b, preferences),
         )
@@ -384,6 +385,7 @@ export default function LocationPage() {
   const meals = Object.keys(menu)
 
   return (
+    <AvoidProvider value={preferences.avoid_ingredients}>
     <div className="min-h-screen bg-background pb-20">
 
       {/* 1. Hero */}
@@ -559,6 +561,7 @@ export default function LocationPage() {
         />
       )}
     </div>
+    </AvoidProvider>
   )
 }
 

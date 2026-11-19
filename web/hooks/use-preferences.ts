@@ -38,6 +38,9 @@ function parseProfileToPreferences(data: Record<string, unknown>): UserPreferenc
   return safeFallback;
 }
 
+/** Every usePreferences instance applies updates made by any other instance. */
+const PREFERENCES_UPDATED_EVENT = "maize-preferences-updated";
+
 export function usePreferences() {
   const [preferences, setPreferences] =
     useState<UserPreferences>(DEFAULT_PREFERENCES);
@@ -130,6 +133,15 @@ export function usePreferences() {
       window.removeEventListener(MAIZE_PREFERENCES_MERGED_EVENT, onMerged);
   }, [loadPreferences]);
 
+  useEffect(() => {
+    const onUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<Partial<UserPreferences>>).detail;
+      if (detail) setPreferences((prev) => ({ ...prev, ...detail }));
+    };
+    window.addEventListener(PREFERENCES_UPDATED_EVENT, onUpdated);
+    return () => window.removeEventListener(PREFERENCES_UPDATED_EVENT, onUpdated);
+  }, []);
+
   const needsTier1Onboarding = useMemo(() => {
     if (loading) return false;
     if (isGuest) return !guestTier1Done;
@@ -170,6 +182,8 @@ export function usePreferences() {
         }
         return newPrefs;
       });
+      // Other mounted instances (e.g. the filter dialog vs. the page) sync up.
+      window.dispatchEvent(new CustomEvent(PREFERENCES_UPDATED_EVENT, { detail: payload }));
 
       if (!isGuest) {
         const {

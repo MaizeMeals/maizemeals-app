@@ -23,6 +23,9 @@ import { DietarySection } from "./filters/DietarySection";
 import { RatingSection } from "./filters/RatingSection";
 import { MScaleSection } from "./filters/MScaleSection";
 import { MacroSection } from "./filters/MacroSection";
+import { AvoidSection } from "./filters/AvoidSection";
+import { usePreferences } from "@/hooks/use-preferences";
+import { avoidCount, NO_AVOID, type AvoidPrefs } from "@/lib/avoid";
 import { FilterState, INITIAL_FILTERS } from "./filters/types";
 import { Item } from "@/types/dining";
 
@@ -43,17 +46,27 @@ export function FilterDialog({
 }: FilterDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [tempFilters, setTempFilters] = useState(filters);
+  // Avoid choices are saved preferences (profile or guest storage), not page state.
+  const { preferences, updatePreferences } = usePreferences();
+  const savedAvoid = preferences.avoid_ingredients ?? NO_AVOID;
+  const [tempAvoid, setTempAvoid] = useState<AvoidPrefs>(savedAvoid);
 
   // Custom hook handles the heavy math and auto-updates
   const { stats, maxes } = useMacroStats(items, setFilters);
 
   const handleOpenChange = (next: boolean) => {
-    if (next) setTempFilters(filters);
+    if (next) {
+      setTempFilters(filters);
+      setTempAvoid(savedAvoid);
+    }
     setIsOpen(next);
   };
 
   const applyFilters = () => {
     setFilters(tempFilters);
+    if (JSON.stringify(tempAvoid) !== JSON.stringify(savedAvoid)) {
+      void updatePreferences({ avoid_ingredients: tempAvoid });
+    }
     setIsOpen(false);
   };
 
@@ -78,13 +91,13 @@ export function FilterDialog({
         <Button
           variant="outline"
           aria-label="Filters"
-          className={appToolbarControlClassName(activeCount > 0)}
+          className={appToolbarControlClassName(activeCount + avoidCount(savedAvoid) > 0)}
         >
           <SlidersHorizontal className="w-4 h-4" />
           <span className="hidden md:inline">Filters</span>
-          {activeCount > 0 && (
+          {activeCount + avoidCount(savedAvoid) > 0 && (
             <span className="bg-maize text-umich-blue text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full absolute -top-1 -right-1 md:static md:top-auto md:right-auto md:w-5 md:h-5 md:ml-1">
-              {activeCount}
+              {activeCount + avoidCount(savedAvoid)}
             </span>
           )}
         </Button>
@@ -100,6 +113,7 @@ export function FilterDialog({
             selected={tempFilters.dietary}
             onChange={toggleDietary}
           />
+          <AvoidSection value={tempAvoid} onChange={setTempAvoid} />
           <RatingSection
             minRating={tempFilters.minRating}
             onChange={(r) => setTempFilters({ ...tempFilters, minRating: r })}
@@ -142,7 +156,8 @@ export function FilterDialog({
             onClick={applyFilters}
             className={cn("gap-2 px-8", appPrimaryButtonClassName)}
           >
-            Show {resultCount} items
+            {/* The count reflects saved Avoid choices; after changing them, just apply. */}
+            {JSON.stringify(tempAvoid) !== JSON.stringify(savedAvoid) ? "Apply" : `Show ${resultCount} items`}
           </Button>
         </ResponsiveDialogFooter>
       </ResponsiveDialogContent>

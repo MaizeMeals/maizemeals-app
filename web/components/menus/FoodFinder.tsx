@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import type { ItemWithPhotos } from "@/types/dining";
 import type { Offering } from "@/lib/day-menu/dishes";
 import { useFavoriteFoods } from "@/hooks/use-favorite-foods";
+import { AvoidProvider } from "@/components/ingredients/avoid-context";
 
 const PAGE = 30;
 const DAYS_AHEAD = 6;
@@ -129,7 +130,8 @@ export function FoodFinder() {
     // Same predicate as the hall page (dietary + rating/M-Scale/macros); text
     // search is handled by buildDishes' relevance ranking instead.
     const nonSearch = { ...filters, search: "" };
-    const include = (it: DayMenuItem) => filterItems([asScoringItem(it)], nonSearch).length > 0;
+    const include = (it: DayMenuItem) =>
+      filterItems([asScoringItem(it)], nonSearch, preferences.avoid_ingredients).length > 0;
     const meals = searching ? mealOptions : effectiveMeal ? [effectiveMeal] : [];
     return meals
       .map((m) => ({
@@ -206,6 +208,7 @@ export function FoodFinder() {
   return (
     // lg+: the item panel sits beside the page and the content shifts over
     // (same pattern and widths as the hall menu), instead of a blocking overlay.
+    <AvoidProvider value={preferences.avoid_ingredients}>
     <div className="lg:flex lg:w-full lg:items-start">
     <PageShell className="min-w-0 px-0 md:px-0 lg:flex-1">
       <div className="px-4">
@@ -416,6 +419,7 @@ export function FoodFinder() {
         />
       )}
     </div>
+    </AvoidProvider>
   );
 }
 

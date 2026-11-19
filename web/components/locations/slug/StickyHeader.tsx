@@ -9,6 +9,7 @@ import { QuickToggles } from "./QuickToggles"
 import { useMacroStats } from "./filters/useMacroStats"
 import { useMemo } from "react"
 import { filterItems } from "@/lib/filter-utils"
+import { usePreferences } from "@/hooks/use-preferences"
 
 interface StickyHeaderProps {
   filters: FilterState
@@ -32,7 +33,11 @@ export function StickyHeader({ filters, setFilters, items, selectedDate, availab
     setFilters({ ...filters, dietary: next })
   }
 
-  const resultCount = useMemo(() => filterItems(items, filters).length, [items, filters])
+  const { preferences } = usePreferences()
+  const resultCount = useMemo(
+    () => filterItems(items, filters, preferences.avoid_ingredients).length,
+    [items, filters, preferences.avoid_ingredients],
+  )
 
   // Calculate active count
   const activeCount = useMemo(() => {

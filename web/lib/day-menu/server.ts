@@ -121,6 +121,7 @@ async function loadDayMenu(date: string): Promise<DayMenu> {
       meals: [e.meal],
       allergens: it.allergens ?? [],
       additives: Array.isArray(it.ingredient_flags?.categories) ? it.ingredient_flags.categories : [],
+      ingredientsKnown: it.ingredient_flags != null,
     });
   }
   for (const it of items.values()) it.meals.sort((a, b) => mealRank(a) - mealRank(b));
@@ -147,7 +148,7 @@ async function loadDayMenu(date: string): Promise<DayMenu> {
 // Bump the key ("day-menu-vN") whenever the DayMenu shape changes: the data
 // cache survives deploys, so old-shape entries would otherwise be served.
 export function getDayMenu(date: string): Promise<DayMenu> {
-  return unstable_cache(() => loadDayMenu(date), ["day-menu-v3", date], {
+  return unstable_cache(() => loadDayMenu(date), ["day-menu-v4", date], {
     revalidate: 600,
     tags: ["day-menu", `day-menu:${date}`],
   })();

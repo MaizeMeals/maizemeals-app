@@ -27,6 +27,16 @@ export const UserPreferencesSchema = z.object({
 
   favorite_location_ids: z.array(z.string().uuid()).catch([]),
 
+  // "Avoid" menu filters (allergens + additive categories). See lib/avoid.ts.
+  avoid_ingredients: z
+    .object({
+      allergens: z.array(z.string()).catch([]),
+      additives: z.array(z.string()).catch([]),
+      hide_unknown: z.boolean().catch(false),
+    })
+    .catch({ allergens: [], additives: [], hide_unknown: false })
+    .default({ allergens: [], additives: [], hide_unknown: false }),
+
   // GAMIFICATION
   streak_current: z.number().int().nonnegative().default(0),
   // Handles the "string | null" -> "string | undefined" conversion
@@ -51,6 +61,7 @@ export const UserPreferencesUpdateSchema = UserPreferencesSchema.pick({
   rating_sensitivity: true,
   onboarding_completed: true,
   favorite_location_ids: true,
+  avoid_ingredients: true,
   default_campus: true,
   streak_current: true,
   last_played_at: true,

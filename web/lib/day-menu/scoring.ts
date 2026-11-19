@@ -44,7 +44,8 @@ export function asScoringItem(it: DayMenuItem): Item {
     // the full record (and shows "loading" until then).
     allergens: it.allergens.length ? it.allergens : null,
     ingredients: null,
-    ingredient_flags: null,
+    // Categories only (no spans): enough for the Avoid filters and row markers.
+    ingredient_flags: it.ingredientsKnown ? { categories: it.additives, spans: [] } : null,
     ingredients_checked_at: null,
     label_notes: null,
     nutrition_label: null,

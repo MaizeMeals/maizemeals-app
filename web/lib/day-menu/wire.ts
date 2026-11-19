@@ -13,13 +13,14 @@ import { foodKey, type DayMenu, type DayMenuHall, type DayMenuItem } from "./typ
  * - v2 adds satFat/sodium/sugars + servingSize so the item drawer can render
  *   the full nutrition label instantly (no second pop while loading).
  * - v3 appends allergens + additive categories (row markers in Find food).
+ * - v4 appends ingredientsKnown (1/0) for the Avoid filters.
  * - `key` is recomputed from `name` (foodKey(normalized_name) === foodKey(name)).
  * - carbon-footprint tags aren't sent (unused by these views).
  * - hall ids are replaced by an index into `halls`.
  * `fromWire` still accepts v1 (e.g. an offline copy cached by the service worker).
  */
 
-export const WIRE_VERSION = 3;
+export const WIRE_VERSION = 4;
 
 type Macros = [number, number, number, number, number, number?, number?, number?];
 
@@ -37,10 +38,11 @@ type WireItem = [
   servingSize?: string | null,
   allergens?: string[],
   additives?: string[],
+  ingredientsKnown?: 0 | 1,
 ];
 
 export type DayMenuWire = {
-  v: 1 | 2 | 3;
+  v: 1 | 2 | 3 | 4;
   date: string;
   generatedAt: string;
   halls: DayMenuHall[];
@@ -81,14 +83,15 @@ export function toWire(menu: DayMenu): DayMenuWire {
         it.servingSize,
         it.allergens,
         it.additives,
+        it.ingredientsKnown ? 1 : 0,
       ]),
   };
 }
 
 export function fromWire(wire: DayMenuWire): DayMenu {
-  if (wire.v !== 1 && wire.v !== 2 && wire.v !== 3) throw new Error(`Unsupported menu format v${String(wire.v)}`);
+  if (![1, 2, 3, 4].includes(wire.v)) throw new Error(`Unsupported menu format v${String(wire.v)}`);
   const items: DayMenuItem[] = wire.items.map(
-    ([id, hall, name, station, tags, m, mScale, avgRating, reviewCount, meals, servingSize, allergens, additives]) => ({
+    ([id, hall, name, station, tags, m, mScale, avgRating, reviewCount, meals, servingSize, allergens, additives, ingredientsKnown]) => ({
       id,
       hallId: wire.halls[hall].id,
       name,
@@ -112,6 +115,7 @@ export function fromWire(wire: DayMenuWire): DayMenu {
       meals,
       allergens: allergens ?? [],
       additives: additives ?? [],
+      ingredientsKnown: ingredientsKnown === 1,
     }),
   );
   return { date: wire.date, generatedAt: wire.generatedAt, halls: wire.halls, items };

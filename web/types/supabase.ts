@@ -433,6 +433,7 @@ export type Database = {
       user_profiles: {
         Row: {
           avatar_url: string | null
+          avoid_ingredients: Json
           created_at: string
           default_campus: string | null
           dietary_filters: Json
@@ -452,6 +453,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          avoid_ingredients?: Json
           created_at?: string
           default_campus?: string | null
           dietary_filters?: Json
@@ -471,6 +473,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          avoid_ingredients?: Json
           created_at?: string
           default_campus?: string | null
           dietary_filters?: Json

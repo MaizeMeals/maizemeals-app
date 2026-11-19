@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { SmartSlidersDialog } from "@/components/preferences/SmartSlidersDialog";
 import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
 import { AppearanceSection } from "@/components/settings/AppearanceSection";
+import { AvoidSection } from "@/components/locations/slug/filters/AvoidSection";
+import { NO_AVOID } from "@/lib/avoid";
 import { usePreferences } from "@/hooks/use-preferences";
 import { PageHeader, PageShell } from "@/components/layout/page-shell";
 import { appPrimaryButtonClassName } from "@/lib/button-styles";
@@ -95,6 +97,17 @@ export function SettingsPanel({ email }: { email: string | null }) {
               );
             })}
           </div>
+        )}
+      </section>
+
+      <section className="mt-10 border-t border-border pt-8">
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Loading your saved preferences…</p>
+        ) : (
+          <AvoidSection
+            value={preferences.avoid_ingredients ?? NO_AVOID}
+            onChange={(next) => void updatePreferences({ avoid_ingredients: next })}
+          />
         )}
       </section>
 
