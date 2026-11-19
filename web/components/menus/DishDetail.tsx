@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DetailDrawer, ItemDetailSidebar } from "@/components/locations/slug/DetailDrawer";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { createClient } from "@/lib/supabase/client";
+import { catalogQuery } from "@/lib/catalog-query";
 import { appSurfaceOutlineButtonClassName } from "@/lib/button-styles";
 import { cn } from "@/lib/utils";
 import type { ItemWithPhotos } from "@/types/dining";
@@ -29,47 +30,42 @@ export type DishSelection = {
 
 type DishItemState = { item: ItemWithPhotos | null; loading: boolean; error: string | null };
 
+async function fetchDishItem(itemId: string): Promise<ItemWithPhotos> {
+  const { data, error } = await createClient()
+    .from("items")
+    .select("*, photos ( storage_path, is_approved )")
+    .eq("id", itemId)
+    .single();
+  if (error || !data) {
+    console.error("[DishDetail] item load failed", error);
+    throw new Error("Couldn't load photos for this dish.");
+  }
+  const { photos, ...rest } = data;
+  const approved = (photos ?? [])
+    .filter((photo) => photo.is_approved)
+    .map((photo) => ({ storage_path: photo.storage_path }));
+  return {
+    ...rest,
+    photos: approved.length ? approved : undefined,
+    review_count: rest.review_count,
+  };
+}
+
 /** Loads the full, location-specific item (nutrition label, approved photos). */
 export function useDishItem(selection: DishSelection | null): DishItemState {
-  const [state, setState] = useState<DishItemState>({ item: null, loading: false, error: null });
+  const query = useQuery({
+    queryKey: ["menu-item", selection?.itemId],
+    queryFn: () => fetchDishItem(selection!.itemId),
+    enabled: Boolean(selection),
+    ...catalogQuery,
+  });
 
-  useEffect(() => {
-    if (!selection) {
-      setState({ item: null, loading: false, error: null });
-      return;
-    }
-    let cancelled = false;
-    setState({ item: selection.provisional, loading: true, error: null });
-    createClient()
-      .from("items")
-      .select("*, photos ( storage_path, is_approved )")
-      .eq("id", selection.itemId)
-      .single()
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error || !data) {
-          // Keep showing the provisional dish; only photos are missing.
-          console.error("[DishDetail] item load failed", error);
-          setState((s) => ({ ...s, loading: false, error: "Couldn't load photos for this dish." }));
-          return;
-        }
-        // Same shape the hall page builds: approved photos only.
-        const { photos, ...rest } = data;
-        const approved = (photos ?? [])
-          .filter((p) => p.is_approved)
-          .map((p) => ({ storage_path: p.storage_path }));
-        setState({
-          item: { ...rest, photos: approved.length ? approved : undefined, review_count: rest.review_count },
-          loading: false,
-          error: null,
-        });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [selection]);
-
-  return state;
+  if (!selection) return { item: null, loading: false, error: null };
+  return {
+    item: query.data ?? selection.provisional,
+    loading: !query.data && query.isFetching,
+    error: query.isError ? "Couldn't load photos for this dish." : null,
+  };
 }
 
 function hallHref(selection: DishSelection) {
