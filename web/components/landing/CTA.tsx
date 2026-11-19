@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
 import { useAnalytics } from "@/hooks/use-analytics"
+import { AuthEntryLink } from "@/components/auth/AuthEntryLink"
 import { landingPrimaryButtonClassName } from "@/lib/button-styles"
 
 export function CTA() {
@@ -51,7 +52,7 @@ export function CTA() {
             </p>
             <div className="relative z-10 flex flex-col sm:flex-row justify-center gap-4">
               <Button asChild size="lg" className={landingPrimaryButtonClassName}>
-                <Link href="/login" onClick={handleGetStartedClick}>Get Started</Link>
+                <AuthEntryLink entry="/login" onClick={handleGetStartedClick}>Get Started</AuthEntryLink>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-white/20 bg-transparent text-white hover:bg-white/10 dark:hover:bg-white/10">
                 <Link href="/menus" onClick={handleViewMenuClick}>View Today's Menu</Link>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeAuthEntryPath, sanitizeAuthNextPath } from "./auth-next-path";
+import { authEntryHref, sanitizeAuthEntryPath, sanitizeAuthNextPath } from "./auth-next-path";
 
 describe("sanitizeAuthNextPath", () => {
   it("keeps an in-app path", () => {
@@ -30,6 +30,23 @@ describe("sanitizeAuthNextPath", () => {
     expect(max.length).toBe(2048);
     expect(sanitizeAuthNextPath(max)).toBe(max);
     expect(sanitizeAuthNextPath(`${max}a`)).toBe("/");
+  });
+});
+
+describe("authEntryHref", () => {
+  it("returns to the current page, including search and hash", () => {
+    expect(authEntryHref("/login", "/locations?tab=1#bursley")).toBe(
+      `/login?next=${encodeURIComponent("/locations?tab=1#bursley")}`,
+    );
+    expect(authEntryHref("/signup", "/menus")).toBe("/signup?next=%2Fmenus");
+  });
+
+  it("does not send someone back to the auth pages", () => {
+    expect(authEntryHref("/login", "/")).toBe("/login");
+    expect(authEntryHref("/login", null)).toBe("/login");
+    expect(authEntryHref("/signup", "/login?error=1")).toBe("/signup");
+    expect(authEntryHref("/login", "/signup#x")).toBe("/login");
+    expect(authEntryHref("/login", "//evil.example")).toBe("/login");
   });
 });
 
