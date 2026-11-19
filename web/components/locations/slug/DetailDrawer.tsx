@@ -21,6 +21,7 @@ import { AdditiveMarker } from "@/components/ingredients/AdditiveMarker"
 import { parseIngredientFlags } from "@/lib/ingredients"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ItemReviewsTab } from "./ItemReviewsTab"
+import { FoodIcon } from "@/components/ingredients/FoodIcon"
 
 const AXIS_LOCK_PX = 10
 
@@ -299,7 +300,7 @@ function useSwipeToCloseSheet(onDismiss: () => void, enabled: boolean) {
 }
 
 /** Same patterned empty state as `LocationDetailPanel` hero when there is no photo. */
-function ItemNoPhotoPattern() {
+function ItemNoPhotoPattern({ name }: { name: string }) {
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6">
       <div
@@ -310,7 +311,8 @@ function ItemNoPhotoPattern() {
         className="absolute inset-0 opacity-[0.35] [background-image:repeating-linear-gradient(135deg,hsl(var(--border))_0,hsl(var(--border))_1px,transparent_1px,transparent_11px)]"
         aria-hidden
       />
-      <p className="relative z-[1] text-center text-sm font-medium text-muted-foreground">
+      <FoodIcon name={name} className="relative z-[1] h-20 w-20 drop-shadow-sm" />
+      <p className="relative z-[1] text-center text-xs font-medium text-muted-foreground">
         Add a photo with a review
       </p>
     </div>
@@ -450,14 +452,14 @@ export function ItemDetailPanel({
                         unoptimized={remoteUnoptimized}
                       />
                     ) : (
-                      <ItemNoPhotoPattern />
+                      <ItemNoPhotoPattern name={item.name} />
                     )}
                   </div>
                 )
               })
             ) : (
               <div className="relative flex h-full w-full shrink-0 snap-center items-center justify-center bg-muted">
-                <ItemNoPhotoPattern />
+                <ItemNoPhotoPattern name={item.name} />
               </div>
             )}
           </div>

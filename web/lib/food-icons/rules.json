@@ -1,0 +1,614 @@
+{
+ "comment": "Ordered: first match wins. Case-insensitive regexes tested against the dish name. Icons are Fluent Emoji Flat names (public/icons/food/<icon>.svg). overrides are keyed by foodKey(name).",
+ "rules": [
+  [
+   "^(?!.*(\\bwith\\b|\\bw\\/|\\bw\\b)).*\\bgravy$",
+   "jar"
+  ],
+  [
+   "^(?!.*(\\bwith\\b|\\bw\\/|\\bw\\b|\\b(spaghetti|pasta|penne|ziti|rigatoni|linguine|fettuccine|noodles?|lasagna|meatballs?|chicken|shrimp|tofu|beef|pork|steak|fish|salmon|wings?|nachos|burrito|taco|eggs?|beans?)\\b)).*\\b(sauce|gravy|marinade|dressing|vinaigrette|glaze|aioli|syrup|dip|spread|chutney|pesto|relish|jam|jelly|drizzle|mayo|mayonnaise|ketchup|mustard|ranch|reduction|compote|coulis|crema)s?$",
+   "jar"
+  ],
+  [
+   "\\b(rub|seasoning|spice blend)s?$",
+   "salt"
+  ],
+  [
+   "\\b(infused water|water)\\b",
+   "ice"
+  ],
+  [
+   "^(?!.*\\b(donuts?|long john|brownies?|cookies?|bars?|muffins?|cake|scones?|danish)\\b).*\\b(iced|lassi|frozen latte|horchata|root beer|sprite|fountain beverage|coke|pepsi|iced tea|lemonade|juice|soda|smoothie|frappe|frappuccino|refresher|punch|kombucha|agua fresca|slushie?)\\b",
+   "cup-with-straw"
+  ],
+  [
+   "^(?!.*\\b(muffins?|cake|brownies?|cookies?|bars?|scones?|frozen)\\b).*\\b(coffee|cider|cafe|caf[eé] au lait|red eye|steamer|london fog|espresso|latte|cappuccino|americano|macchiato|mocha|cold brew|hot chocolate|hot cocoa|cocoa|chai|tea latte|hot tea|herbal tea)\\b",
+   "hot-beverage"
+  ],
+  [
+   "\\b(boba|bubble tea|milk tea)\\b",
+   "bubble-tea"
+  ],
+  [
+   "\\b(milkshake|shake)\\b",
+   "cup-with-straw"
+  ],
+  [
+   "^(whole |skim |2% |1% |chocolate |soy |oat |almond |low ?fat |fat ?free )?milk$",
+   "glass-of-milk"
+  ],
+  [
+   "\\btea\\b",
+   "teacup-without-handle"
+  ],
+  [
+   "\\b(bosco sticks?)\\b",
+   "baguette-bread"
+  ],
+  [
+   "\\bfondue\\b",
+   "fondue"
+  ],
+  [
+   "\\b(quesabirria|birria)\\b",
+   "taco"
+  ],
+  [
+   "\\b(chicken|pepperoni|margherita|cheese|steak|onion|sausage|veggie|vegetable)\\b.*\\bflatbread$",
+   "pizza"
+  ],
+  [
+   "\\bpizza|calzone|stromboli|flatbread pizza\\b",
+   "pizza"
+  ],
+  [
+   "\\b(fries|tots|totchos)\\b",
+   "french-fries"
+  ],
+  [
+   "\\b(hamburger|slider|hot ?dog) buns?$",
+   "bread"
+  ],
+  [
+   "(burger|\\bslider|\\bpatty melt)s?\\b",
+   "hamburger"
+  ],
+  [
+   "\\b(hot ?dog|bratwurst|brat|corn ?dog|frank)s?\\b",
+   "hot-dog"
+  ],
+  [
+   "\\b(burrito|chimichanga)s?\\b",
+   "burrito"
+  ],
+  [
+   "\\b(taco|tostada)s?\\b",
+   "taco"
+  ],
+  [
+   "\\b(quesadilla|enchilada|fajita|nacho|tamale)s?\\b",
+   "tamale"
+  ],
+  [
+   "\\b(gyro|shawarma|pita wrap|kebab|kabob|kebob|doner|souvlaki)s?\\b",
+   "stuffed-flatbread"
+  ],
+  [
+   "\\bfalafel\\b",
+   "falafel"
+  ],
+  [
+   "\\bcookie sandwich\\b",
+   "cookie"
+  ],
+  [
+   "\\b(sandwich loaf|sandwich bread|sub bun)\\b|^(king'?s hawaiian |classic brioche )?bun$",
+   "bread"
+  ],
+  [
+   "\\b(on|with|w\\/)\\s+(an?\\s+)?([\\w'-]+\\s+){0,3}(bun|roll|baguette|hoagie|brioche|ciabatt?a|focaccia|pretzel bread|bagel|english muffin|biscuit)\\b",
+   "sandwich"
+  ],
+  [
+   "\\b(wrap|panini|sandwich|sub|hoagie|club|blt|reuben|melt|cheesesteak|philly|grilled cheese|sloppy joe|po'? ?boy|banh mi|cubano|croque|toastie|muffuletta)s?\\b",
+   "sandwich"
+  ],
+  [
+   "\\b(sushi|maki|nigiri|california roll|spicy tuna roll|poke|chirashi)\\b",
+   "sushi"
+  ],
+  [
+   "\\b(dumpling|steamed bun|potsticker|gyoza|wonton|bao|bun ?bo|shumai|dim sum|empanada|samosa|pierogi|egg ?roll|spring roll|rangoon)s?\\b",
+   "dumpling"
+  ],
+  [
+   "\\b(ramen|pad kee mao|pancit|bun chay|pho|udon|soba|lo mein|chow mein|pad thai|noodle|yakisoba|japchae|laksa)s?\\b",
+   "steaming-bowl"
+  ],
+  [
+   "\\b(rice krisp(ie|y|ies)|krispie treats?|krispy treats?)\\b",
+   "candy"
+  ],
+  [
+   "\\b(soup|chowder|bisque|gumbo|etouffee|stew|broth|minestrone|gazpacho|pozole|posole|menudo|goulash|borscht|feijoada|khoresht|guisado|tinga|tagine|cacciatore)\\b",
+   "pot-of-food"
+  ],
+  [
+   "\\b(salad|slaw|coleslaw|caesar|ensalada)\\b",
+   "green-salad"
+  ],
+  [
+   "\\b(spaghetti|gemelli|stroganoff|cannelloni|spaetzle|mostaccioli|pasta|penne|rigatoni|ziti|linguine|fettuccine|alfredo|lasagna|lasagne|ravioli|tortellini|gnocchi|macaroni|mac ?(&|and|n) ?cheese|mac ?n ?cheese|orzo|rotini|farfalle|bowtie|cavatappi|manicotti|stuffed shells|carbonara|bolognese|primavera|tortelloni)\\b",
+   "spaghetti"
+  ],
+  [
+   "\\b(curry|panang|massaman|tikka|masala|korma|vindaloo|dal|daal|dhal|saag|chana|chole|rajma|biryani|aloo gobi|paneer|bunny chow)\\b",
+   "curry-rice"
+  ],
+  [
+   "\\b(fried rice|rice pilaf|pilaf|pilau|risotto|paella|jambalaya|rice|congee|arroz|bibimbap|onigiri|couscous|quinoa|farro|grain blend|grains?|polenta|koshari|mujadara|spanakorizo|tabbouleh|bulgur)\\b",
+   "cooked-rice"
+  ],
+  [
+   "\\bchill?i\\b\\s*($|with\\b|w\\/|con\\b)",
+   "pot-of-food"
+  ],
+  [
+   "\\b(casserole|jackfruit|stir[ -]?fr(y|ied)|moo shoo|moo shu|teriyaki|general tso|orange chicken|sesame chicken|kung pao|lo mein|fajita veg|szechuan|mongolian|bulgogi|katsu|tempura)\\b",
+   "shallow-pan-of-food"
+  ],
+  [
+   "\\b(bowl|grain bowl|power bowl|buddha bowl)\\b",
+   "bento-box"
+  ],
+  [
+   "\\b(bars?|squares|brownies?|blondies?|brookies?)\\b|\\bcookies?$|\\bcrumbles$",
+   "cookie"
+  ],
+  [
+   "\\b(pancake|flapjack|crepe|crêpe|cachapa)s?\\b",
+   "pancakes"
+  ],
+  [
+   "\\b(waffle)s?\\b",
+   "waffle"
+  ],
+  [
+   "\\b(french toast)\\b",
+   "bread"
+  ],
+  [
+   "\\b(oatmeal|oats|porridge|grits|cereal|granola|muesli|cream of wheat|farina)\\b",
+   "bowl-with-spoon"
+  ],
+  [
+   "\\b(yogurt|parfait|pudding|custard|flan|mousse|panna cotta|creme brulee|tapioca|jell-?o|gelatin)\\b",
+   "custard"
+  ],
+  [
+   "\\b(egg|eggs|sausage|bacon|ham)\\b.*\\b(bagel|biscuit|croissant|english muffin|muffin|sandwich)$",
+   "sandwich"
+  ],
+  [
+   "\\b(omelet|omelette|frittata|quiche|scrambled?|scramble|matzo brei|fried egg|eggs? benedict|hard ?boiled|deviled|egg white|eggs?|huevos|shakshuka)\\b",
+   "cooking"
+  ],
+  [
+   "\\bbacon\\b",
+   "bacon"
+  ],
+  [
+   "\\b(donut|long john|doughnut|cruller|fritter|beignet|churro|funnel cake|paczki)s?\\b",
+   "doughnut"
+  ],
+  [
+   "\\b(cupcake)s?\\b",
+   "cupcake"
+  ],
+  [
+   "\\b(shortcake|cake|cheesecake|tiramisu|torte|tres leches|lava cake|coffee cake|pound cake)\\b",
+   "shortcake"
+  ],
+  [
+   "\\b(pie|cobbler|crisp|crumble|tart|galette|turnover|strudel|baklava|cannoli)s?\\b",
+   "pie"
+  ],
+  [
+   "\\b(cookie|snickerdoodle|macaron|macaroon|biscotti|shortbread|gingersnap|blondie|brownie|bar)s?\\b",
+   "cookie"
+  ],
+  [
+   "\\b(ice cream|flurr(y|ies)|dole whip|gelato|sorbet|sundae|frozen yogurt|froyo|soft serve|popsicle)\\b",
+   "ice-cream"
+  ],
+  [
+   "\\b(candy|fudge|truffle|toffee|brittle|marshmallow|rice krispie|krispies|s'?mores|bark)s?\\b",
+   "candy"
+  ],
+  [
+   "\\b(croissant)s?\\b",
+   "croissant"
+  ],
+  [
+   "\\b(bagel)s?\\b",
+   "bagel"
+  ],
+  [
+   "\\b(pretzel)s?\\b",
+   "pretzel"
+  ],
+  [
+   "\\b(baguette|breadstick|garlic bread|focaccia|ciabatta)s?\\b",
+   "baguette-bread"
+  ],
+  [
+   "\\b(naan|pita|tortilla|flatbread|lavash|roti|chapati|arepa)s?\\b",
+   "flatbread"
+  ],
+  [
+   "\\b(muffin|stuffing|scone|biscuit|danish(es)?|roll|bread|toast|loaf|brioche|cornbread|bun|sourdough|rye|challah|english muffin|pastry|cinnamon roll|sticky bun|kolache)s?\\b",
+   "bread"
+  ],
+  [
+   "\\b(chocolate)\\b",
+   "chocolate-bar"
+  ],
+  [
+   "\\b(shrimp|prawn|scampi|camarones)s?\\b",
+   "fried-shrimp"
+  ],
+  [
+   "\\b(crab|crab cake)s?\\b",
+   "crab"
+  ],
+  [
+   "\\b(lobster)\\b",
+   "lobster"
+  ],
+  [
+   "\\b(squid|calamari|octopus)\\b",
+   "squid"
+  ],
+  [
+   "\\b(oyster|clam|mussel|scallop)s?\\b",
+   "oyster"
+  ],
+  [
+   "\\b(salmon|redfish|rockfish|monkfish|pescado|tuna|cod|tilapia|pollock|halibut|trout|mahi|catfish|swai|haddock|fish|sea bass|bass|whitefish|perch|sardine|anchov(y|ies))\\b",
+   "fish"
+  ],
+  [
+   "\\b(meatballs?|kofta|pakora|bhaji)\\b",
+   "falafel"
+  ],
+  [
+   "\\bpoutine\\b",
+   "french-fries"
+  ],
+  [
+   "\\b(sausage|chorizo|meatloaf|kielbasa|andouille)s?\\b",
+   "cut-of-meat"
+  ],
+  [
+   "\\b(wing|wings|drumstick|drummies|chicken leg|thigh)s?\\b",
+   "poultry-leg"
+  ],
+  [
+   "\\b(rib|ribs|brisket|pulled pork|carnitas|lamb|shank|pork chop|chop|bone-in|osso buco)s?\\b",
+   "meat-on-bone"
+  ],
+  [
+   "\\b(chicken|turkey|poultry|tender|tenders|nugget|nuggets)\\b",
+   "poultry-leg"
+  ],
+  [
+   "\\b(steak|chuck|chuck eye|puntas de res|cochinita|picadillo|beef|pork|ham|sausage|meatball|meatloaf|roast|chorizo|carne asada|barbacoa|bulgogi|pastrami|corned beef|veal|bison|venison|kielbasa|salami|pepperoni|prosciutto|gyro meat|loin|tenderloin|sirloin|pot roast)s?\\b",
+   "cut-of-meat"
+  ],
+  [
+   "\\b(tofu|tempeh|seitan)\\b",
+   "shallow-pan-of-food"
+  ],
+  [
+   "\\b(hush ?pupp(y|ies)|patty|patties|cakes|fritters?)\\b",
+   "falafel"
+  ],
+  [
+   "\\b(fries|french fries|tater tots?|tots|totchos|hash ?browns?|wedges|chips)\\b",
+   "french-fries"
+  ],
+  [
+   "\\b(sweet potato|yam)e?s?\\b",
+   "roasted-sweet-potato"
+  ],
+  [
+   "\\b(potato|potatoes|patatas|papas|sunchokes?|aloo|alu|mashed|scalloped|au gratin|latke|home fries|breakfast hash|hash)\\b",
+   "potato"
+  ],
+  [
+   "\\b(popcorn)\\b",
+   "popcorn"
+  ],
+  [
+   "\\b(corn|elotes?|esquites|succotash|hominy)\\b",
+   "ear-of-corn"
+  ],
+  [
+   "\\b(broccoli|broccolini)\\b",
+   "broccoli"
+  ],
+  [
+   "\\b(carrot)s?\\b",
+   "carrot"
+  ],
+  [
+   "\\b(green bean|bean|beans|frijoles|lentil|lentils|chickpea|chickpeas|garbanzos?'?s?|edamame|hummus|refried)\\b",
+   "beans"
+  ],
+  [
+   "\\b(pea|peas|snap peas|snow peas)\\b",
+   "pea-pod"
+  ],
+  [
+   "\\b(mushroom|portabella|portabello|portobella|portobello|hongos|huitlacoche)s?\\b",
+   "mushroom"
+  ],
+  [
+   "\\b(tomato|tomatoes|marinara|salsa|pico)\\b",
+   "tomato"
+  ],
+  [
+   "\\b(cucumber|pickle)s?\\b",
+   "cucumber"
+  ],
+  [
+   "\\b(pepper|peppers|jalapeno|jalapeño|poblano|bell pepper)s?\\b",
+   "bell-pepper"
+  ],
+  [
+   "\\b(eggplant|aubergine|baba gh?anou?sh|bademjan)\\b",
+   "eggplant"
+  ],
+  [
+   "\\b(onion|onions|scallion|leek)s?\\b",
+   "onion"
+  ],
+  [
+   "\\b(avocado|guacamole|guac)\\b",
+   "avocado"
+  ],
+  [
+   "\\b(spinach|kale|lettuce|greens|chard|collard|bok choy|cabbage|brussels? sprouts|radish|bamboo shoots|nori|seaweed|chayote|calabacitas|zucchini|squash|asparagus|cauliflower|okra|vegetable|vegetables|veggie|veggies|medley|celery|beet|beets|artichoke|ratatouille)\\b",
+   "leafy-green"
+  ],
+  [
+   "\\b(olive)s?\\b",
+   "olive"
+  ],
+  [
+   "\\b(strawberr(y|ies))\\b",
+   "strawberry"
+  ],
+  [
+   "\\b(blueberr(y|ies)|berries|berry|raspberr(y|ies)|blackberr(y|ies))\\b",
+   "blueberries"
+  ],
+  [
+   "\\b(banana|plantain)s?\\b",
+   "banana"
+  ],
+  [
+   "\\b(apple|applesauce)s?\\b",
+   "red-apple"
+  ],
+  [
+   "\\b(orange|clementine|mandarin|tangerine)s?\\b",
+   "tangerine"
+  ],
+  [
+   "\\b(grapefruit|lemon)s?\\b",
+   "lemon"
+  ],
+  [
+   "\\b(lime)s?\\b",
+   "lime"
+  ],
+  [
+   "\\b(grape)s?\\b",
+   "grapes"
+  ],
+  [
+   "\\b(pineapple)s?\\b",
+   "pineapple"
+  ],
+  [
+   "\\b(mango)e?s?\\b",
+   "mango"
+  ],
+  [
+   "\\b(watermelon)s?\\b",
+   "watermelon"
+  ],
+  [
+   "\\b(melon|cantaloupe|honeydew)s?\\b",
+   "melon"
+  ],
+  [
+   "\\b(peach|peaches|nectarine)\\b",
+   "peach"
+  ],
+  [
+   "\\b(pear)s?\\b",
+   "pear"
+  ],
+  [
+   "\\b(cherr(y|ies))\\b",
+   "cherries"
+  ],
+  [
+   "\\b(kiwi)s?\\b",
+   "kiwi-fruit"
+  ],
+  [
+   "\\b(coconut)\\b",
+   "coconut"
+  ],
+  [
+   "\\b(fruit|fruits|fruit cup|mixed fruit)\\b",
+   "grapes"
+  ],
+  [
+   "\\b(cheese|mozzarella|cheddar|parmesan|feta|brie|provolone|swiss|gouda|ricotta|queso|cottage cheese)\\b",
+   "cheese-wedge"
+  ],
+  [
+   "\\b(peanut butter|peanut|peanuts|almond|almonds|cashew|cashews|walnut|walnuts|pecan|pecans|trail mix|nuts|mixed nuts|pistachio)s?\\b",
+   "peanuts"
+  ],
+  [
+   "\\b(butter|margarine)\\b",
+   "butter"
+  ],
+  [
+   "\\b(honey)\\b",
+   "honey-pot"
+  ],
+  [
+   "\\b(syrup|dressing|vinaigrette|gravy|sauce|aioli|mayo|mayonnaise|ketchup|mustard|ranch|relish|jam|jelly|preserves|spread|dip|glaze|drizzle|salsa verde|chutney|pesto|hot sauce|sriracha|tzatziki|condiment)s?\\b",
+   "jar"
+  ],
+  [
+   "\\b(salt|pepper|seasoning|spice)s?\\b",
+   "salt"
+  ],
+  [
+   "\\b(crouton|cracker|crackers|pita chips|tortilla chips|rice cake)s?\\b",
+   "rice-cracker"
+  ],
+  [
+   "\\b(tofu)\\b",
+   "shallow-pan-of-food"
+  ],
+  [
+   "\\b(ginger)\\b",
+   "ginger-root"
+  ],
+  [
+   "\\b(rub|marinade|harissa|vinegar|herb oil|oil|au jus|chimichurri|gremolata|topping|horseradish|sour cream|icing|frosting|whipped|creamer|half & half|kim ?chi|sauerkraut|do chua|encurtidas|pepperoncini|capers?|sikil)\\b",
+   "jar"
+  ],
+  [
+   "\\b(sugar|cinnamon stick|cinnamon)\\b",
+   "salt"
+  ],
+  [
+   "\\b(sprinkles)\\b",
+   "candy"
+  ],
+  [
+   "\\b(basil|cilantro|parsley|chives|mint|microgreens|arugula|herbs?|dill|rosemary|thyme|oregano)\\b",
+   "herb"
+  ],
+  [
+   "\\b(seeds?|pinenuts?)\\b",
+   "peanuts"
+  ],
+  [
+   "\\b(raisins?|cranberr(y|ies)|dates|prunes?|dried fruit)\\b",
+   "grapes"
+  ],
+  [
+   "\\b(garlic)\\b",
+   "garlic"
+  ]
+ ],
+ "overrides": {
+  "apple pandowdy": "pie",
+  "arugula": "leafy-green",
+  "bacon cheddar bread": "bread",
+  "baked chorizo hash brown": "french-fries",
+  "baked msc cod with muffuletta relish": "fish",
+  "baked redfish with muffuletta relish": "fish",
+  "baked scallops with muffuletta relish": "oyster",
+  "basmati rice cake": "falafel",
+  "bosco cheese sticks": "baguette-bread",
+  "bread butter pickle": "cucumber",
+  "bread dressing": "bread",
+  "butter egg dinner roll": "bread",
+  "cauliflower au gratin": "leafy-green",
+  "cauliflower quinoa veggie patty": "falafel",
+  "chicken bacon ranch": "poultry-leg",
+  "chicken dumplings": "pot-of-food",
+  "chicken salad croissant": "croissant",
+  "chili vinegar roastchicken": "poultry-leg",
+  "chipotle pepper jack cheese": "cheese-wedge",
+  "coconut farro porridge with fruit": "bowl-with-spoon",
+  "collard greens w smoked ham": "leafy-green",
+  "couscous cakes": "falafel",
+  "cuban black beans rice": "cooked-rice",
+  "cuban style pork": "cut-of-meat",
+  "curry honey lacquered salmon": "fish",
+  "curry roasted carrots": "carrot",
+  "curry roasted sweet potatoes": "roasted-sweet-potato",
+  "dill pickle chips": "cucumber",
+  "fajita vegetables": "bell-pepper",
+  "fortune cookies": "fortune-cookie",
+  "fresh pineapple salsa": "pineapple",
+  "fried falafel waffles with syrup": "waffle",
+  "fried sauerkraut cakes": "falafel",
+  "fruit salad": "grapes",
+  "funnel cake fries": "doughnut",
+  "garam masala butternut squash": "leafy-green",
+  "garlic butter croutons": "rice-cracker",
+  "gemelli pasta with cacciatore sauce": "spaghetti",
+  "greek honey puffs": "doughnut",
+  "grilled jerk pork w curry mango relish": "cut-of-meat",
+  "halal grilled turkey and cheese": "sandwich",
+  "hash brown patty": "french-fries",
+  "hot fudge poke cake": "shortcake",
+  "ice cream sundae bar": "ice-cream",
+  "lemon wedges": "lemon",
+  "lime wedges": "lime",
+  "mango salsa": "mango",
+  "marinated ramen eggs": "cooking",
+  "marshmallow glazed sweet potatoes": "roasted-sweet-potato",
+  "mushroom risotto balls w mozzarella": "falafel",
+  "nacho corn mexicali soup": "pot-of-food",
+  "nan vahn phet": "custard",
+  "new england blueberry buckle": "shortcake",
+  "olive oil": "jar",
+  "onion kulcha": "flatbread",
+  "oyster crackers": "rice-cracker",
+  "peach salsa": "peach",
+  "portabella stuffed with quinoa": "mushroom",
+  "potato frips": "french-fries",
+  "pretzel bun": "bread",
+  "pumpkin pie spice": "salt",
+  "quinoa stuffed peppers": "bell-pepper",
+  "red braised cabbage with bacon": "leafy-green",
+  "risotto cakes": "falafel",
+  "roasted spaghetti squash": "leafy-green",
+  "romesco sauce with almonds": "jar",
+  "salt water taffy": "candy",
+  "sausage roll 6": "hot-dog",
+  "sauteed arugula": "leafy-green",
+  "sauteed spinach with capers tomato": "leafy-green",
+  "seafood roll": "sandwich",
+  "smoked pork loin with mustard rub": "cut-of-meat",
+  "southwest garbanzo griddle cake": "pancakes",
+  "spaghetti squash with bean ragout": "leafy-green",
+  "spaghetti squash with vegetables": "leafy-green",
+  "spicy porkloin with apple cherry chutney": "cut-of-meat",
+  "stuffed cabbage with lentils": "leafy-green",
+  "sweet potato casserole w marshmallows": "roasted-sweet-potato",
+  "sweet potato casserole w pecans": "roasted-sweet-potato",
+  "sweet spicy pickle chips": "cucumber",
+  "swiss steak tempeh": "shallow-pan-of-food",
+  "tempeh swiss steak": "shallow-pan-of-food",
+  "tortilla wrap": "flatbread",
+  "vegetable stew with dumplings": "pot-of-food",
+  "vegetable wonton soup": "pot-of-food",
+  "vegimax cheese steak": "sandwich",
+  "waffle cones": "ice-cream"
+ }
+}

@@ -46,6 +46,18 @@ export default function AboutPage() {
         </a>
         . Always confirm allergens with dining staff.
       </p>
+      <p className="mt-4 text-sm text-muted-foreground">
+        Food illustrations are{" "}
+        <a
+          href="https://github.com/microsoft/fluentui-emoji"
+          className="text-primary underline-offset-4 hover:underline"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Fluent Emoji
+        </a>{" "}
+        by Microsoft, used under the MIT License.
+      </p>
       <p className="mt-8 text-sm">
         <Link href="/" className="text-primary underline-offset-4 hover:underline">
           Back to home

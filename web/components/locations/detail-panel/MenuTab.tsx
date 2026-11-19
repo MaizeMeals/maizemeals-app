@@ -15,6 +15,7 @@ import type { MenuData, ItemMetadata } from "@/types/dining";
 import { getStoragePhotoUrl } from "./PhotosDialog";
 import { FOOD_ITEM_PLACEHOLDER_IMAGE } from "@/lib/food-placeholder-image";
 import { usePreferences } from "@/hooks/use-preferences";
+import { FoodIcon } from "@/components/ingredients/FoodIcon";
 import { itemMatchesDietaryFilters } from "@/lib/filter-utils";
 import { compareItemsBySmartPreferences, itemPreferenceScore } from "@/lib/preference-scoring";
 
@@ -149,8 +150,8 @@ export function MenuTab({ loading, menu, itemMetadata, venueSlug }: Props) {
                            {/* Thumbnail with fallback */}
                            <div className="h-12 w-12 shrink-0 relative bg-muted rounded-lg overflow-hidden border border-border/50">
                               {showPlaceholder ? (
-                                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                                  <UtensilsCrossed className="w-6 h-6" />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <FoodIcon name={item.name} className="h-8 w-8" />
                                 </div>
                               ) : (
                                 <Image
