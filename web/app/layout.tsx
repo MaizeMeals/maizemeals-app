@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header";
 import { ConditionalHeader } from "@/components/layout/ConditionalHeader";
 import { ConditionalFooter } from "@/components/layout/ConditionalFooter";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { ThemeColorSync } from "@/components/providers/theme-color-sync";
 import { Toaster } from "@/components/ui/sonner";
 import { SignInSuccessToast } from "@/components/auth/sign-in-success-toast";
 import { cn } from "@/lib/utils";
@@ -90,6 +91,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <ThemeColorSync />
             <ConditionalHeader>
               <Header />
             </ConditionalHeader>

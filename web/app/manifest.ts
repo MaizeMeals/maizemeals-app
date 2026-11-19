@@ -11,8 +11,10 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#00274C",
-    theme_color: "#00274C",
+    // Android paints the splash screen and system bars of the installed app
+    // from these; ThemeColorSync switches the bars to dark at runtime.
+    background_color: "#ffffff",
+    theme_color: "#ffffff",
     categories: ["food", "lifestyle", "health"],
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },

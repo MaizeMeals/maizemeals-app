@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { SmartSlidersDialog } from "@/components/preferences/SmartSlidersDialog";
 import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
+import { AppearanceSection } from "@/components/settings/AppearanceSection";
 import { usePreferences } from "@/hooks/use-preferences";
 import { PageHeader, PageShell } from "@/components/layout/page-shell";
 import { appPrimaryButtonClassName } from "@/lib/button-styles";
@@ -55,6 +56,8 @@ export function SettingsPanel({ email }: { email: string | null }) {
           "Manage the preferences saved on your account."
         )}
       </p>
+
+      <AppearanceSection className="mt-10" />
 
       <section className="mt-10 border-t border-border pt-8">
         <h2 className="text-lg font-semibold text-foreground">

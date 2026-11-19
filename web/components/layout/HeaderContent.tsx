@@ -16,8 +16,8 @@ import {
   HEADER_HEIGHT_PX,
   HEADER_TRANSPARENT_SURFACE,
 } from "@/components/layout/constants";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserNav } from "@/components/layout/UserNav";
+import { AuthSync } from "@/components/auth/auth-sync";
 
 const MD_UP_QUERY = "(min-width: 768px)";
 
@@ -135,7 +135,7 @@ export function HeaderContent({ user, signOut, isAdmin = false }: HeaderContentP
         </div>
 
         <div className="flex items-center gap-4">
-          <ThemeToggle forceWhite={isTransparent} />
+          <AuthSync serverUserId={user?.id ?? null} />
           <UserNav
             user={user}
             signOut={signOut}
