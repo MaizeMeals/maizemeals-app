@@ -106,3 +106,20 @@ class AllergenTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_inventory_style_oils_are_flagged():
+    # Dining labels often write the oil type after "oil".
+    for text in ["Oil Canola", "Oil Soy Frying Zoye", "Oil Soybean Butter Flavor"]:
+        spans = highlight_ingredients(text)["spans"]
+        assert spans and spans[0]["category"] == "seed_oil", text
+    spans = highlight_ingredients("OIL (CORN AND CANOLA), SALT")["spans"]
+    assert [s["matched"] for s in spans] == ["CORN", "CANOLA"]
+    assert {s["category"] for s in spans} == {"seed_oil"}
+    assert highlight_ingredients("Oil Palm Kernel")["spans"][0]["category"] == "palm_oil"
+
+
+def test_inventory_style_oils_do_not_cross_punctuation():
+    assert not highlight_ingredients("Olive oil, corn starch")["spans"]
+    spans = highlight_ingredients("oil (corn syrup solids)")["spans"]
+    assert all(s["category"] != "seed_oil" for s in spans)

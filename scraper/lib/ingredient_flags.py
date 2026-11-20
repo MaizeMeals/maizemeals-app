@@ -61,6 +61,8 @@ def scan_ingredients(text: str) -> list[dict]:
                     _hit(entry, name=name, matched=text[start:end], start=start, end=end)
                 )
 
+    hits.extend(_inverted_oil_hits(text, index))
+
     for match in _E_NUMBER_RE.finditer(text):
         key = f"{match.group(1)}{(match.group(2) or '').lower()}{(match.group(3) or '').lower()}"
         entry = index["by_ekey"].get(key)
@@ -79,6 +81,40 @@ def scan_ingredients(text: str) -> list[dict]:
     kept = _resolve_overlaps(hits)
     kept.sort(key=lambda item: (item["start"], item["end"], item["id"], item["name"]))
     return kept
+
+
+# Words that make a bare oil type inside "oil (...)" something else
+# ("oil (corn syrup ...)" is not corn oil).
+_NOT_OIL_AFTER = r"(?:syrup|starch|flour|meal|masa|protein|lecithin|fiber|fibre|solids|maltodextrin|sugar|grits|kernels?|nuts?|seeds?)"
+
+
+def _inverted_oil_hits(text: str, index: dict) -> list[dict]:
+    """Oils written inventory-style: "Oil Canola", "Oil Soy Frying",
+    "OIL (CORN AND CANOLA)", "Vegetable Oil (Soybean and/or Canola)".
+
+    Only whitespace may sit between "oil" and the type (or the type is inside
+    the parentheses right after "oil"), so "olive oil, corn starch" is not
+    corn oil.
+    """
+    types = index["oil_types"]
+    if not types:
+        return []
+    hits = []
+    for match in index["inverted_re"].finditer(text):
+        entry, name = types[_type_key(match.group(1))]
+        hits.append(_hit(entry, name=name, matched=match.group(0), start=match.start(), end=match.end()))
+    for group in index["paren_re"].finditer(text):
+        inner_start = group.start(1)
+        for word in index["type_word_re"].finditer(group.group(1)):
+            entry, name = types[_type_key(word.group(1))]
+            start = inner_start + word.start(1)
+            end = inner_start + word.end(1)
+            hits.append(_hit(entry, name=name, matched=text[start:end], start=start, end=end))
+    return hits
+
+
+def _type_key(word: str) -> str:
+    return " ".join(word.lower().split())
 
 
 def _hit(entry: dict, name: str, matched: str, start: int, end: int) -> dict:
@@ -205,7 +241,33 @@ def _build_index() -> dict:
                 continue
             pattern = _phrase_pattern(phrase)
             names.append((pattern, entry, phrase))
-    return {"names": names, "by_ekey": by_ekey}
+    # "canola oil" -> "canola", for oils written inventory-style ("Oil Canola").
+    oil_types = {}
+    for entry in watch.get("entries") or []:
+        for name in entry.get("names") or []:
+            phrase = normalize_ingredient_phrase(name)
+            if phrase.endswith(" oil"):
+                oil_types.setdefault(phrase[: -len(" oil")], (entry, phrase))
+    alternatives = "|".join(
+        r"\s+".join(re.escape(token) for token in key.split())
+        for key in sorted(oil_types, key=len, reverse=True)
+    )
+    inverted_re = re.compile(
+        rf"(?<![A-Za-z0-9])oils?\s+(?:blend\s+)?({alternatives})(?![A-Za-z0-9])", re.IGNORECASE
+    )
+    paren_re = re.compile(r"(?<![A-Za-z0-9])oils?\s*(?:blend\s*)?\(([^()]*)\)?", re.IGNORECASE)
+    type_word_re = re.compile(
+        rf"(?<![A-Za-z0-9])({alternatives})(?![A-Za-z0-9])(?!\s+(?:oils?\b|{_NOT_OIL_AFTER}\b))",
+        re.IGNORECASE,
+    )
+    return {
+        "names": names,
+        "by_ekey": by_ekey,
+        "oil_types": oil_types,
+        "inverted_re": inverted_re,
+        "paren_re": paren_re,
+        "type_word_re": type_word_re,
+    }
 
 
 def _phrase_pattern(phrase: str) -> re.Pattern:
