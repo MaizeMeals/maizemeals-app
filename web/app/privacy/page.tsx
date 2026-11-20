@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     'What MaizeMeals collects, who can see it, and how to delete your account.',
 }
 
-const UPDATED = 'November 19, 2026'
+const UPDATED = 'November 20, 2026'
 const GITHUB_REPO_URL = 'https://github.com/MaizeMeals/maizemeals-app'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -121,11 +121,27 @@ export default function PrivacyPage() {
         </p>
       </Section>
 
+      <Section title="What admins can see">
+        <p>
+          A small number of MaizeMeals project admins can open an account in
+          an admin view. It shows the name, email address, uniqname, sign-in
+          method, join and last sign-in dates, saved preferences, every review
+          and photo the account posted (including anonymous ones), and how
+          many food-log entries and favorite dishes it has. It does not show
+          the contents of your food log.
+        </p>
+        <p>
+          Admins use this to moderate: they can remove reviews or photos and
+          suspend an account that breaks the terms.
+        </p>
+      </Section>
+
       <Section title="Cookies and local storage">
         <p>
           Sign-in uses cookies so the session stays logged in. Analytics, when
           enabled, can use cookies or local storage to keep a device id. Guest
-          preferences use local storage only. The installed app can cache its
+          preferences use local storage only, and so does whether you last
+          chose to post reviews anonymously. The installed app can cache its
           shell so pages open offline. That cache is not a copy of your food
           log.
         </p>

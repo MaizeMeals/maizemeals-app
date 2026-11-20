@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     'The rules for using MaizeMeals, a student-built University of Michigan dining companion.',
 }
 
-const UPDATED = 'November 19, 2026'
+const UPDATED = 'November 20, 2026'
 const GITHUB_REPO_URL = 'https://github.com/MaizeMeals/maizemeals-app'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -76,7 +76,8 @@ export default function TermsPage() {
           You keep ownership of the text and photos you submit. You give
           MaizeMeals permission to store them, show approved photos and review
           text to other users, and keep them available with the dish they
-          describe for as long as the review stays up.
+          describe for as long as the review stays up, including after you
+          delete your account.
         </p>
         <p>
           You will only post content you have the right to post. Do not post
@@ -87,8 +88,14 @@ export default function TermsPage() {
         <p>
           Photos stay hidden until a moderator approves them. We can remove a
           review or photo that breaks these terms. You can have one review per
-          dish. You can edit that review. Deleting your account removes your
-          reviews and photos.
+          dish. You can edit or delete that review.
+        </p>
+        <p>
+          You can post a review anonymously. Other users then see
+          &ldquo;Anonymous&rdquo; instead of your name and photo, but MaizeMeals
+          admins can still see which account posted it. Anonymous reviews
+          follow the same rules as any other review, and we can act on them
+          the same way.
         </p>
       </Section>
 
@@ -114,10 +121,17 @@ export default function TermsPage() {
       <Section title="Accounts end">
         <p>
           You can delete your account from Settings. That removes the sign-in
-          user and the profile, reviews, photos, food logs, macro goals, and
-          favorites tied to it. We can suspend or remove an account or a piece
-          of content that breaks these terms, or if we have to shut the
-          student project down.
+          user and the profile, food logs, macro goals, and favorites tied to
+          it. Your reviews and review photos stay up, no longer linked to you,
+          and are shown as &ldquo;Deleted user&rdquo; (or &ldquo;Anonymous&rdquo;
+          if you posted them anonymously). Delete any reviews you don&apos;t
+          want kept before deleting your account.
+        </p>
+        <p>
+          We can suspend an account for a set time or indefinitely, or remove
+          an account or a piece of content, if it breaks these terms or if we
+          have to shut the student project down. A suspended account can&apos;t
+          sign in or post or edit reviews.
         </p>
       </Section>
 
