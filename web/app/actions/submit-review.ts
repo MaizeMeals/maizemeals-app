@@ -1,5 +1,6 @@
 "use server";
 
+import { SUSPENDED_MESSAGE, userIsSuspended } from "@/lib/admin/banned";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ITEM_PHOTOS_BUCKET } from "@/lib/item-photos";
@@ -39,6 +40,9 @@ export async function submitReview(
   if (authError || !user) {
     return { success: false, error: "You must be signed in to submit a review.", status: 401 };
   }
+  if (userIsSuspended(user)) {
+    return { success: false, error: SUSPENDED_MESSAGE, status: 403 };
+  }
 
   const itemIdRaw = formData.get("item_id");
   const itemId =
@@ -60,6 +64,7 @@ export async function submitReview(
   const comment =
     typeof commentRaw === "string" ? commentRaw.trim() || null : null;
 
+  const isAnonymous = formData.get("is_anonymous") === "1";
   const photoFile = formData.get("photo") ?? formData.get("image");
   const file =
     photoFile instanceof File && photoFile.size > 0 ? photoFile : null;
@@ -87,6 +92,7 @@ export async function submitReview(
       item_id: itemId,
       rating,
       comment: comment ?? undefined,
+      is_anonymous: isAnonymous,
     })
     .select("id")
     .single();

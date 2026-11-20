@@ -17,6 +17,7 @@ import {
 import { appPrimaryButtonClassName } from "@/lib/button-styles";
 import { StarRatingInput } from "./StarRatingInput";
 import { submitReview, type SubmitReviewResult } from "@/app/actions/submit-review";
+import { AnonymousToggle, readAnonymousPref, writeAnonymousPref } from "@/components/reviews/AnonymousToggle";
 import {
   EditReviewDialog,
   type EditReviewTarget,
@@ -57,6 +58,7 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [anonymous, setAnonymous] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
   const [alreadyReviewed, setAlreadyReviewed] = useState(false);
@@ -80,6 +82,8 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
     setRating(0);
     setComment("");
     setPhotoFile(null);
+    // Remember the last choice so regular anonymous posters don't re-tick it.
+    setAnonymous(readAnonymousPref());
     setIsCompressing(false);
     setAlreadyReviewed(false);
     setOwnReview(null);
@@ -123,7 +127,7 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
 
     const { data: row, error } = await supabase
       .from("user_ratings")
-      .select("id, rating, comment")
+      .select("id, rating, comment, is_anonymous")
       .eq("item_id", itemId)
       .eq("user_id", userId)
       .maybeSingle();
@@ -150,6 +154,7 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
         id: row.id,
         rating: row.rating,
         comment: row.comment,
+        is_anonymous: row.is_anonymous,
         photos: photoError
           ? null
           : (photoRows ?? []).map((photo) => ({
@@ -207,7 +212,9 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
         formData.set("rating", String(rating));
         if (comment.trim()) formData.set("comment", comment.trim());
         if (photoFile) formData.set("photo", photoFile);
+        if (anonymous) formData.set("is_anonymous", "1");
         if (locationSlug) formData.set("revalidate_location_slug", locationSlug);
+        writeAnonymousPref(anonymous);
 
         const result: SubmitReviewResult = await submitReview(formData);
 
@@ -454,6 +461,7 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
                     )}
                   </div>
                 </div>
+                <AnonymousToggle checked={anonymous} onChange={setAnonymous} disabled={isSubmitting} />
               </ResponsiveDialogBody>
               <ResponsiveDialogFooter>
                 <Button

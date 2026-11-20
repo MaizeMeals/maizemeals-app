@@ -48,26 +48,23 @@ function safeMenuReturnPath(raw: string | null): string | null {
 
 type SortMode = "newest" | "highest" | "lowest";
 
-/** Public reviewer identity (`reviewer_profiles` view; owner-only `user_profiles` is private). */
-type ReviewProfile = {
-  avatar_url: string | null;
-  display_name: string | null;
-};
-
 type ReviewPhoto = {
   storage_path: string;
   is_approved: boolean | null;
 };
 
+/** One row of reviews_public(): author already masked for anonymous/deleted. */
 type ReviewRow = {
   id: string;
   rating: number;
   comment: string | null;
   created_at: string | null;
   edited_at: string | null;
-  user_id: string;
-  reviewer_profiles: ReviewProfile | null;
-  photos: ReviewPhoto[] | null;
+  is_anonymous: boolean;
+  is_mine: boolean;
+  author_name: string;
+  author_avatar_url: string | null;
+  photos: ReviewPhoto[];
 };
 
 type ItemSummary = {
@@ -76,22 +73,12 @@ type ItemSummary = {
   review_count: number;
 };
 
-const USER_RATINGS_SELECT = `
-  id,
-  rating,
-  comment,
-  created_at,
-  edited_at,
-  user_id,
-  reviewer_profiles (
-    avatar_url,
-    display_name
-  ),
-  photos (
-    storage_path,
-    is_approved
-  )
-`;
+function toReviewRows(data: unknown): ReviewRow[] {
+  return ((data as (Omit<ReviewRow, "photos"> & { photos: unknown })[] | null) ?? []).map((r) => ({
+    ...r,
+    photos: Array.isArray(r.photos) ? (r.photos as ReviewPhoto[]) : [],
+  }));
+}
 
 function pickDisplayPhoto(
   photos: ReviewPhoto[] | null | undefined,
@@ -263,11 +250,7 @@ function ItemReviewsContent() {
         .select("name, avg_rating, review_count")
         .eq("id", itemId)
         .maybeSingle(),
-      supabase
-        .from("user_ratings")
-        .select(USER_RATINGS_SELECT)
-        .eq("item_id", itemId)
-        .order("created_at", { ascending: false }),
+      supabase.rpc("reviews_public", { p_item_id: itemId, p_limit: 200 }),
     ]);
 
     if (itemRes.error || ratingsRes.error) return;
@@ -286,7 +269,7 @@ function ItemReviewsContent() {
             review_count: 0,
           },
     );
-    setReviews((ratingsRes.data as ReviewRow[]) ?? []);
+    setReviews(toReviewRows(ratingsRes.data));
   }, [itemId]);
 
   useEffect(() => {
@@ -324,11 +307,7 @@ function ItemReviewsContent() {
           .select("name, avg_rating, review_count")
           .eq("id", itemId)
           .maybeSingle(),
-        supabase
-          .from("user_ratings")
-          .select(USER_RATINGS_SELECT)
-          .eq("item_id", itemId)
-          .order("created_at", { ascending: false }),
+        supabase.rpc("reviews_public", { p_item_id: itemId, p_limit: 200 }),
       ]);
 
       if (cancelled) return;
@@ -358,14 +337,15 @@ function ItemReviewsContent() {
               review_count: 0,
             },
       );
-      setReviews((ratingsRes.data as ReviewRow[]) ?? []);
+      setReviews(toReviewRows(ratingsRes.data));
       setLoading(false);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [itemId]);
+    // currentUserId: reload when auth changes so "You" / Edit (is_mine) are right.
+  }, [itemId, currentUserId]);
 
   const sortedReviews = useMemo(
     () => sortReviews(reviews, sort),
@@ -466,12 +446,9 @@ function ItemReviewsContent() {
 
       <ul className="space-y-4">
         {sortedReviews.map((r) => {
-          const p = r.reviewer_profiles;
-          const isOwn = currentUserId !== null && r.user_id === currentUserId;
-          const label = isOwn
-            ? "You"
-            : p?.display_name?.trim() || "Student";
-          const avatarUrl = p?.avatar_url?.trim() || null;
+          const isOwn = r.is_mine;
+          const label = isOwn ? (r.is_anonymous ? "You (posted anonymously)" : "You") : r.author_name;
+          const avatarUrl = r.author_avatar_url?.trim() || null;
           const displayPhoto = pickDisplayPhoto(r.photos, isOwn);
           const thumbUrl = displayPhoto
             ? getItemPhotoPublicUrl(displayPhoto.storage_path)

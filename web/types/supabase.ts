@@ -392,7 +392,7 @@ export type Database = {
           is_approved: boolean | null
           item_id: string
           storage_path: string
-          user_id: string
+          user_id: string | null
           user_rating_id: string | null
         }
         Insert: {
@@ -401,7 +401,7 @@ export type Database = {
           is_approved?: boolean | null
           item_id: string
           storage_path: string
-          user_id: string
+          user_id: string | null
           user_rating_id?: string | null
         }
         Update: {
@@ -410,7 +410,7 @@ export type Database = {
           is_approved?: boolean | null
           item_id?: string
           storage_path?: string
-          user_id?: string
+          user_id?: string | null
           user_rating_id?: string | null
         }
         Relationships: [
@@ -499,27 +499,30 @@ export type Database = {
           created_at: string | null
           edited_at: string | null
           id: string
+          is_anonymous: boolean
           item_id: string
           rating: number
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           comment?: string | null
           created_at?: string | null
           edited_at?: string | null
           id?: string
+          is_anonymous?: boolean
           item_id: string
           rating: number
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           comment?: string | null
           created_at?: string | null
           edited_at?: string | null
           id?: string
+          is_anonymous?: boolean
           item_id?: string
           rating?: number
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -567,6 +570,24 @@ export type Database = {
       }
     }
     Functions: {
+      reviews_public: {
+        Args: { p_hall_id?: string; p_item_id?: string; p_limit?: number }
+        Returns: {
+          author_avatar_url: string | null
+          author_name: string
+          comment: string | null
+          created_at: string | null
+          dining_hall_id: string
+          edited_at: string | null
+          id: string
+          is_anonymous: boolean
+          is_mine: boolean
+          item_id: string
+          item_name: string
+          photos: Json
+          rating: number
+        }[]
+      }
       storage_objects_owned_by: {
         Args: { target_user: string }
         Returns: { bucket_id: string; name: string }[]

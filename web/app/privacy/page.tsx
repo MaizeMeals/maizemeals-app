@@ -64,7 +64,7 @@ export default function PrivacyPage() {
           Google profile photo if Google provides one. The part of the email
           before @ is stored as a uniqname. The email address is not shown on
           public reviews. The shortened name and photo can appear next to
-          reviews you post.
+          reviews you post, unless you post the review anonymously.
         </p>
         <p>
           Accounts that are not @umich.edu are signed out and not kept.
@@ -76,6 +76,11 @@ export default function PrivacyPage() {
           If you rate a dish, we store the star rating, an optional comment,
           and the item it belongs to. You can post one review per item. Review
           text is visible to other people using MaizeMeals.
+        </p>
+        <p>
+          If you post anonymously, other people see &ldquo;Anonymous&rdquo;
+          instead of your name and photo. MaizeMeals admins can still see which
+          account posted it, for moderation.
         </p>
         <p>
           Photos you attach are stored until a moderator approves them. Until
@@ -148,9 +153,16 @@ export default function PrivacyPage() {
         <p>
           Profile, review, photo, and food-log data stays until you delete the
           account or remove that item. Deleting the account in Settings removes
-          the sign-in user and the related profile, reviews, photos, food logs,
-          macro goals, and favorite dishes. You confirm by typing the phrase
-          the settings screen asks for.
+          the sign-in user and the related profile, food logs, macro goals,
+          and favorite dishes. You confirm by typing the phrase the settings
+          screen asks for.
+        </p>
+        <p>
+          Reviews and review photos are kept after you delete your account so
+          dish ratings stay meaningful. They are unlinked from you and shown as
+          &ldquo;Deleted user&rdquo; (or &ldquo;Anonymous&rdquo; if you posted
+          them anonymously). To remove them, delete those reviews before
+          deleting your account.
         </p>
         <p>
           Analytics events already sent to PostHog are not pulled back by

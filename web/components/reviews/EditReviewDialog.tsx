@@ -23,6 +23,8 @@ import {
 } from "@/lib/compress-review-photo";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { AnonymousToggle } from "@/components/reviews/AnonymousToggle";
+import { deleteOwnReview } from "@/app/actions/delete-review";
 
 const MAX_PHOTO_MB = 2;
 
@@ -35,6 +37,7 @@ export type EditReviewTarget = {
   id: string;
   comment: string | null;
   photos: ReviewPhoto[] | null;
+  is_anonymous?: boolean;
 };
 
 type Props = {
@@ -58,6 +61,9 @@ export function EditReviewDialog({
   const [comment, setComment] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [removePhoto, setRemovePhoto] = useState(false);
+  const [anonymous, setAnonymous] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [compressing, setCompressing] = useState(false);
   const photoRequestRef = useRef(0);
@@ -65,6 +71,8 @@ export function EditReviewDialog({
   useEffect(() => {
     if (open && review) {
       setComment(review.comment ?? "");
+      setAnonymous(review.is_anonymous ?? false);
+      setConfirmDelete(false);
       setFile(null);
       setRemovePhoto(false);
       return;
@@ -116,6 +124,7 @@ export function EditReviewDialog({
       fd.set("item_id", itemId);
       fd.set("comment", comment.trim());
       if (removePhoto) fd.set("remove_photo", "1");
+      fd.set("is_anonymous", anonymous ? "1" : "0");
       if (file) fd.set("photo", file);
       const slug = revalidateLocationSlug?.trim();
       if (slug) fd.set("revalidate_location_slug", slug);
@@ -206,9 +215,36 @@ export function EditReviewDialog({
                 New or replaced photos are shown after moderator approval.
               </p>
             </div>
+            <AnonymousToggle checked={anonymous} onChange={setAnonymous} disabled={submitting} />
           </ResponsiveDialogBody>
 
-          <ResponsiveDialogFooter className="flex-row justify-end gap-2 sm:space-x-0">
+          <ResponsiveDialogFooter className="flex-row items-center justify-end gap-2 sm:space-x-0">
+            {/* Two taps to delete: no extra dialog on top of this one. */}
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={submitting || deleting}
+              className="mr-auto text-red-600 hover:bg-destructive/10 hover:text-red-700"
+              onClick={async () => {
+                if (!review) return;
+                if (!confirmDelete) {
+                  setConfirmDelete(true);
+                  return;
+                }
+                setDeleting(true);
+                const res = await deleteOwnReview(review.id);
+                setDeleting(false);
+                if (!res.success) {
+                  toast.error(res.error);
+                  return;
+                }
+                toast.success("Review deleted.");
+                onOpenChange(false);
+                await onSaved();
+              }}
+            >
+              {deleting ? "Deleting…" : confirmDelete ? "Tap again to delete" : "Delete review"}
+            </Button>
             <ResponsiveDialogClose asChild>
               <Button
                 type="button"

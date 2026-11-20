@@ -12,7 +12,9 @@ type Review = {
   rating: number
   comment: string | null
   created_at: string | null
-  reviewer_profiles: { display_name: string | null } | null
+  author_name: string
+  is_mine: boolean
+  is_anonymous: boolean
 }
 
 const PREVIEW = 5
@@ -35,11 +37,7 @@ export function ItemReviewsTab({
     setReviews(null)
     setFailed(false)
     createClient()
-      .from("user_ratings")
-      .select("id, rating, comment, created_at, reviewer_profiles ( display_name )")
-      .eq("item_id", itemId)
-      .order("created_at", { ascending: false })
-      .limit(PREVIEW)
+      .rpc("reviews_public", { p_item_id: itemId, p_limit: PREVIEW })
       .then(({ data, error }) => {
         if (cancelled) return
         if (error) setFailed(true)
@@ -89,7 +87,7 @@ export function ItemReviewsTab({
                 ))}
               </span>
               <span className="text-xs text-muted-foreground">
-                {r.reviewer_profiles?.display_name ?? "Student"}
+                {r.is_mine ? (r.is_anonymous ? "You (anonymous)" : "You") : r.author_name}
                 {r.created_at ? ` · ${formatDistanceToNowStrict(new Date(r.created_at))} ago` : ""}
               </span>
             </div>

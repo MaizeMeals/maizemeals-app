@@ -1,5 +1,6 @@
 "use server";
 
+import { SUSPENDED_MESSAGE, userIsSuspended } from "@/lib/admin/banned";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ITEM_PHOTOS_BUCKET } from "@/lib/item-photos";
@@ -37,6 +38,9 @@ export async function updateReview(
       status: 401,
     };
   }
+  if (userIsSuspended(user)) {
+    return { success: false, error: SUSPENDED_MESSAGE, status: 403 };
+  }
 
   const authUserId = user.id;
 
@@ -58,6 +62,10 @@ export async function updateReview(
   const comment =
     typeof commentRaw === "string" ? commentRaw.trim() || null : null;
 
+  // Absent = leave as is (older clients); "1"/"0" = set.
+  const anonymousRaw = formData.get("is_anonymous");
+  const isAnonymous = anonymousRaw === null ? null : anonymousRaw === "1";
+
   const removePhotoRaw = formData.get("remove_photo");
   const removePhoto =
     removePhotoRaw === "1" || removePhotoRaw === "true";
@@ -75,7 +83,7 @@ export async function updateReview(
 
   const { data: row, error: fetchError } = await supabase
     .from("user_ratings")
-    .select("id, user_id, item_id, comment")
+    .select("id, user_id, item_id, comment, is_anonymous")
     .eq("id", reviewId)
     .maybeSingle();
 
@@ -113,7 +121,8 @@ export async function updateReview(
   const sameComment = (row.comment ?? null) === (comment ?? null);
   const effectiveRemove = removePhoto && !!existingPhoto;
 
-  if (!file && !effectiveRemove && sameComment) {
+  const sameAnonymity = isAnonymous === null || isAnonymous === row.is_anonymous;
+  if (!file && !effectiveRemove && sameComment && sameAnonymity) {
     return { success: false, error: "Nothing to save." };
   }
 
@@ -122,7 +131,12 @@ export async function updateReview(
   async function persistRatingRow() {
     const { error } = await supabase
       .from("user_ratings")
-      .update({ comment: comment ?? null, edited_at: editedAt })
+      .update({
+        comment: comment ?? null,
+        // Switching anonymity alone isn't an edit to what the review says.
+        ...(sameComment && !file && !effectiveRemove ? {} : { edited_at: editedAt }),
+        ...(isAnonymous === null ? {} : { is_anonymous: isAnonymous }),
+      })
       .eq("id", ratingRowId)
       .eq("user_id", authUserId);
     return error;

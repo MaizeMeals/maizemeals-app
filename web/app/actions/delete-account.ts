@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPostHogClient } from "@/lib/posthog-server";
 import { DELETE_CONFIRMATION_PHRASE } from "@/lib/account";
+import { ITEM_PHOTOS_BUCKET } from "@/lib/item-photos";
 
 export type DeleteAccountResult = { success: true } | { success: false; error: string };
 
@@ -12,10 +13,11 @@ const STORAGE_BATCH = 100;
 
 /**
  * Permanently deletes the signed-in user's account:
- *   1. every Storage object they own (review photos, incl. orphans),
- *   2. the auth user — which cascades to user_profiles, user_ratings (and
- *      the rating aggregates refresh), photos, food_logs, user_macro_goals
- *      and favorite_foods (see migrations 20261118185119 / 20261118194025).
+ *   1. Storage objects they own that no review photo uses (abandoned uploads),
+ *   2. the auth user — which cascades to user_profiles, food_logs,
+ *      user_macro_goals and favorite_foods.
+ * Reviews and review photos are kept: their user_id becomes NULL (migration
+ * 20261120055118), so they show as "Deleted user" / "Anonymous".
  * Requires typing the confirmation phrase.
  */
 export async function deleteAccount(confirmation: string): Promise<DeleteAccountResult> {
@@ -48,8 +50,19 @@ export async function deleteAccount(confirmation: string): Promise<DeleteAccount
     console.error("[deleteAccount] storage lookup failed", listError);
     return { success: false, error: "Could not delete your photos. Please try again." };
   }
+  // Files behind kept review photos stay; only unreferenced uploads go.
+  const { data: keptPhotos, error: keptError } = await admin
+    .from("photos")
+    .select("storage_path")
+    .eq("user_id", user.id);
+  if (keptError) {
+    console.error("[deleteAccount] photo lookup failed", keptError);
+    return { success: false, error: "Could not delete your account. Please try again." };
+  }
+  const keep = new Set((keptPhotos ?? []).map((p) => p.storage_path));
   const byBucket = new Map<string, string[]>();
   for (const o of objects ?? []) {
+    if (o.bucket_id === ITEM_PHOTOS_BUCKET && keep.has(o.name)) continue;
     const list = byBucket.get(o.bucket_id) ?? [];
     list.push(o.name);
     byBucket.set(o.bucket_id, list);

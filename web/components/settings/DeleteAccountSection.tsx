@@ -90,12 +90,17 @@ export function DeleteAccountSection() {
             <ResponsiveDialogDescription>This can&apos;t be undone.</ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
           <ResponsiveDialogBody className="space-y-4 text-sm">
+            <p className="font-medium text-foreground">Deleted:</p>
             <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
-              <li>Your reviews and ratings (dish averages update)</li>
-              <li>Photos you uploaded</li>
+              <li>Your profile, name, and sign-in</li>
               <li>MaizeMacros goals and food log</li>
               <li>Saved favorites and preferences</li>
             </ul>
+            <p className="text-muted-foreground">
+              Your reviews and review photos stay up so dish ratings remain useful, shown as
+              &ldquo;Deleted user&rdquo; (or &ldquo;Anonymous&rdquo; if you posted anonymously). They are no
+              longer linked to you. Delete individual reviews first if you don&apos;t want them kept.
+            </p>
             <label className="block space-y-2">
               <span className="font-medium">
                 Type <span className="font-mono">{DELETE_CONFIRMATION_PHRASE}</span> to confirm

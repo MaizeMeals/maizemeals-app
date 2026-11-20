@@ -13,8 +13,11 @@ type Review = {
   rating: number;
   comment: string | null;
   created_at: string | null;
-  reviewer_profiles: { display_name: string | null } | null;
-  items: { id: string; name: string } | null;
+  author_name: string;
+  is_mine: boolean;
+  is_anonymous: boolean;
+  item_id: string;
+  item_name: string;
 };
 
 const LIMIT = 15;
@@ -29,11 +32,7 @@ export function ReviewsTab({ hallId, venueSlug }: { hallId: string; venueSlug: s
     setReviews(null);
     setFailed(false);
     createClient()
-      .from("user_ratings")
-      .select("id, rating, comment, created_at, reviewer_profiles ( display_name ), items!inner ( id, name, dining_hall_id )")
-      .eq("items.dining_hall_id", hallId)
-      .order("created_at", { ascending: false })
-      .limit(LIMIT)
+      .rpc("reviews_public", { p_hall_id: hallId, p_limit: LIMIT })
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error) setFailed(true);
@@ -90,16 +89,12 @@ export function ReviewsTab({ hallId, venueSlug }: { hallId: string; venueSlug: s
       {reviews.map((r) => (
         <li key={r.id} className="py-4">
           <div className="flex items-start justify-between gap-3">
-            {r.items ? (
-              <Link
-                href={`/locations/${venueSlug}?item=${encodeURIComponent(r.items.id)}`}
-                className="min-w-0 truncate text-sm font-semibold text-foreground hover:underline"
-              >
-                {r.items.name}
-              </Link>
-            ) : (
-              <span className="text-sm font-semibold">A dish</span>
-            )}
+            <Link
+              href={`/locations/${venueSlug}?item=${encodeURIComponent(r.item_id)}`}
+              className="min-w-0 truncate text-sm font-semibold text-foreground hover:underline"
+            >
+              {r.item_name}
+            </Link>
             <span className="flex shrink-0 items-center gap-0.5" aria-label={`${r.rating} out of 5`}>
               {Array.from({ length: 5 }, (_, i) => (
                 <Star
@@ -112,7 +107,7 @@ export function ReviewsTab({ hallId, venueSlug }: { hallId: string; venueSlug: s
           </div>
           {r.comment ? <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">{r.comment}</p> : null}
           <p className="mt-1 text-xs text-muted-foreground">
-            {r.reviewer_profiles?.display_name ?? "Student"}
+            {r.is_mine ? (r.is_anonymous ? "You (anonymous)" : "You") : r.author_name}
             {r.created_at ? ` · ${formatDistanceToNowStrict(new Date(r.created_at))} ago` : ""}
           </p>
         </li>
