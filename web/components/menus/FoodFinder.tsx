@@ -416,6 +416,11 @@ export function FoodFinder() {
           itemName={reviewItem.name}
           open
           onOpenChange={(open) => !open && setReviewItem(null)}
+          resumeHref={
+            selection
+              ? `/locations/${selection.hallSlug}?date=${selection.date}&review=${encodeURIComponent(reviewItem.id)}`
+              : undefined
+          }
         />
       )}
     </div>

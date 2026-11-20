@@ -85,6 +85,27 @@ export function EditReviewDialog({
     Array.isArray(review.photos) &&
     review.photos.length > 0;
 
+  /** Compress and attach a photo; returns false if it couldn't be used. */
+  const attachPhoto = useCallback(async (next: File): Promise<boolean> => {
+    const requestId = ++photoRequestRef.current;
+    setCompressing(true);
+    try {
+      const compressed = await compressReviewPhoto(next);
+      if (requestId !== photoRequestRef.current) return true;
+      setRemovePhoto(false);
+      setFile(compressed);
+      return true;
+    } catch (err) {
+      console.error("Image compression failed:", err);
+      if (requestId !== photoRequestRef.current) return true;
+      setFile(null);
+      toast.error(REVIEW_PHOTO_PROCESS_ERROR);
+      return false;
+    } finally {
+      if (requestId === photoRequestRef.current) setCompressing(false);
+    }
+  }, []);
+
   const onPhotoChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const input = e.target;
@@ -93,25 +114,12 @@ export function EditReviewDialog({
         setFile(null);
         return;
       }
-      const requestId = ++photoRequestRef.current;
-      setCompressing(true);
-      try {
-        const compressed = await compressReviewPhoto(next);
-        if (requestId !== photoRequestRef.current) return;
-        setRemovePhoto(false);
-        setFile(compressed);
-      } catch (err) {
-        console.error("Image compression failed:", err);
-        if (requestId !== photoRequestRef.current) return;
-        input.value = "";
-        setFile(null);
-        toast.error(REVIEW_PHOTO_PROCESS_ERROR);
-      } finally {
-        if (requestId === photoRequestRef.current) setCompressing(false);
-      }
+      if (!(await attachPhoto(next))) input.value = "";
     },
-    [],
+    [attachPhoto],
   );
+
+  const onCapture = useCallback((next: File) => void attachPhoto(next), [attachPhoto]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,6 +203,7 @@ export function EditReviewDialog({
               <div className="mt-2">
                 <PhotoSourceButtons
                   onChange={onPhotoChange}
+                  onCapture={onCapture}
                   disabled={submitting}
                   busy={compressing}
                   chooseLabel={file ? "Choose another" : "Choose photo"}

@@ -536,6 +536,7 @@ export default function LocationPage() {
           open={!!reviewItem}
           onOpenChange={(open) => !open && closeReviewModal()}
           onPosted={() => refetch()}
+          resumeHref={`/locations/${slug}?date=${selectedDate}&review=${encodeURIComponent(reviewItem.id)}`}
         />
       )}
 

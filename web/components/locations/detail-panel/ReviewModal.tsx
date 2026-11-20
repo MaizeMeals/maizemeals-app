@@ -29,6 +29,7 @@ import {
   REVIEW_PHOTO_PROCESS_ERROR,
 } from "@/lib/compress-review-photo";
 import { cn } from "@/lib/utils";
+import { clearReviewDraft, readReviewDraft, writeReviewDraft } from "@/lib/review-draft";
 
 type AuthStatus = "loading" | "signed-in" | "signed-out";
 
@@ -41,6 +42,11 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   /** Called after a successful post so the parent can refetch location/menu data. */
   onPosted?: () => void;
+  /**
+   * A page that reopens this review sheet (`?review=<itemId>`), used to resume
+   * a draft if the browser is killed mid-review. Defaults to the current page.
+   */
+  resumeHref?: string;
 };
 
 function locationSlugFromPathname(pathname: string): string | null {
@@ -50,7 +56,7 @@ function locationSlugFromPathname(pathname: string): string | null {
   return parts[i + 1];
 }
 
-export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: Props) {
+export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted, resumeHref }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const postLoginPath = `${pathname}?review=${encodeURIComponent(itemId)}`;
@@ -67,6 +73,8 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
   const [loadingOwnReview, setLoadingOwnReview] = useState(false);
   const [ownReviewError, setOwnReviewError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  /** False until a saved draft for this item has been restored (or found absent). */
+  const [draftLoaded, setDraftLoaded] = useState(false);
   const photoRequestRef = useRef(0);
   const reviewRequestRef = useRef(0);
   /** Read at event time so a nested edit dialog cannot dismiss this one mid-open. */
@@ -91,6 +99,7 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
     setLoadingOwnReview(false);
     setOwnReviewError(null);
     setEditing(false);
+    setDraftLoaded(false);
   }, [setEditing]);
 
   useEffect(() => {
@@ -113,6 +122,36 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
   useEffect(() => {
     resetComposer();
   }, [itemId, resetComposer]);
+
+  // Restore a draft the browser lost (e.g. Android killed it while the camera
+  // app was open), then keep the draft current while composing.
+  const composing = open && authStatus === "signed-in" && !alreadyReviewed;
+  useEffect(() => {
+    if (!composing || draftLoaded) return;
+    const draft = readReviewDraft();
+    if (draft && draft.itemId === itemId) {
+      setRating(draft.rating);
+      setComment(draft.comment);
+      setAnonymous(draft.anonymous);
+    }
+    setDraftLoaded(true);
+  }, [composing, draftLoaded, itemId]);
+
+  const draftHref = resumeHref ?? postLoginPath;
+  const draftWrittenRef = useRef(false);
+  useEffect(() => {
+    if (!composing || !draftLoaded) return;
+    draftWrittenRef.current = true;
+    writeReviewDraft({ itemId, itemName, resumeHref: draftHref, rating, comment, anonymous });
+  }, [composing, draftLoaded, itemId, itemName, draftHref, rating, comment, anonymous]);
+
+  // Leaving the page normally drops the draft; a killed browser never gets here.
+  useEffect(
+    () => () => {
+      if (draftWrittenRef.current) clearReviewDraft(itemId);
+    },
+    [itemId]
+  );
 
   const loadOwnReview = useCallback(async (): Promise<
     { ok: true; review: OwnReview } | { ok: false; message: string }
@@ -192,11 +231,12 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
     (next: boolean) => {
       if (!next && editOpenRef.current) return;
       if (!next && !isSubmitting) {
+        clearReviewDraft(itemId);
         resetComposer();
       }
       onOpenChange(next);
     },
-    [onOpenChange, isSubmitting, resetComposer]
+    [onOpenChange, isSubmitting, resetComposer, itemId]
   );
 
   const handleSubmit = useCallback(
@@ -220,6 +260,7 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
         const result: SubmitReviewResult = await submitReview(formData);
 
         if (result.success) {
+          clearReviewDraft(itemId);
           onPosted?.();
           router.refresh();
           handleOpenChange(false);
@@ -272,29 +313,40 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
     if (review) setEditing(true);
   }, [ownReview, refreshOwnReview, setEditing]);
 
-  const onPhotoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target;
-    const file = input.files?.[0];
-    if (!file) {
-      setPhotoFile(null);
-      return;
-    }
+  /** Compress and attach a photo; returns false if it couldn't be used. */
+  const attachPhoto = useCallback(async (file: File): Promise<boolean> => {
     const requestId = ++photoRequestRef.current;
     setIsCompressing(true);
     try {
       const compressed = await compressReviewPhoto(file);
-      if (requestId !== photoRequestRef.current) return;
+      if (requestId !== photoRequestRef.current) return true;
       setPhotoFile(compressed);
+      return true;
     } catch (err) {
       console.error("Image compression failed:", err);
-      if (requestId !== photoRequestRef.current) return;
-      input.value = "";
+      if (requestId !== photoRequestRef.current) return true;
       setPhotoFile(null);
       toast.error(REVIEW_PHOTO_PROCESS_ERROR);
+      return false;
     } finally {
       if (requestId === photoRequestRef.current) setIsCompressing(false);
     }
   }, []);
+
+  const onPhotoChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const input = e.target;
+      const file = input.files?.[0];
+      if (!file) {
+        setPhotoFile(null);
+        return;
+      }
+      if (!(await attachPhoto(file))) input.value = "";
+    },
+    [attachPhoto]
+  );
+
+  const onCapture = useCallback((file: File) => void attachPhoto(file), [attachPhoto]);
 
   const blockDismissWhileEditing = useCallback(
     (event: { preventDefault: () => void }) => {
@@ -429,6 +481,7 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
                   <div className="mt-2">
                     <PhotoSourceButtons
                       onChange={onPhotoChange}
+                      onCapture={onCapture}
                       disabled={isSubmitting}
                       busy={isCompressing}
                       chooseLabel={photoFile ? "Choose another" : "Choose photo"}
