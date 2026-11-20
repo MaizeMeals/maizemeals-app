@@ -130,6 +130,7 @@ export type Database = {
           fat_g_per_serving: number
           id: string
           item_id: string | null
+          is_planned: boolean
           item_name: string
           logged_at: string
           meal_type: string
@@ -148,6 +149,7 @@ export type Database = {
           fat_g_per_serving?: number
           id?: string
           item_id?: string | null
+          is_planned?: boolean
           item_name: string
           logged_at?: string
           meal_type?: string
@@ -166,6 +168,7 @@ export type Database = {
           fat_g_per_serving?: number
           id?: string
           item_id?: string | null
+          is_planned?: boolean
           item_name?: string
           logged_at?: string
           meal_type?: string
@@ -546,6 +549,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      refresh_all_macro_implicit_traits: { Args: never; Returns: number }
       reviews_public: {
         Args: { p_hall_id?: string; p_item_id?: string; p_limit?: number }
         Returns: {

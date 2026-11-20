@@ -57,6 +57,13 @@ export function LogFoodDialog({
   const servingCount = Number(servings);
   const total = scaleMacros(perServing, Number.isFinite(servingCount) ? servingCount : 0);
   const hasNutrition = Object.values(perServing).some((value) => value > 0);
+  const todayStr = dateInEasternTime();
+  const maxPlanDate = (() => {
+    const d = new Date(`${todayStr}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 7);
+    return d.toISOString().slice(0, 10);
+  })();
+  const isPlanned = consumedOn > todayStr;
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
@@ -80,6 +87,7 @@ export function LogFoodDialog({
       servings: servingCount,
       meal,
       consumedOn,
+      planned: isPlanned,
     });
     setSaving(false);
 
@@ -108,7 +116,11 @@ export function LogFoodDialog({
       meal,
       calories: total.calories,
     });
-    toast.success(`Added +${roundMacro(total.calories)} Calories to Daily Log.`);
+    toast.success(
+      isPlanned
+        ? `Planned ${item.name} for ${consumedOn}.`
+        : `Added +${roundMacro(total.calories)} Calories to Daily Log.`,
+    );
     setOpen(false);
   };
 
@@ -179,12 +191,18 @@ export function LogFoodDialog({
           </label>
 
           <label className="block space-y-2">
-            <span className="text-sm font-semibold">Date eaten</span>
+            <span className="text-sm font-semibold">{isPlanned ? "Planned for" : "Date eaten"}</span>
             <Input
               type="date"
               value={consumedOn}
+              max={maxPlanDate}
               onChange={(event) => setConsumedOn(event.target.value)}
             />
+            {isPlanned ? (
+              <span className="block text-xs text-muted-foreground">
+                Future dates go on your plan. They count once you tap “Ate it” in MaizeMacros.
+              </span>
+            ) : null}
           </label>
         </ResponsiveDialogBody>
 

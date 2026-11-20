@@ -1,5 +1,7 @@
 # MaizeMacros: small fixes
 
+> **Status: all ten items are done** (November 20, 2026, together with the larger MaizeMacros features: in-tracker add-food sheet, custom foods, recent foods and copy-day, "What to eat next", planning, week view and streak, CSV export, and the recommendation-boost fix). Don't pick these up; the list is kept for reference.
+
 Small, independent fixes from the MaizeMacros (`/nutrition`) audit. Each item stands alone: do them in any order, one PR per item (or a few per PR).
 
 **Ground rules**

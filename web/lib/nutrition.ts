@@ -175,3 +175,32 @@ export function calculateMacroTargets(input: MacroProfileInput): CalculatedMacro
     goals: { calories: targetCalories, protein, carbs, fat },
   };
 }
+
+/** Nutrients beyond the four macros, summed per day from food_logs.nutrition_snapshot. */
+export type ExtraNutrients = { fiber: number; sugar: number; sodium: number; satFat: number };
+
+export const EXTRA_NUTRIENT_KEYS: Record<keyof ExtraNutrients, string> = {
+  fiber: "Dietary Fiber",
+  sugar: "Sugars",
+  sodium: "Sodium",
+  satFat: "Saturated Fat",
+};
+
+/** Reference amounts for a day (FDA Daily Values); used only for gentle warnings. */
+export const EXTRA_NUTRIENT_LIMITS = { sodium: 2300, satFat: 20 } as const;
+
+export function extraNutrients(snapshot: Json | null | undefined, servings: number): ExtraNutrients {
+  const record =
+    snapshot && typeof snapshot === "object" && !Array.isArray(snapshot) ? snapshot : {};
+  const n = finiteNonnegative(servings);
+  return {
+    fiber: finiteNonnegative(record[EXTRA_NUTRIENT_KEYS.fiber]) * n,
+    sugar: finiteNonnegative(record[EXTRA_NUTRIENT_KEYS.sugar]) * n,
+    sodium: finiteNonnegative(record[EXTRA_NUTRIENT_KEYS.sodium]) * n,
+    satFat: finiteNonnegative(record[EXTRA_NUTRIENT_KEYS.satFat]) * n,
+  };
+}
+
+export function addExtraNutrients(a: ExtraNutrients, b: ExtraNutrients): ExtraNutrients {
+  return { fiber: a.fiber + b.fiber, sugar: a.sugar + b.sugar, sodium: a.sodium + b.sodium, satFat: a.satFat + b.satFat };
+}

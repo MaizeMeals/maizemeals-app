@@ -17,7 +17,7 @@ export default function Footer() {
                         <ul className="space-y-2 text-sm text-muted-foreground">
                             <li><Link href="/menus" className="hover:text-foreground transition-colors">Menus</Link></li>
                             <li><Link href="/locations" className="hover:text-foreground transition-colors">Locations</Link></li>
-                            <li><Link href="/nutrition" className="hover:text-foreground transition-colors">Nutrition</Link></li>
+                            <li><Link href="/nutrition" className="hover:text-foreground transition-colors">Macros</Link></li>
                         </ul>
                     </div>
                     <div>

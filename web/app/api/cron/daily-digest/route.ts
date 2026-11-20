@@ -58,6 +58,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
   }
 
+  // Recompute "you eat this a lot" boosts so they fade after 14 days.
+  const { error: boostError } = await admin.rpc("refresh_all_macro_implicit_traits");
+  if (boostError) console.error("[daily-digest] refresh boosts:", boostError);
+
   const { count, error: countError } = await admin
     .from("photos")
     .select("*", { count: "exact", head: true })

@@ -29,7 +29,7 @@ const NETWORK_TIMEOUT_MS = 4500;
 // Supabase tables that are public, user-independent menu data.
 const CACHEABLE_REST = /\/rest\/v1\/(menu_events|items|dining_halls|operating_hours)(\?|$)/;
 // Same-origin paths the worker must never intercept.
-const BYPASS = [/^\/auth\//, /^\/api\//, /^\/ingest/, /^\/monitoring/, /^\/admin/, /^\/sw\.js$/];
+const BYPASS = [/^\/auth\//, /^\/nutrition\/export/, /^\/api\//, /^\/ingest/, /^\/monitoring/, /^\/admin/, /^\/sw\.js$/];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

@@ -100,7 +100,7 @@ export function DateControls({
             <Button
               variant="outline"
               size="icon"
-              aria-label="Choose date"
+              aria-label={`Choose date (selected ${selectedDate})`}
               className={appToolbarIconControlClassName(
                 isDateDialogOpen || !isToday,
               )}
@@ -152,7 +152,7 @@ export function DateControls({
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              aria-label="Choose date"
+              aria-label={`Choose date (selected ${selectedDate})`}
               className={appToolbarControlClassName(false)}
             >
               {loading ? (

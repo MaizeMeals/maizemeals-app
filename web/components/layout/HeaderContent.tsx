@@ -87,7 +87,7 @@ export function HeaderContent({ user, signOut, isAdmin = false }: HeaderContentP
   const navLinks = [
     { name: "Find food", href: "/menus" },
     { name: "Locations", href: "/locations" },
-    { name: "Nutrition", href: "/nutrition" },
+    { name: "Macros", href: "/nutrition" },
     ...(isAdmin ? [{ name: "Admin", href: "/admin" } as const] : []),
   ];
 

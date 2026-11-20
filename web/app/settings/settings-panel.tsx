@@ -170,7 +170,7 @@ export function SettingsPanel({ email }: { email: string | null }) {
           variant="outline"
           className="mt-4 w-full sm:w-auto"
         >
-          <Link href="/nutrition">Edit targets</Link>
+          <Link href="/nutrition?edit=targets">Edit targets</Link>
         </Button>
       </section>
 
