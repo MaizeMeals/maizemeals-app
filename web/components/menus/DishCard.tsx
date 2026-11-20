@@ -36,11 +36,14 @@ function StatusPill({ offering }: { offering: Offering }) {
 
 function OfferingRow({
   offering,
+  dishName,
   date,
   isToday,
   onSelect,
 }: {
   offering: Offering;
+  /** Card title; when this hall's menu name differs (a grouped variant), show it. */
+  dishName: string;
   date: string;
   isToday: boolean;
   onSelect?: (offering: Offering) => void;
@@ -72,6 +75,9 @@ function OfferingRow({
             <span className="truncate text-sm font-semibold">{hall.name}</span>
             <StatusPill offering={offering} />
           </div>
+          {item.name.trim().toLowerCase() !== dishName.trim().toLowerCase() ? (
+            <p className="truncate text-xs font-medium text-foreground/80">{item.name}</p>
+          ) : null}
           <p className="truncate text-xs text-muted-foreground">
             {/* Cafés/markets: "Café · 7:30 AM–3 PM" (their open hours), not a meal. */}
             {locationKind(hall) ?? meal}
@@ -125,7 +131,7 @@ export function DishCard({
       </header>
       <ul className="divide-y divide-border/60 border-t border-border/60">
         {shown.map((o) => (
-          <OfferingRow key={o.item.id} offering={o} date={date} isToday={isToday} onSelect={onSelectOffering} />
+          <OfferingRow key={o.item.id} offering={o} dishName={dish.name} date={date} isToday={isToday} onSelect={onSelectOffering} />
         ))}
       </ul>
       {hidden > 0 && (

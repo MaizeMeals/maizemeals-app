@@ -169,11 +169,11 @@ export function FoodFinder() {
   // Without a search, favorites get their own section above the ranked list.
   const showFavorites = !query.trim() && favorites.size > 0;
   const favoriteDishes = useMemo(
-    () => (showFavorites ? dishes.filter((d) => favorites.has(d.key)) : []),
+    () => (showFavorites ? dishes.filter((d) => d.memberKeys.some((k) => favorites.has(k))) : []),
     [showFavorites, dishes, favorites],
   );
   const listDishes = useMemo(
-    () => (showFavorites ? dishes.filter((d) => !favorites.has(d.key)) : dishes),
+    () => (showFavorites ? dishes.filter((d) => !d.memberKeys.some((k) => favorites.has(k))) : dishes),
     [showFavorites, dishes, favorites],
   );
 

@@ -1,5 +1,5 @@
 import type { DayMenu, DayMenuHall, DayMenuItem } from "./types";
-import { mealRank } from "./types";
+import { dishDisplayName, dishGroupKey, mealRank } from "./types";
 import {
   itemFit,
   mealForShift,
@@ -26,7 +26,10 @@ export type Offering = {
 };
 
 export type Dish = {
+  /** Group key (dishGroupKey): near-identical names share one card. */
   key: string;
+  /** foodKey of every menu name in the group (favorites match on these). */
+  memberKeys: string[];
   name: string;
   /** Representative item (highest scoring offering) for tags/macros. */
   primary: DayMenuItem;
@@ -194,10 +197,11 @@ export function buildDishes(menu: DayMenu, prefs: ScoringPrefs, q: DishQuery): D
       score: preferenceScore(item, prefs),
     };
 
-    const g = groups.get(item.key) ?? { offerings: [], relevance: 0 };
+    const groupKey = dishGroupKey(item.name);
+    const g = groups.get(groupKey) ?? { offerings: [], relevance: 0 };
     g.offerings.push(offering);
     g.relevance = Math.max(g.relevance, rel);
-    groups.set(item.key, g);
+    groups.set(groupKey, g);
   }
 
   const dishes: Dish[] = [];
@@ -213,7 +217,8 @@ export function buildDishes(menu: DayMenu, prefs: ScoringPrefs, q: DishQuery): D
     const best = rated.sort((a, b) => b.item.avgRating - a.item.avgRating)[0];
     dishes.push({
       key,
-      name: primary.name,
+      memberKeys: [...new Set(g.offerings.map((o) => o.item.key))],
+      name: dishDisplayName(primary.name),
       primary,
       offerings: g.offerings,
       score: Math.max(...g.offerings.map((o) => o.score)),

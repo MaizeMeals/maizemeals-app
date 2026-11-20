@@ -59,7 +59,7 @@ export function FavoritesSection({
   date: string;
   isToday: boolean;
 }) {
-  const shownKeys = useMemo(() => new Set(dishes.map((d) => d.key)), [dishes]);
+  const shownKeys = useMemo(() => new Set(dishes.flatMap((d) => d.memberKeys)), [dishes]);
   const allKeys = useMemo(() => [...favorites.keys()], [favorites]);
   const upcoming = useUpcoming(allKeys);
 

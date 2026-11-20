@@ -83,3 +83,40 @@ export function foodKey(name: string): string {
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 }
+
+/** Words in a dish name that say how it's served, not what it is. */
+const SERVED_ON = /\s+(?:on|with)\s+(?:a\s+)?(?:[a-z0-9']+\s+){0,3}(?:bun|roll|bread|white|wheat)$/;
+/** Dishes that always come on bread, so the bun type never changes the dish. */
+const BREAD_IMPLIED = /\b(?:burger|hamburger|cheeseburger|slider|hot dog|hotdog|sandwich|patty|sloppy joe|grilled cheese|cheese steak|cheesesteak|brat|bratwurst|sub|hoagie)$/;
+
+/**
+ * Coarser key for grouping near-identical dishes in Find food:
+ * "Beef & Mushroom Blended Burger w/ Cheese" and "Beef and Mushroom Blend
+ * Burger w/ American" match; "... w/ Cheddar" does not. Ignores "&"/"and",
+ * "blend"/"blended", "w/"/"with", plurals, plain American vs cheese, and the
+ * bun or bread a dish is served on.
+ */
+export function dishGroupKey(name: string): string {
+  let key = foodKey(name)
+    .split(" ")
+    .filter((w) => w !== "and")
+    .map((w) => (w === "w" ? "with" : w === "blended" ? "blend" : w))
+    // Singular forms (key only): tenders/tender, vegetables/vegetable.
+    .map((w) => (w.length > 3 && w.endsWith("s") && !/(ss|us|is)$/.test(w) ? w.slice(0, -1) : w))
+    .join(" ");
+  key = key.replace(/\bamerican(?: cheese)?\b/g, "cheese");
+  if (SERVED_ON.test(key)) {
+    const base = key.replace(SERVED_ON, "").trim();
+    // A burger on a white or wheat bun is still the burger. "BBQ Chicken" on a
+    // bun is a sandwich, not the entree: those only merge with other buns.
+    key = BREAD_IMPLIED.test(base) ? base : `${base} on bun`;
+  }
+  return key.trim() || foodKey(name);
+}
+
+/** "Black Bean Burger w/ White Bun" → "Black Bean Burger" (bread-implied dishes only). */
+export function dishDisplayName(name: string): string {
+  const trimmed = name.trim();
+  const stripped = trimmed.replace(/\s+(?:on|with|w\/)\s+(?:a\s+)?(?:[\w']+\s+){0,3}(?:bun|roll|bread|white|wheat)$/i, "");
+  return stripped !== trimmed && BREAD_IMPLIED.test(foodKey(stripped)) ? stripped : trimmed;
+}
