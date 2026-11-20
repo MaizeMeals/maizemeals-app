@@ -536,13 +536,6 @@ export type Database = {
             foreignKeyName: "user_ratings_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "reviewer_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "user_ratings_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["user_id"]
           },
@@ -550,24 +543,7 @@ export type Database = {
       }
     }
     Views: {
-      reviewer_profiles: {
-        Row: {
-          avatar_url: string | null
-          display_name: string | null
-          user_id: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          display_name?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          display_name?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       reviews_public: {
