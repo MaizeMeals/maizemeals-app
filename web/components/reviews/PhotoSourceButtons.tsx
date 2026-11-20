@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useState, type ChangeEvent } from "react";
 import { Camera, ImagePlus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CameraCapture, type CameraFailure } from "@/components/reviews/CameraCapture";
@@ -34,31 +34,30 @@ export function PhotoSourceButtons({
   const [cameraOpen, setCameraOpen] = useState(false);
   const [failure, setFailure] = useState<CameraFailure | null>(null);
 
+  const closeCamera = useCallback(() => setCameraOpen(false), []);
+
   useEffect(() => {
     setCanStream(typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia);
   }, []);
-
-  if (cameraOpen) {
-    return (
-      <CameraCapture
-        onCapture={(file) => {
-          setCameraOpen(false);
-          onCapture(file);
-        }}
-        onCancel={() => setCameraOpen(false)}
-        onFailure={(reason) => {
-          setCameraOpen(false);
-          setFailure(reason);
-        }}
-      />
-    );
-  }
 
   // In-page camera when possible; after a failure, the system camera.
   const useInPageCamera = canStream && !failure;
 
   return (
     <div className="space-y-2">
+      {cameraOpen ? (
+        <CameraCapture
+          onCapture={(file) => {
+            setCameraOpen(false);
+            onCapture(file);
+          }}
+          onCancel={closeCamera}
+          onFailure={(reason) => {
+            setCameraOpen(false);
+            setFailure(reason);
+          }}
+        />
+      ) : null}
       <div className="flex flex-wrap items-center gap-2">
         {useInPageCamera ? (
           <button

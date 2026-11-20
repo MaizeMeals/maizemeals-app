@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 import { Sheet, SheetContent, SheetClose, SheetTitle } from "@/components/ui/sheet"
 import Link from "next/link"
 import Image from "next/image"
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react"
 import { getItemPhotoPublicUrl } from "@/lib/item-photos"
 import { useLgUp } from "@/hooks/use-lg-up"
 import { LogFoodDialog } from "@/components/nutrition/LogFoodDialog"
@@ -30,30 +30,55 @@ function closeThresholdPx() {
   return Math.max(100, Math.round(window.innerHeight * 0.18))
 }
 
+/** How far the sheet can be pulled up past its open position (asymptote). */
+const RUBBER_MAX_PX = 110
+
+/** iOS-style rubber band: resistance grows the further you pull. */
+function rubberBand(overshoot: number) {
+  return RUBBER_MAX_PX * (1 - 1 / ((overshoot * 0.55) / RUBBER_MAX_PX + 1))
+}
+
+type SpringConfig = { stiffness: number; damping: number }
+/** Slightly underdamped: settles with a small bounce. */
+const SNAP_SPRING: SpringConfig = { stiffness: 520, damping: 32 }
+/** Open: rises with a little settle at the top. */
+const OPEN_SPRING: SpringConfig = { stiffness: 340, damping: 30 }
+/** Close: critically damped, no bounce. */
+const DISMISS_SPRING: SpringConfig = { stiffness: 260, damping: 32 }
+/** A downward flick faster than this (px/s) closes the sheet even if it moved only a little. */
+const FLICK_CLOSE_VELOCITY = 900
+
+function prefersReducedMotion() {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+}
+
+/**
+ * Drag the item sheet with your finger: down to close, up for a rubber-band
+ * overpull. On release it springs back (keeping the release velocity) or, past
+ * the threshold or on a quick flick, flies off and closes.
+ */
 function useSwipeToCloseSheet(onDismiss: () => void, enabled: boolean) {
   const [dragY, setDragY] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
-  const [isExitAnimating, setIsExitAnimating] = useState(false)
 
   const dragYRef = useRef(0)
   const startYRef = useRef(0)
   const startXRef = useRef(0)
+  const baseYRef = useRef(0)
   const phaseRef = useRef<"idle" | "pending" | "handle" | "dragging">("idle")
   const windowCleanupRef = useRef<(() => void) | null>(null)
-  const dismissAfterTransitionRef = useRef(false)
-  const dismissFallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const samplesRef = useRef<{ y: number; t: number }[]>([])
+  const rafRef = useRef<number | null>(null)
 
-  const completeDismiss = useCallback(() => {
-    if (dismissFallbackTimerRef.current) {
-      clearTimeout(dismissFallbackTimerRef.current)
-      dismissFallbackTimerRef.current = null
-    }
-    dismissAfterTransitionRef.current = false
-    setIsExitAnimating(false)
-    setDragY(0)
-    dragYRef.current = 0
-    onDismiss()
-  }, [onDismiss])
+  const apply = useCallback((y: number) => {
+    dragYRef.current = y
+    setDragY(y)
+  }, [])
+
+  const stopAnimation = useCallback(() => {
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+    rafRef.current = null
+  }, [])
 
   const clearWindowListeners = useCallback(() => {
     windowCleanupRef.current?.()
@@ -62,76 +87,143 @@ function useSwipeToCloseSheet(onDismiss: () => void, enabled: boolean) {
 
   useEffect(() => {
     if (!enabled) {
-      if (dismissFallbackTimerRef.current) {
-        clearTimeout(dismissFallbackTimerRef.current)
-        dismissFallbackTimerRef.current = null
-      }
-      setDragY(0)
-      dragYRef.current = 0
+      stopAnimation()
+      apply(0)
       setIsDragging(false)
-      setIsExitAnimating(false)
-      dismissAfterTransitionRef.current = false
       phaseRef.current = "idle"
       clearWindowListeners()
     }
-  }, [enabled, clearWindowListeners])
+  }, [enabled, apply, stopAnimation, clearWindowListeners])
 
   useEffect(
     () => () => {
       clearWindowListeners()
-      if (dismissFallbackTimerRef.current) {
-        clearTimeout(dismissFallbackTimerRef.current)
-        dismissFallbackTimerRef.current = null
-      }
+      stopAnimation()
     },
-    [clearWindowListeners],
+    [clearWindowListeners, stopAnimation],
   )
 
-  const setOffset = useCallback((y: number) => {
-    const next = Math.max(0, y)
-    dragYRef.current = next
-    setDragY(next)
+  const animateRef = useRef<typeof animateTo | null>(null)
+
+  /** Spring dragY to `target`, starting at velocity `v0` (px/s). */
+  const animateTo = useCallback(
+    (target: number, v0: number, spring: SpringConfig, doneWhen?: (y: number) => boolean, onDone?: () => void) => {
+      stopAnimation()
+      if (prefersReducedMotion()) {
+        apply(target)
+        onDone?.()
+        return
+      }
+      let y = dragYRef.current
+      let v = v0
+      let last = performance.now()
+      const step = (now: number) => {
+        const dt = Math.min(0.064, (now - last) / 1000)
+        last = now
+        // Fixed small substeps keep the integration stable on slow frames.
+        const n = Math.max(1, Math.ceil(dt / 0.004))
+        const h = dt / n
+        for (let i = 0; i < n; i++) {
+          const a = -spring.stiffness * (y - target) - spring.damping * v
+          v += a * h
+          y += v * h
+        }
+        const settled = Math.abs(v) < 6 && Math.abs(y - target) < 0.5
+        if (settled || doneWhen?.(y)) {
+          rafRef.current = null
+          apply(settled ? target : y)
+          onDone?.()
+          return
+        }
+        apply(y)
+        rafRef.current = requestAnimationFrame(step)
+      }
+      rafRef.current = requestAnimationFrame(step)
+    },
+    [apply, stopAnimation],
+  )
+
+  animateRef.current = animateTo
+
+  // Rise in on a spring when the sheet opens (before first paint, so no flash).
+  useLayoutEffect(() => {
+    if (!enabled || prefersReducedMotion()) return
+    apply(window.innerHeight)
+    animateRef.current?.(0, 0, OPEN_SPRING)
+  }, [enabled, apply])
+
+  const closingRef = useRef(false)
+  useEffect(() => {
+    if (enabled) closingRef.current = false
+  }, [enabled])
+
+  /** Fly off-screen, then close (X button, tap outside, Escape). */
+  const flyAway = useCallback(
+    (velocity = 0) => {
+      if (closingRef.current) return
+      closingRef.current = true
+      phaseRef.current = "idle"
+      setIsDragging(false)
+      const h = typeof window !== "undefined" ? window.innerHeight : 800
+      animateTo(h, Math.max(velocity, 1400), DISMISS_SPRING, (pos) => pos >= h * 0.97, () => {
+        onDismiss()
+        apply(0)
+      })
+    },
+    [animateTo, apply, onDismiss],
+  )
+
+  const trackSample = useCallback((y: number) => {
+    const t = performance.now()
+    const samples = samplesRef.current
+    samples.push({ y, t })
+    while (samples.length > 2 && t - samples[0].t > 80) samples.shift()
   }, [])
 
-  const flushDismissAnimation = useCallback(() => {
-    dismissAfterTransitionRef.current = true
-    setIsDragging(false)
-    setIsExitAnimating(true)
-    const h = typeof window !== "undefined" ? window.innerHeight : 720
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        dragYRef.current = h
-        setDragY(h)
-      })
-    })
-    if (dismissFallbackTimerRef.current) clearTimeout(dismissFallbackTimerRef.current)
-    dismissFallbackTimerRef.current = setTimeout(() => {
-      dismissFallbackTimerRef.current = null
-      if (!dismissAfterTransitionRef.current) return
-      completeDismiss()
-    }, 450)
-  }, [completeDismiss])
+  const releaseVelocity = useCallback(() => {
+    const samples = samplesRef.current
+    if (samples.length < 2) return 0
+    const a = samples[0]
+    const b = samples[samples.length - 1]
+    // A finger that stopped before lifting has no velocity.
+    if (performance.now() - b.t > 60) return 0
+    const dt = b.t - a.t
+    return dt > 0 ? ((b.y - a.y) / dt) * 1000 : 0
+  }, [])
 
-  const onSheetTransitionEnd = useCallback(
-    (e: React.TransitionEvent<HTMLDivElement>) => {
-      if (e.propertyName !== "transform" || e.target !== e.currentTarget) return
-      if (!dismissAfterTransitionRef.current) return
-      completeDismiss()
+  const moveTo = useCallback(
+    (clientY: number) => {
+      const raw = baseYRef.current + (clientY - startYRef.current)
+      const y = raw >= 0 ? raw : -rubberBand(-raw)
+      apply(y)
+      trackSample(y)
     },
-    [completeDismiss],
+    [apply, trackSample],
   )
 
-  const endDrag = useCallback(() => {
-    const y = dragYRef.current
+  const beginDrag = useCallback(
+    (clientX: number, clientY: number) => {
+      stopAnimation()
+      // Catch the sheet mid-animation where it is.
+      baseYRef.current = Math.max(0, dragYRef.current)
+      startYRef.current = clientY
+      startXRef.current = clientX
+      samplesRef.current = []
+    },
+    [stopAnimation],
+  )
+
+  const release = useCallback(() => {
     phaseRef.current = "idle"
     setIsDragging(false)
-    if (y >= closeThresholdPx()) {
-      flushDismissAnimation()
+    const y = dragYRef.current
+    const v = releaseVelocity()
+    if (y > 0 && (y >= closeThresholdPx() || (v > FLICK_CLOSE_VELOCITY && y > 16))) {
+      flyAway(v)
       return
     }
-    setDragY(0)
-    dragYRef.current = 0
-  }, [flushDismissAnimation])
+    animateTo(0, v, SNAP_SPRING)
+  }, [animateTo, flyAway, releaseVelocity])
 
   const handleHandlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLElement>) => {
@@ -139,30 +231,21 @@ function useSwipeToCloseSheet(onDismiss: () => void, enabled: boolean) {
       if (e.button !== 0 && e.pointerType === "mouse") return
       phaseRef.current = "handle"
       setIsDragging(true)
-      startYRef.current = e.clientY
-      startXRef.current = e.clientX
-      setOffset(0)
+      beginDrag(e.clientX, e.clientY)
       e.currentTarget.setPointerCapture(e.pointerId)
     },
-    [enabled, setOffset],
+    [enabled, beginDrag],
   )
 
   const handleCapturedPointerMove = useCallback(
     (e: React.PointerEvent<HTMLElement>) => {
       if (!enabled) return
       if (phaseRef.current !== "handle" && phaseRef.current !== "dragging") return
-      if (phaseRef.current === "handle") {
-        phaseRef.current = "dragging"
-      }
-      const dy = e.clientY - startYRef.current
-      if (dy > 0) {
-        setOffset(dy)
-        e.preventDefault()
-      } else {
-        setOffset(0)
-      }
+      phaseRef.current = "dragging"
+      moveTo(e.clientY)
+      e.preventDefault()
     },
-    [enabled, setOffset],
+    [enabled, moveTo],
   )
 
   const handleCapturedPointerUp = useCallback(
@@ -174,11 +257,15 @@ function useSwipeToCloseSheet(onDismiss: () => void, enabled: boolean) {
       } catch {
         /* ignore */
       }
-      endDrag()
+      release()
     },
-    [enabled, endDrag],
+    [enabled, release],
   )
 
+  /**
+   * Content area: becomes a drag only when the body is scrolled to the top
+   * and the finger moves down (moving up scrolls the content as usual).
+   */
   const startPendingSwipe = useCallback(
     (e: React.PointerEvent<HTMLElement>, scrollTopAtDown = 0) => {
       if (!enabled) return
@@ -188,30 +275,21 @@ function useSwipeToCloseSheet(onDismiss: () => void, enabled: boolean) {
       const el = e.currentTarget
       const pointerId = e.pointerId
       phaseRef.current = "pending"
-      startYRef.current = e.clientY
-      startXRef.current = e.clientX
-      setOffset(0)
+      const downX = e.clientX
+      const downY = e.clientY
 
       const onMove = (ev: PointerEvent) => {
         if (ev.pointerId !== pointerId) return
 
         if (phaseRef.current === "pending") {
-          const dy = ev.clientY - startYRef.current
-          const dx = ev.clientX - startXRef.current
+          const dy = ev.clientY - downY
+          const dx = ev.clientX - downX
           if (Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return
-
-          if (Math.abs(dx) >= Math.abs(dy)) {
+          if (Math.abs(dx) >= Math.abs(dy) || dy <= 0) {
             phaseRef.current = "idle"
             clearWindowListeners()
             return
           }
-
-          if (dy <= 0) {
-            phaseRef.current = "idle"
-            clearWindowListeners()
-            return
-          }
-
           try {
             el.setPointerCapture(pointerId)
           } catch {
@@ -219,52 +297,34 @@ function useSwipeToCloseSheet(onDismiss: () => void, enabled: boolean) {
             clearWindowListeners()
             return
           }
-
           phaseRef.current = "dragging"
           setIsDragging(true)
-          setOffset(dy)
+          // Start from where the finger crossed the axis-lock distance, so the sheet doesn't jump.
+          beginDrag(ev.clientX, ev.clientY)
           ev.preventDefault()
           return
         }
 
         if (phaseRef.current === "dragging") {
-          const dy = ev.clientY - startYRef.current
-          if (dy > 0) {
-            setOffset(dy)
-            ev.preventDefault()
-          } else {
-            setOffset(0)
-          }
+          moveTo(ev.clientY)
+          ev.preventDefault()
         }
       }
 
       const onUp = (ev: PointerEvent) => {
         if (ev.pointerId !== pointerId) return
-        window.removeEventListener("pointermove", onMove)
-        window.removeEventListener("pointerup", onUp)
-        window.removeEventListener("pointercancel", onUp)
-        windowCleanupRef.current = null
-
+        clearWindowListeners()
         if (phaseRef.current === "pending") {
           phaseRef.current = "idle"
           return
         }
-
         if (phaseRef.current === "dragging") {
           try {
             el.releasePointerCapture(pointerId)
           } catch {
             /* ignore */
           }
-          const y = dragYRef.current
-          phaseRef.current = "idle"
-          setIsDragging(false)
-          if (y >= closeThresholdPx()) {
-            flushDismissAnimation()
-          } else {
-            setDragY(0)
-            dragYRef.current = 0
-          }
+          release()
         }
       }
 
@@ -277,25 +337,17 @@ function useSwipeToCloseSheet(onDismiss: () => void, enabled: boolean) {
         window.removeEventListener("pointercancel", onUp)
       }
     },
-    [clearWindowListeners, enabled, flushDismissAnimation, setOffset],
+    [beginDrag, clearWindowListeners, enabled, moveTo, release],
   )
-
-  const sheetTransition =
-    isDragging || isExitAnimating
-      ? isDragging
-        ? "none"
-        : "transform 0.38s cubic-bezier(0.32, 0.72, 0, 1)"
-      : "transform 0.28s cubic-bezier(0.32, 0.72, 0, 1)"
 
   return {
     dragY,
     isDragging,
-    sheetTransition,
-    onSheetTransitionEnd,
     handleHandlePointerDown,
     handleCapturedPointerMove,
     handleCapturedPointerUp,
     startPendingSwipe,
+    flyAway,
   }
 }
 
@@ -350,11 +402,15 @@ export function ItemDetailPanel({
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [tab, setTab] = useState("nutrition")
   const scrollBodyRef = useRef<HTMLDivElement>(null)
+  const imageRef = useRef<HTMLDivElement>(null)
+  const [pastImage, setPastImage] = useState(false)
   const isSheet = variant === "sheet"
 
   useEffect(() => {
     setActiveImageIndex(0)
     setTab("nutrition")
+    setPastImage(false)
+    scrollBodyRef.current?.scrollTo({ top: 0 })
   }, [item.id])
 
   const carbonTag = item.dietary_tags?.find(t => t.toLowerCase().startsWith('carbon'))
@@ -397,7 +453,7 @@ export function ItemDetailPanel({
     <>
       {isSheet && <SheetTitle className="sr-only">{item.name} Details</SheetTitle>}
 
-      <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
+      <div className={cn("relative flex min-h-0 flex-1 flex-col", className)}>
         {isSheet && swipe && (
           <div
             className="z-30 flex shrink-0 cursor-grab touch-none flex-col items-center justify-center gap-2 bg-background pb-2 pt-3 active:cursor-grabbing"
@@ -411,17 +467,60 @@ export function ItemDetailPanel({
           </div>
         )}
 
+        {isSheet ? (
+          <SheetClose
+            className={cn(
+              "absolute right-4 top-10 z-30 rounded-full bg-black/50 p-2 text-white backdrop-blur-md transition-[opacity,transform] duration-200 hover:bg-black/70",
+              pastImage && "pointer-events-none scale-90 opacity-0",
+            )}
+            tabIndex={pastImage ? -1 : undefined}
+          >
+            <X className="h-5 w-5" />
+            <span className="sr-only">Close</span>
+          </SheetClose>
+        ) : (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-3 top-3 z-30 rounded-full bg-black/50 p-2 text-white backdrop-blur-md transition-colors hover:bg-black/70"
+            aria-label="Close details"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
+          {/* --- Scrollable Content Body --- */}
+          <div
+            ref={scrollBodyRef}
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+            onScroll={(e) => {
+              const imageHeight = imageRef.current?.offsetHeight ?? 0
+              setPastImage(e.currentTarget.scrollTop > imageHeight - 56)
+            }}
+            onPointerDown={
+              isSheet && swipe
+                ? (e) => {
+                    const t = e.target as HTMLElement
+                    if (
+                      t.closest(
+                        "button, a, input, textarea, select, [role='button'], [role='tab'], [data-sheet-swipe-ignore]",
+                      )
+                    ) {
+                      return
+                    }
+                    swipe.startPendingSwipe(e, scrollBodyRef.current?.scrollTop ?? 0)
+                  }
+                : undefined
+            }
+          >
         <div
+          ref={imageRef}
           className={cn(
-            "relative min-h-0 w-full shrink-0 bg-muted",
-            isSheet ? "h-44" : "h-40",
+            "relative w-full shrink-0 bg-muted",
+            isSheet ? "h-52" : "h-44",
           )}
         >
           <div
             className="flex h-full w-full snap-x snap-mandatory overflow-x-auto scrollbar-hide"
-            onPointerDown={
-              isSheet && swipe ? (e) => swipe.startPendingSwipe(e) : undefined
-            }
             onScroll={(e) => {
                 const scrollLeft = e.currentTarget.scrollLeft
                 const width = e.currentTarget.offsetWidth
@@ -474,43 +573,8 @@ export function ItemDetailPanel({
               ))}
             </div>
           ) : null}
-
-          {isSheet ? (
-            <SheetClose className="absolute top-4 right-4 p-2 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-black/70 transition-colors">
-              <X className="h-5 w-5" />
-            </SheetClose>
-          ) : (
-            <button
-              type="button"
-              onClick={onClose}
-              className="absolute right-3 top-3 z-20 rounded-full bg-black/50 p-2 text-white backdrop-blur-md transition-colors hover:bg-black/70"
-              aria-label="Close details"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          )}
         </div>
-
-          {/* --- Scrollable Content Body --- */}
-          <div
-            ref={scrollBodyRef}
-            className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-5"
-            onPointerDown={
-              isSheet && swipe
-                ? (e) => {
-                    const t = e.target as HTMLElement
-                    if (
-                      t.closest(
-                        "button, a, input, textarea, select, [role='button'], [role='tab'], [data-sheet-swipe-ignore]",
-                      )
-                    ) {
-                      return
-                    }
-                    swipe.startPendingSwipe(e, scrollBodyRef.current?.scrollTop ?? 0)
-                  }
-                : undefined
-            }
-          >
+          <div className="px-5 pb-6 pt-5">
           <div className="mb-5">
             <div className="flex items-start justify-between gap-4">
               <h2 className="text-2xl font-bold leading-tight text-foreground">
@@ -626,6 +690,7 @@ export function ItemDetailPanel({
               />
             </TabsContent>
           </Tabs>
+          </div>
         </div>
 
         {/* Actions stay visible: no scrolling past the label to log or review. */}
@@ -702,19 +767,22 @@ export function DetailDrawer({
   if (lgUp) return null
 
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
+    <Sheet open={isOpen} onOpenChange={(open) => (open ? onClose(true) : swipe.flyAway())}>
       <SheetContent
         side="bottom"
         hideClose
-        onTransitionEnd={swipe.onSheetTransitionEnd}
         className={cn(
           "flex h-[85vh] max-h-[85vh] flex-col overflow-hidden rounded-t-3xl bg-background p-0 will-change-transform",
           swipe.isDragging && "touch-none",
           "data-[state=closed]:animate-none data-[state=closed]:duration-0",
+          // The spring in useSwipeToCloseSheet animates opening instead.
+          "motion-safe:data-[state=open]:animate-none",
         )}
         style={{
-          transform: `translateY(${swipe.dragY}px)`,
-          transition: swipe.sheetTransition,
+          transform: `translate3d(0, ${swipe.dragY}px, 0)`,
+          transition: "none",
+          // Fills the gap below the sheet when it is overpulled upward.
+          boxShadow: "0 160px 0 0 hsl(var(--background))",
         }}
       >
         <ItemDetailPanel
