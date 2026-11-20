@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Loader2, Camera, LogIn, Pencil } from "lucide-react";
+import { Loader2, LogIn, Pencil } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { appPrimaryButtonClassName } from "@/lib/button-styles";
 import { StarRatingInput } from "./StarRatingInput";
 import { submitReview, type SubmitReviewResult } from "@/app/actions/submit-review";
 import { AnonymousToggle, readAnonymousPref, writeAnonymousPref } from "@/components/reviews/AnonymousToggle";
+import { PhotoSourceButtons } from "@/components/reviews/PhotoSourceButtons";
 import {
   EditReviewDialog,
   type EditReviewTarget,
@@ -255,6 +256,7 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
       itemId,
       rating,
       comment,
+      anonymous,
       photoFile,
       handleOpenChange,
       router,
@@ -423,43 +425,28 @@ export function ReviewModal({ itemId, itemName, open, onOpenChange, onPosted }: 
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-foreground">
-                    Photo (optional, JPEG, PNG, or WebP)
-                  </label>
-                  <div className="mt-2 flex items-center gap-2">
-                    <label
-                      className={cn(
-                        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors",
-                        "hover:bg-accent hover:text-accent-foreground",
-                        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
-                        (isCompressing || isSubmitting) && "pointer-events-none opacity-70"
-                      )}
-                    >
-                      {isCompressing ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Camera className="h-4 w-4" />
-                      )}
-                      {isCompressing ? "Compressing…" : photoFile ? photoFile.name : "Choose photo"}
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        className="sr-only"
-                        onChange={onPhotoChange}
-                        disabled={isSubmitting || isCompressing}
-                      />
-                    </label>
-                    {photoFile && !isCompressing && (
+                  <p className="text-sm font-medium text-foreground">Photo (optional)</p>
+                  <div className="mt-2">
+                    <PhotoSourceButtons
+                      onChange={onPhotoChange}
+                      disabled={isSubmitting}
+                      busy={isCompressing}
+                      chooseLabel={photoFile ? "Choose another" : "Choose photo"}
+                    />
+                  </div>
+                  {photoFile && !isCompressing && (
+                    <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="truncate">Attached: {photoFile.name}</span>
                       <button
                         type="button"
                         onClick={() => setPhotoFile(null)}
                         disabled={isSubmitting}
-                        className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+                        className="font-medium hover:text-foreground disabled:opacity-50"
                       >
                         Remove
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
                 <AnonymousToggle checked={anonymous} onChange={setAnonymous} disabled={isSubmitting} />
               </ResponsiveDialogBody>

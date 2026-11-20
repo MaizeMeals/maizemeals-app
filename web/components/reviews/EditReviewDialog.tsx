@@ -25,8 +25,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { AnonymousToggle } from "@/components/reviews/AnonymousToggle";
 import { deleteOwnReview } from "@/app/actions/delete-review";
-
-const MAX_PHOTO_MB = 2;
+import { PhotoSourceButtons } from "@/components/reviews/PhotoSourceButtons";
 
 type ReviewPhoto = {
   storage_path: string;
@@ -190,21 +189,20 @@ export function EditReviewDialog({
             ) : null}
 
             <div>
-              <label
-                htmlFor="edit-review-photo"
-                className="text-sm font-medium text-foreground"
-              >
-                {hasPhoto ? "Replace photo" : "Add photo"} (optional, JPEG, PNG,
-                or WebP, max {MAX_PHOTO_MB}MB)
-              </label>
-              <input
-                id="edit-review-photo"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                disabled={submitting || compressing}
-                onChange={onPhotoChange}
-                className="mt-2 block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-foreground"
-              />
+              <p className="text-sm font-medium text-foreground">
+                {hasPhoto ? "Replace photo" : "Add photo"} (optional)
+              </p>
+              <div className="mt-2">
+                <PhotoSourceButtons
+                  onChange={onPhotoChange}
+                  disabled={submitting}
+                  busy={compressing}
+                  chooseLabel={file ? "Choose another" : "Choose photo"}
+                />
+              </div>
+              {file && !compressing ? (
+                <p className="mt-1 truncate text-xs text-muted-foreground">Attached: {file.name}</p>
+              ) : null}
               {compressing ? (
                 <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin" />

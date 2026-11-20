@@ -15,6 +15,8 @@ export async function compressReviewPhoto(file: File): Promise<File> {
     maxSizeMB: 0.15,
     maxWidthOrHeight: 1600,
     useWebWorker: true,
+    // Phone cameras/libraries can hand over HEIC/HEIF; re-encode those as JPEG.
+    ...(isAllowedReviewPhotoType(file.type.trim().toLowerCase()) ? {} : { fileType: "image/jpeg" }),
   });
 
   const type = compressed.type.trim().toLowerCase();
@@ -22,7 +24,9 @@ export async function compressReviewPhoto(file: File): Promise<File> {
     throw new Error("Unsupported photo type");
   }
 
-  const name = compressed.name.trim() || file.name.trim() || "photo";
+  const baseName = compressed.name.trim() || file.name.trim() || "photo";
+  // Keep the extension in step with the (possibly converted) type.
+  const name = type === "image/jpeg" ? baseName.replace(/\.(heic|heif)$/i, ".jpg") : baseName;
   return new File([compressed], name, {
     type,
     lastModified: Number.isFinite(compressed.lastModified)
