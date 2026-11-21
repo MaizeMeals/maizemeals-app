@@ -54,8 +54,7 @@ export function AnonymousToggle({
           <EyeOff className="h-3.5 w-3.5" aria-hidden /> Post anonymously
         </span>
         <span className="mt-0.5 block text-xs text-muted-foreground">
-          Other students see &ldquo;Anonymous&rdquo; instead of your name. MaizeMeals admins can still see who
-          posted it.
+          Other students see &ldquo;Anonymous&rdquo; instead of your name.
         </span>
       </span>
     </label>
