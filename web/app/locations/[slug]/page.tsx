@@ -35,6 +35,26 @@ export default async function LocationPage({ params, searchParams }: Props) {
     !Number.isNaN(Date.parse(requested)) && new Date(requested).toISOString().startsWith(requested)
     ? requested : easternToday();
   const data = await loadLocationData(anonClient(), hall, date);
+  // Only the selected dish needs its full label, highlight spans and photos.
+  // Keep the public source identity and categories used by the list filters.
+  for (const groups of Object.values(data.menu)) {
+    for (const group of groups) {
+      for (const item of group.items) {
+        const label = item.nutrition_label;
+        item.nutrition_label = label && typeof label === "object" && !Array.isArray(label) && label.source
+          ? { source: label.source } : null;
+        const flags = item.ingredient_flags;
+        if (flags && typeof flags === "object" && !Array.isArray(flags)) {
+          item.ingredient_flags = { ...flags, spans: [] };
+        } else if (item.ingredients) {
+          item.ingredient_flags = { categories: [], spans: [] };
+        }
+        item.ingredients = null;
+        item.label_notes = null;
+      }
+    }
+  }
+  data.itemMetadata = {};
   const initialMeal = defaultLocationMeal(Object.keys(data.menu), data.hours) ?? "Lunch";
   return <LocationMenu initialMeal={initialMeal} key={`${hall.slug}:${date}`} slug={hall.slug} initialDate={date} initialData={data} />;
 }

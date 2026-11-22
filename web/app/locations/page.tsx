@@ -11,17 +11,16 @@ export const metadata: Metadata = {
 
 export default async function LocationsPage() {
   const halls = await getLocationDirectory();
-  return <>
-    <LocationsView />
-    <section className="mx-auto max-w-6xl px-4 py-8 pb-24">
-      <h1 className="text-2xl font-bold">U-M dining halls, cafés &amp; markets</h1>
-      <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+  return <LocationsView directory={
+    <details className="border-t px-4 py-3">
+      <summary className="cursor-pointer text-sm font-medium">All dining hall and café menus</summary>
+      <ul className="mt-3 space-y-2">
         {halls.map((hall) => <li key={hall.id}>
-          <Link className="underline underline-offset-4" href={`/locations/${hall.slug}`}>
+          <Link className="text-sm underline underline-offset-4" href={`/locations/${hall.slug}`}>
             {hall.display_name || hall.name}
           </Link>
         </li>)}
       </ul>
-    </section>
-  </>;
+    </details>
+  } />;
 }

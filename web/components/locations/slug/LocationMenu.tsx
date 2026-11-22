@@ -6,6 +6,7 @@ import { useLocationData } from "@/hooks/use-location-data"
 import { LocationHero } from "@/components/locations/slug/LocationHero"
 import { MenuTabs } from "@/components/locations/slug/MenuTabs"
 import { StationGroup } from "@/components/locations/slug/StationGroup"
+import { useItemDetails } from "@/components/menus/DishDetail"
 import { DetailDrawer, ItemDetailSidebar } from "@/components/locations/slug/DetailDrawer"
 import { SocialProof } from "@/components/locations/slug/SocialProof"
 import { ReviewItemPickerModal } from "@/components/locations/slug/ReviewItemPickerModal"
@@ -20,7 +21,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { appGhostTextButtonClassName } from "@/lib/button-styles"
-import type { Item, ItemWithPhotos, LocationData, MenuData, OperatingHour, StationGroup as StationGroupData } from "@/types/dining"
+import type { Item, LocationData, MenuData, OperatingHour, StationGroup as StationGroupData } from "@/types/dining"
 import { formatTime } from "@/lib/dining"
 import { AvoidProvider } from "@/components/ingredients/avoid-context"
 import { LocationSkeleton } from "@/components/locations/slug/LocationSkeleton"
@@ -36,7 +37,7 @@ import {
 import { SmartSlidersDialog } from "@/components/preferences/SmartSlidersDialog"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 
 const STATION_HIGH_PRIORITY = ["24 carrots", "wild fire maize", "signature maize", "halal", "kosher"]
 const STATION_LOW_PRIORITY = ["m-bakery", "mbakery", "pizziti", "soup"]
@@ -78,6 +79,12 @@ function mergePageDietaryWithProfileEssentials(
   return [...new Set([...tier1DietaryIds(profileDietary), ...pageDietary])]
 }
 
+function consumeLinkParam(param: "item" | "review") {
+  const url = new URL(window.location.href)
+  url.searchParams.delete(param)
+  window.history.replaceState(null, "", url)
+}
+
 function findMealForItem(menu: MenuData, itemId: string): string | null {
   for (const meal of Object.keys(menu)) {
     if (menu[meal].some((g) => g.items.some((i) => i.id === itemId))) {
@@ -94,7 +101,6 @@ export default function LocationMenu({ slug, initialDate, initialData, initialMe
   initialData: LocationData
 }) {
   const pathname = usePathname()
-  const router = useRouter()
   const searchParams = useSearchParams()
   const itemParam = searchParams.get("item")
   const reviewParam = searchParams.get("review")
@@ -236,19 +242,7 @@ export default function LocationMenu({ slug, initialDate, initialData, initialMe
       })
   }, [data?.menu])
 
-  const detailDrawerItem = useMemo((): ItemWithPhotos | null => {
-    if (!selectedItem) return null
-    const meta = data?.itemMetadata?.[selectedItem.id]
-    if (!meta) return selectedItem
-    const photos = meta.photos.map((storage_path) => ({ storage_path }))
-    return {
-      ...selectedItem,
-      avg_rating:
-        (meta.avgRating ?? 0) > 0 ? meta.avgRating : selectedItem.avg_rating,
-      photos: photos.length > 0 ? photos : undefined,
-      review_count: meta.reviewCount,
-    }
-  }, [selectedItem, data?.itemMetadata])
+  const { item: detailDrawerItem, loading: detailsLoading, error: detailsError } = useItemDetails(selectedItem)
 
   const reviewsReturnPath = useMemo(() => {
     const q = new URLSearchParams(searchParams.toString())
@@ -299,11 +293,11 @@ export default function LocationMenu({ slug, initialDate, initialData, initialMe
       }
       setFlashItemId(itemParam)
       window.setTimeout(() => setFlashItemId(null), 2200)
-      router.replace(`/locations/${slug}`, { scroll: false })
+      consumeLinkParam("item")
     }, 120)
 
     return () => clearTimeout(timer)
-  }, [itemParam, sortedGroups, data?.menu, slug, router])
+  }, [itemParam, sortedGroups, data?.menu])
 
   const loginHref = useMemo(() => {
     const q = searchParams.toString()
@@ -352,11 +346,11 @@ export default function LocationMenu({ slug, initialDate, initialData, initialMe
     reviewDeepLinkConsumedRef.current = reviewParam
 
     const timer = window.setTimeout(() => {
-      router.replace(`/locations/${slug}`, { scroll: false })
+      consumeLinkParam("review")
     }, 0)
 
     return () => clearTimeout(timer)
-  }, [reviewParam, data?.menu, slug, router, setFiltersWithProfileSync])
+  }, [reviewParam, data?.menu, setFiltersWithProfileSync])
 
   if (loading && !data) {
     return <LocationSkeleton />
@@ -517,6 +511,8 @@ export default function LocationMenu({ slug, initialDate, initialData, initialMe
             <div className="flex h-[calc(100vh-4rem)] min-h-[28rem] w-[min(420px,38vw)] min-w-[280px] flex-col">
               <ItemDetailSidebar
                 item={detailDrawerItem}
+                ingredientsLoading={detailsLoading}
+                extraAction={detailsError ? <p role="alert">{detailsError}</p> : undefined}
                 onClose={() => setSelectedItem(null)}
                 onStartReview={setReviewItemFromDrawer}
                 reviewsReturnPath={reviewsReturnPath}
@@ -553,6 +549,8 @@ export default function LocationMenu({ slug, initialDate, initialData, initialMe
       {/* Detail Drawer */}
       <DetailDrawer
         item={detailDrawerItem}
+        ingredientsLoading={detailsLoading}
+        extraAction={detailsError ? <p role="alert">{detailsError}</p> : undefined}
         isOpen={!!detailDrawerItem}
         onClose={() => setSelectedItem(null)}
         onStartReview={setReviewItemFromDrawer}

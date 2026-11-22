@@ -30,18 +30,20 @@ export default async function MenusPage({ searchParams }: { searchParams: Promis
     examples.set(item.hallId, names);
   }
 
-  return <FoodFinder initialDate={date}>
-    <section aria-label="Published menus" className="space-y-3 py-4">
-      <h2 className="text-lg font-bold">Campus menus for <time dateTime={date}>{date}</time></h2>
-      <ul className="grid gap-3 sm:grid-cols-2">
-        {menu.halls.filter((hall) => examples.has(hall.id)).map((hall) =>
-          <li key={hall.id}>
-            <Link className="font-semibold underline" href={`/locations/${hall.slug}?date=${date}`}>{hall.name}</Link>
-            <noscript><p className="text-sm text-muted-foreground">{[...examples.get(hall.id)!].join(", ")}</p></noscript>
-          </li>
-        )}
-      </ul>
-      {examples.size === 0 && <p>No matching dishes posted for this date.</p>}
-    </section>
+  return <FoodFinder>
+    <noscript>
+      <section aria-label="Published menus" className="space-y-3 py-4">
+        <h2 className="text-lg font-bold">Campus menus for <time dateTime={date}>{new Date(date + "T12:00:00Z").toLocaleDateString("en-US", { dateStyle: "long", timeZone: "America/New_York" })}</time></h2>
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {menu.halls.filter((hall) => examples.has(hall.id)).map((hall) =>
+            <li key={hall.id}>
+              <Link className="font-semibold underline" href={`/locations/${hall.slug}?date=${date}`}>{hall.name}</Link>
+              <p className="text-sm text-muted-foreground">{[...examples.get(hall.id)!].join(", ")}</p>
+            </li>
+          )}
+        </ul>
+        {examples.size === 0 && <p>No matching dishes posted for this date.</p>}
+      </section>
+    </noscript>
   </FoodFinder>;
 }

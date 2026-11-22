@@ -58,7 +58,7 @@ function isWeekend(date: string): boolean {
  * The toolbar deliberately reuses the hall menu's controls (search, date,
  * filters, dietary chips, meal tabs) so both views behave the same.
  */
-export function FoodFinder({ initialDate, children }: { initialDate: string; children: React.ReactNode }) {
+export function FoodFinder({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const { track } = useAnalytics();
   const { preferences, loading: prefsLoading, isGuest } = usePreferences();
@@ -296,8 +296,9 @@ export function FoodFinder({ initialDate, children }: { initialDate: string; chi
         )}
 
         <section className="mt-4" aria-live="polite" data-testid="food-results">
-          {(loading || !prefsApplied) && date === initialDate && !error ? children : loading || !prefsApplied ? (
-            <div className="flex items-center justify-center gap-2 py-20 text-muted-foreground">
+          {children}
+          {loading || !prefsApplied ? (
+            <div className="flex min-h-[50vh] items-center justify-center gap-2 text-muted-foreground [@media(scripting:none)]:hidden">
               <Loader2 className="h-5 w-5 animate-spin" /> Loading menus…
             </div>
           ) : error ? (
