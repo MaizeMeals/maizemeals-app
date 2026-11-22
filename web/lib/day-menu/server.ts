@@ -1,8 +1,7 @@
 import "server-only";
 
-import { createClient } from "@supabase/supabase-js";
+import { anonClient } from "@/lib/supabase/public";
 import { unstable_cache } from "next/cache";
-import type { Database } from "@/types/supabase";
 import { foodKey, mealRank, type DayMenu, type DayMenuHall, type DayMenuItem } from "./types";
 
 /** PostgREST caps responses at 1000 rows; a day has ~1,200 menu events. */
@@ -28,15 +27,6 @@ type EventRow = {
     ingredient_flags: { categories?: string[] } | null;
   } | null;
 };
-
-function anonClient() {
-  // Menu data is public; no cookies, so the result is safe to cache across users.
-  return createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
-}
 
 function num(record: Record<string, unknown>, key: string): number {
   const v = Number(record[key] ?? 0);

@@ -38,7 +38,7 @@ async function fetchDishItem(itemId: string): Promise<ItemWithPhotos> {
     .single();
   if (error || !data) {
     console.error("[DishDetail] item load failed", error);
-    throw new Error("Couldn't load photos for this dish.");
+    throw new Error("Couldn't load details for this dish.");
   }
   const { photos, ...rest } = data;
   const approved = (photos ?? [])
@@ -53,18 +53,22 @@ async function fetchDishItem(itemId: string): Promise<ItemWithPhotos> {
 
 /** Loads the full, location-specific item (nutrition label, approved photos). */
 export function useDishItem(selection: DishSelection | null): DishItemState {
+  return useItemDetails(selection?.provisional ?? null);
+}
+
+export function useItemDetails(provisional: ItemWithPhotos | null): DishItemState {
   const query = useQuery({
-    queryKey: ["menu-item", selection?.itemId],
-    queryFn: () => fetchDishItem(selection!.itemId),
-    enabled: Boolean(selection),
+    queryKey: ["menu-item", provisional?.id],
+    queryFn: () => fetchDishItem(provisional!.id),
+    enabled: Boolean(provisional),
     ...catalogQuery,
   });
 
-  if (!selection) return { item: null, loading: false, error: null };
+  if (!provisional) return { item: null, loading: false, error: null };
   return {
-    item: query.data ?? selection.provisional,
+    item: query.data ?? provisional,
     loading: !query.data && query.isFetching,
-    error: query.isError ? "Couldn't load photos for this dish." : null,
+    error: query.isError ? "Couldn't load details for this dish." : null,
   };
 }
 

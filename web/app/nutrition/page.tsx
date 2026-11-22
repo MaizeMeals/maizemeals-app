@@ -11,7 +11,8 @@ import { dateInEasternTime, DEFAULT_NUTRITION_GOALS } from "@/lib/nutrition";
 import { appPrimaryButtonClassName } from "@/lib/button-styles";
 
 export const metadata: Metadata = {
-  title: "MaizeMacros | MaizeMeals",
+  alternates: { canonical: "/nutrition" },
+  title: "U-M Dining Hall Calories & Macro Tracker | MaizeMeals",
   description: "Track calories and macros from the dining hall menus you actually eat.",
 };
 

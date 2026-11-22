@@ -2,6 +2,9 @@ import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  outputFileTracingIncludes: {
+    "/share/menu-card": ["./public/images/dining_halls/east-quad-dining-hall.jpg"],
+  },
   turbopack: {
     root: __dirname,
   },

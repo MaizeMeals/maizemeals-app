@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { PageHeader, PageShell } from '@/components/layout/page-shell'
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/terms" },
   title: 'Terms of Service',
   description:
     'The rules for using MaizeMeals, a student-built University of Michigan dining companion.',

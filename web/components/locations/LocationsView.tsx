@@ -83,7 +83,7 @@ function replaceLocationsHash(slug: string | null) {
   window.history.replaceState(null, "", url);
 }
 
-export default function LocationsView() {
+export default function LocationsView({ directory }: { directory: React.ReactNode }) {
   const mdUp = useMdUp();
   const {
     preferences,
@@ -289,6 +289,7 @@ export default function LocationsView() {
 
   const listContent = (
     <>
+      <h1 className="sr-only">U-M dining halls, cafés and markets</h1>
       {isLoading ? (
         <div
           className="flex flex-1 items-center justify-center min-h-[200px] text-muted-foreground"
@@ -334,6 +335,7 @@ export default function LocationsView() {
           </EmptyHeader>
         </Empty>
       )}
+      {directory}
     </>
   );
 
