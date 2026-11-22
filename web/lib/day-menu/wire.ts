@@ -14,6 +14,7 @@ import { foodKey, type DayMenu, type DayMenuHall, type DayMenuItem } from "./typ
  *   the full nutrition label instantly (no second pop while loading).
  * - v3 appends allergens + additive categories (row markers in Find food).
  * - v4 appends ingredientsKnown (1/0) for the Avoid filters.
+ * - With labelSchema 1, the final fields encode coverage and the source match time.
  * - `key` is recomputed from `name` (foodKey(normalized_name) === foodKey(name)).
  * - carbon-footprint tags aren't sent (unused by these views).
  * - hall ids are replaced by an index into `halls`.
@@ -38,11 +39,13 @@ type WireItem = [
   servingSize?: string | null,
   allergens?: string[],
   additives?: string[],
-  ingredientsKnown?: 0 | 1,
+  coverage?: 0 | 1 | 2,
+  matchedAt?: string | null,
 ];
 
 export type DayMenuWire = {
   v: 1 | 2 | 3 | 4;
+  labelSchema?: 1;
   date: string;
   generatedAt: string;
   halls: DayMenuHall[];
@@ -55,6 +58,7 @@ export function toWire(menu: DayMenu): DayMenuWire {
   const hallIndex = new Map(menu.halls.map((h, i) => [h.id, i]));
   return {
     v: WIRE_VERSION,
+    labelSchema: 1,
     date: menu.date,
     generatedAt: menu.generatedAt,
     halls: menu.halls,
@@ -83,7 +87,8 @@ export function toWire(menu: DayMenu): DayMenuWire {
         it.servingSize,
         it.allergens,
         it.additives,
-        it.ingredientsKnown ? 1 : 0,
+        it.labelMatch?.coverage === "ingredients" ? 1 : it.labelMatch?.coverage === "allergens" ? 2 : 0,
+        it.labelMatch?.matchedAt ?? null,
       ]),
   };
 }
@@ -91,7 +96,7 @@ export function toWire(menu: DayMenu): DayMenuWire {
 export function fromWire(wire: DayMenuWire): DayMenu {
   if (![1, 2, 3, 4].includes(wire.v)) throw new Error(`Unsupported menu format v${String(wire.v)}`);
   const items: DayMenuItem[] = wire.items.map(
-    ([id, hall, name, station, tags, m, mScale, avgRating, reviewCount, meals, servingSize, allergens, additives, ingredientsKnown]) => ({
+    ([id, hall, name, station, tags, m, mScale, avgRating, reviewCount, meals, servingSize, allergens, additives, coverage, matchedAt]) => ({
       id,
       hallId: wire.halls[hall].id,
       name,
@@ -115,7 +120,8 @@ export function fromWire(wire: DayMenuWire): DayMenu {
       meals,
       allergens: allergens ?? [],
       additives: additives ?? [],
-      ingredientsKnown: ingredientsKnown === 1,
+      labelMatch: wire.labelSchema === 1 && matchedAt && (coverage === 1 || coverage === 2)
+        ? { coverage: coverage === 1 ? "ingredients" : "allergens", matchedAt } : null,
     }),
   );
   return { date: wire.date, generatedAt: wire.generatedAt, halls: wire.halls, items };

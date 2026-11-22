@@ -49,7 +49,7 @@ export function ItemSummary({
   const macros = macroSummaryFromNutrition(item.macronutrients);
   // Avoiding something and this dish has no label: say so instead of implying it's safe.
   const avoid = useAvoid();
-  const unknownIngredients = avoidCount(avoid) > 0 && !ingredientInfo(item).known;
+  const unknownIngredients = avoidCount(avoid) > 0 && !ingredientInfo(item, avoid).known;
   const shownRating =
     rating !== undefined
       ? rating
