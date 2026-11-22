@@ -1,3 +1,4 @@
+import { defaultLocationMeal } from "@/lib/locations/default-meal"
 import { cn } from "@/lib/utils"
 import { OperatingHour } from "@/types/dining"
 import { formatTime } from "@/lib/dining"
@@ -32,45 +33,7 @@ export function MenuTabs({ meals, activeTab, onTabChange, hours = [] }: MenuTabs
   useEffect(() => {
     if (hasAutoSelected.current || sortedMeals.length === 0 || hours.length === 0) return
 
-    const now = new Date()
-    const estNow = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }))
-
-    let currentMinutes = estNow.getHours() * 60 + estNow.getMinutes();
-
-    let bestMatch: string | null = null
-
-    const parseTime = (t: string) => {
-      const [h, m] = t.split(':').map(Number)
-      return h * 60 + m
-    }
-
-    let minDiff = Infinity
-
-    for (const meal of sortedMeals) {
-      const shift = hours.find(h => h.event_name?.toLowerCase() === meal.toLowerCase()
-                                || h.event_name?.toLowerCase().includes(meal.toLowerCase()))
-
-      if (shift) {
-        const start = parseTime(shift.start_time)
-        const end = parseTime(shift.end_time)
-
-        if (currentMinutes >= start && currentMinutes < end) {
-          bestMatch = meal;
-          break; // Found it, stop looking
-        }
-
-        let diff = Math.abs(start - currentMinutes)
-
-        if (diff > 0 && diff < minDiff) {
-          minDiff = diff;
-          bestMatch = meal;
-        }
-      }
-    }
-
-    if (!bestMatch && sortedMeals.length > 0) {
-        bestMatch = sortedMeals[0]
-    }
+    const bestMatch = defaultLocationMeal(sortedMeals, hours)
 
     if (bestMatch && bestMatch !== activeTab) {
       onTabChange(bestMatch)

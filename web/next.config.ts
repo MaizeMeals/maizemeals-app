@@ -2,6 +2,9 @@ import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  outputFileTracingIncludes: {
+    "/share/menu-card": ["./public/images/dining_halls/east-quad-dining-hall.jpg"],
+  },
   turbopack: {
     root: __dirname,
   },
@@ -10,6 +13,15 @@ const nextConfig: NextConfig = {
     // Review photos are compressed client-side (~150 KB) but the default 1 MB
     // server-action limit rejected uncompressed fallbacks with an opaque error.
     serverActions: { bodySizeLimit: "3mb" },
+  },
+
+  async redirects() {
+    return [{
+      source: "/:path*",
+      has: [{ type: "host", value: "maizemeals\\.com" }],
+      destination: "https://www.maizemeals.com/:path*",
+      permanent: true,
+    }];
   },
 
   async headers() {

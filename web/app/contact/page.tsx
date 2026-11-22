@@ -5,6 +5,7 @@ import { ObfuscatedEmail } from '@/components/about/ObfuscatedEmail'
 import { TEAM } from '@/lib/team'
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/contact" },
   title: 'Contact',
   description: 'How to reach the MaizeMeals project.',
 }

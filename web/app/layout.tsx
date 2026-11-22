@@ -1,3 +1,4 @@
+import { SITE_ORIGIN } from "@/lib/site";
 import type { Metadata, Viewport } from "next";
 import { Roboto, Poppins, Instrument_Serif } from "next/font/google";
 import "./globals.css";
@@ -41,6 +42,7 @@ const instrument = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_ORIGIN),
   title: "MaizeMeals",
   description: "U-M Dining Companion App",
   applicationName: "MaizeMeals",

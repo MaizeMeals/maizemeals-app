@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { LandingHero } from "@/components/landing/LandingHero";
 import { ScheduleNoticeBanner } from "@/components/landing/ScheduleNoticeBanner";
@@ -9,6 +10,18 @@ import { getMacroTrackerDay } from "@/app/actions/macro-tracker";
 import { createClient } from "@/lib/supabase/server";
 import { getScheduleNotice } from "@/lib/schedule-notice-server";
 import { dateInEasternTime } from "@/lib/nutrition";
+
+const description = "Search University of Michigan dining hall and café menus, check serving hours, and compare dishes by ingredients, calories, and protein.";
+export const metadata: Metadata = {
+  title: "University of Michigan Dining Menus & Hours | MaizeMeals",
+  description,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website", url: "/", siteName: "MaizeMeals", title: "What’s on the menu at U-M today?", description,
+    images: [{ url: "/share/menu-card", width: 1200, height: 630, alt: "MaizeMeals campus dining guide featuring East Quad" }],
+  },
+  twitter: { card: "summary_large_image", title: "What’s on the menu at U-M today?", description, images: ["/share/menu-card"] },
+};
 
 function firstNameOf(meta: Record<string, unknown> | undefined): string | null {
   const full = typeof meta?.full_name === "string" ? meta.full_name : typeof meta?.name === "string" ? meta.name : "";

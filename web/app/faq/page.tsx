@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { PageHeader, PageShell } from '@/components/layout/page-shell'
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/faq" },
   title: 'FAQ',
   description:
     'How MaizeMeals ratings, photo approval, and dietary filters work.',

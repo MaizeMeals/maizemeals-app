@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { PageHeader, PageShell } from '@/components/layout/page-shell'
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/privacy" },
   title: 'Privacy Policy',
   description:
     'What MaizeMeals collects, who can see it, and how to delete your account.',
