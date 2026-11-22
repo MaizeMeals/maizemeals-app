@@ -549,6 +549,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      menu_location_days: {
+        Args: { p_from: string; p_to: string }
+        Returns: { date: string; halls: Json }[]
+      }
       refresh_all_macro_implicit_traits: { Args: never; Returns: number }
       reviews_public: {
         Args: { p_hall_id?: string; p_item_id?: string; p_limit?: number }

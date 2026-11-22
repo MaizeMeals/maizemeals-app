@@ -15,8 +15,16 @@ type BeforeInstallPromptEvent = Event & {
 
 const DISMISSED_KEY = "mm_install_prompt_dismissed_at";
 const VIEWS_KEY = "mm_session_page_views";
+const VISITS_KEY = "mm_visit_count";
+const VISIT_COUNTED_KEY = "mm_visit_counted";
+/** Fired when an item sheet opens (components/locations/slug/DetailDrawer). */
+export const DISH_OPENED_EVENT = "mm:dish-opened";
 const SNOOZE_MS = 14 * 24 * 60 * 60 * 1000;
-/** Ask only once someone has actually used the app this session. */
+/**
+ * Ask only once someone has actually used the app: a second page view this
+ * session, an opened dish, or a return visit. Never on a first look at the
+ * landing page.
+ */
 const MIN_PAGE_VIEWS = 2;
 const HIDDEN_ON = [/^\/login$/, /^\/signup$/, /^\/admin/];
 
@@ -51,6 +59,24 @@ export function InstallPrompt() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [mode, setMode] = useState<"native" | "ios" | null>(null);
   const [engaged, setEngaged] = useState(false);
+
+  // Return visits: count sessions, once per session.
+  useEffect(() => {
+    if (safeGet(sessionStorage, VISIT_COUNTED_KEY)) {
+      if (Number(safeGet(localStorage, VISITS_KEY) ?? "0") >= 2) setEngaged(true);
+      return;
+    }
+    safeSet(sessionStorage, VISIT_COUNTED_KEY, "1");
+    const visits = Number(safeGet(localStorage, VISITS_KEY) ?? "0") + 1;
+    safeSet(localStorage, VISITS_KEY, String(visits));
+    if (visits >= 2) setEngaged(true);
+  }, []);
+
+  useEffect(() => {
+    const onDish = () => setEngaged(true);
+    window.addEventListener(DISH_OPENED_EVENT, onDish);
+    return () => window.removeEventListener(DISH_OPENED_EVENT, onDish);
+  }, []);
 
   // Count page views this session.
   useEffect(() => {

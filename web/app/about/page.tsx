@@ -39,6 +39,9 @@ export default function AboutPage() {
                 <div className="min-w-0">
                   <p className="font-semibold text-foreground">{person.name}</p>
                   <p className="text-sm text-muted-foreground">{person.role}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {person.major}, Class of {person.classOf}
+                  </p>
                 </div>
               </div>
               <ObfuscatedEmail user={person.uniqname} className="mt-3" />

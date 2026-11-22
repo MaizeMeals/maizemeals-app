@@ -68,11 +68,12 @@ export function HeaderContent({ user, signOut, isAdmin = false }: HeaderContentP
         setIsScrolled(false);
         return;
       }
-      // Landing page: Full screen video -> Threshold ~ 100vh
+      // Landing page: the video hero's height (0 when it is hidden, as in the
+      // installed app, so the bar is solid from the start).
       // Location page: 40vh hero (min 300px) -> Threshold ~ height - header
       const heroHeight = isLocationPage
         ? Math.max(window.innerHeight * 0.4, 300)
-        : window.innerHeight;
+        : (document.getElementById("landing-hero")?.offsetHeight ?? 0);
 
       const threshold = heroHeight - HEADER_HEIGHT_PX;
 

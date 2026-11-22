@@ -22,6 +22,7 @@ import { parseIngredientFlags } from "@/lib/ingredients"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ItemReviewsTab } from "./ItemReviewsTab"
 import { FoodIcon } from "@/components/ingredients/FoodIcon"
+import { DISH_OPENED_EVENT } from "@/components/pwa/InstallPrompt"
 
 const AXIS_LOCK_PX = 10
 
@@ -762,6 +763,11 @@ export function DetailDrawer({
   const lgUp = useLgUp()
   // Radix Sheet portals to document.body — a CSS-hidden parent does not hide it; skip mounting on lg+.
   const swipe = useSwipeToCloseSheet(dismiss, isOpen && !!item && !lgUp)
+
+  // Opening a dish counts as engagement for the "install the app" prompt.
+  useEffect(() => {
+    if (isOpen && item) window.dispatchEvent(new Event(DISH_OPENED_EVENT))
+  }, [isOpen, item])
 
   if (!item) return null
   if (lgUp) return null
