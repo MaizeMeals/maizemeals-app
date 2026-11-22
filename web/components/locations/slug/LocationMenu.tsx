@@ -453,7 +453,9 @@ export default function LocationMenu({ slug, initialDate, initialData, initialMe
           )}
 
           {/* 4. Menu Content */}
-          <main className="container mx-auto px-4 py-6 min-h-[500px]">
+          {prefsLoading && <p role="status" className="menu-preferences-status container mx-auto px-4 py-6">Loading menu preferences…</p>}
+          <noscript><p className="container mx-auto px-4">Showing the public menu. Enable JavaScript to apply your saved filters.</p></noscript>
+          <main data-preferences-pending={prefsLoading} className="container mx-auto px-4 py-6 min-h-[500px]">
             {sortedGroups.length > 0 ? (
               sortedGroups.map((group) => (
                 <StationGroup

@@ -37,7 +37,7 @@ export default async function MenusPage({ searchParams }: { searchParams: Promis
         {menu.halls.filter((hall) => examples.has(hall.id)).map((hall) =>
           <li key={hall.id}>
             <Link className="font-semibold underline" href={`/locations/${hall.slug}?date=${date}`}>{hall.name}</Link>
-            <p className="text-sm text-muted-foreground">{[...examples.get(hall.id)!].join(", ")}</p>
+            <noscript><p className="text-sm text-muted-foreground">{[...examples.get(hall.id)!].join(", ")}</p></noscript>
           </li>
         )}
       </ul>
