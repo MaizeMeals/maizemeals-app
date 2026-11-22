@@ -19,9 +19,9 @@ export function AvoidSection({ value, onChange }: { value: AvoidPrefs; onChange:
       <h3 className="mb-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">Avoid</h3>
       <p className="mb-3 text-xs text-muted-foreground">
         Dishes listing a selected allergen or additive are hidden. For a food allergy, check{" "}
-        <a className="underline" href="https://fss.studentlife.umich.edu/NetNutrition/1">MyNutrition</a>
+        <a target="_blank" rel="noopener noreferrer" className="underline" href="https://fss.studentlife.umich.edu/NetNutrition/1">MyNutrition</a>
         {" "}and speak with dining hall staff before eating.{" "}
-        <a className="underline" href="https://dining.umich.edu/about-our-food/allergies-special-diets/">Michigan Dining allergy guidance</a>
+        <a target="_blank" rel="noopener noreferrer" className="underline" href="https://dining.umich.edu/about-our-food/allergies-special-diets/">Michigan Dining allergy guidance</a>
       </p>
 
       <p className="mb-2 text-xs font-semibold text-foreground">Allergens</p>

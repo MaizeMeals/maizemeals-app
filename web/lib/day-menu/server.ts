@@ -1,4 +1,5 @@
 import "server-only";
+import { matchedLabel } from "../label-source";
 
 import { createClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
@@ -25,7 +26,8 @@ type EventRow = {
     review_count: number;
     item_type: string | null;
     allergens: string[] | null;
-    ingredient_flags: { source_item_id?: string; categories?: string[] } | null;
+    label_source: unknown;
+    ingredient_flags: { categories?: string[] } | null;
   } | null;
 };
 
@@ -65,7 +67,7 @@ async function loadDayMenu(date: string): Promise<DayMenu> {
         `meal, item_id, dining_hall_id,
          items ( id, name, normalized_name, station, dietary_tags, serving_size,
                  macronutrients, nutrition_score, avg_rating, review_count, item_type,
-                 allergens, ingredient_flags )`,
+                 allergens, ingredient_flags, label_source:nutrition_label->source )`,
       )
       .eq("date", date)
       .order("id")
@@ -121,7 +123,7 @@ async function loadDayMenu(date: string): Promise<DayMenu> {
       meals: [e.meal],
       allergens: it.allergens ?? [],
       additives: Array.isArray(it.ingredient_flags?.categories) ? it.ingredient_flags.categories : [],
-      ingredientsKnown: it.ingredient_flags?.source_item_id === it.id,
+      labelMatch: matchedLabel(it.label_source, it.id, it.station),
     });
   }
   for (const it of items.values()) it.meals.sort((a, b) => mealRank(a) - mealRank(b));
@@ -148,7 +150,7 @@ async function loadDayMenu(date: string): Promise<DayMenu> {
 // Bump the key ("day-menu-vN") whenever the DayMenu shape changes: the data
 // cache survives deploys, so old-shape entries would otherwise be served.
 export function getDayMenu(date: string): Promise<DayMenu> {
-  return unstable_cache(() => loadDayMenu(date), ["day-menu-v5", date], {
+  return unstable_cache(() => loadDayMenu(date), ["day-menu-label-source-v1", date], {
     revalidate: 600,
     tags: ["day-menu", `day-menu:${date}`],
   })();

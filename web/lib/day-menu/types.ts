@@ -48,7 +48,7 @@ export type DayMenuItem = {
   /** Additive highlight categories present in the ingredients ("seed_oil", ...). */
   additives: string[];
   /** The ingredient label was matched to this item at its own location. */
-  ingredientsKnown?: boolean;
+  labelMatch?: import("../label-source").LabelMatch | null;
 };
 
 export type DayMenu = {

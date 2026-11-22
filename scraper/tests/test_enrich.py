@@ -32,7 +32,7 @@ class WantedItemsTest(unittest.TestCase):
         events = [
             {"meal": "Lunch", "items": {"id": "a", "name": "Corn Dogs", "item_type": "food", "ingredients": None, "ingredients_checked_at": None}},
             {"meal": "Dinner", "items": {"id": "a", "name": "Corn Dogs", "item_type": "food", "ingredients": None, "ingredients_checked_at": None}},
-            {"meal": "Lunch", "items": {"id": "b", "name": "Has Label", "item_type": "food", "ingredients": "x", "ingredient_flags": {"source_item_id": "b"}, "ingredients_checked_at": None}},
+            {"meal": "Lunch", "items": {"id": "b", "name": "Has Label", "item_type": "food", "ingredients": "x", "station": "Deli", "nutrition_label": {"source": {"item_id": "b", "item_station": "Deli"}}, "ingredients_checked_at": now.isoformat()}},
             {"meal": "Lunch", "items": {"id": "c", "name": "Checked Recently", "item_type": "food", "ingredients": None, "ingredients_checked_at": now.isoformat()}},
             {"meal": "Lunch", "items": {"id": "d", "name": "Checked Long Ago", "item_type": "food", "ingredients": None, "ingredients_checked_at": (now - timedelta(days=30)).isoformat()}},
             {"meal": "Lunch", "items": {"id": "e", "name": "SOUPS", "item_type": "station_header", "ingredients": None, "ingredients_checked_at": None}},
@@ -68,6 +68,22 @@ class MatchingTest(unittest.TestCase):
         payload = db.table.return_value.update.call_args.args[0]
         self.assertEqual(set(payload), {"ingredients_checked_at"})
 
+    def test_week_backfill_retries_an_early_miss_on_a_later_date(self):
+        db = MagicMock()
+        db.table.return_value.select.return_value.eq.return_value.execute.return_value.data = [
+            {"id": "hall", "name": "East Quad", "type": "DINING HALLS"}]
+        db.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value.data = [
+            {"meal": "Dinner", "items": {"id": "local", "name": "Soup", "station": "Grill"}}]
+        label = {"name": "Soup", "ingredients": "Carrots", "source": {"item_station": "Grill"}}
+        with patch("lib.enrich.parse_units", return_value=[{"name": "East Quad", "unit_oid": 7}]), \
+             patch("lib.enrich._crawl_hall", side_effect=[{}, {"local": label}]) as crawl:
+            result = enrich_ingredients(db, days_ahead=7, recheck_days=0, client_factory=MagicMock(), log=lambda _: None)
+        self.assertEqual(crawl.call_count, 2)
+        self.assertEqual(result["labels"], 1)
+        self.assertEqual(result["checked_missing"], 0)
+        db.table.return_value.update.assert_called_once()
+
+
 
 class LabelPayloadTest(unittest.TestCase):
     def test_payload(self):
@@ -76,8 +92,24 @@ class LabelPayloadTest(unittest.TestCase):
         self.assertEqual(p["allergens"], ["Milk"])
         self.assertEqual(p["label_notes"], ["Item is deep fried"])
         self.assertEqual(p["ingredient_flags"]["categories"], ["seed_oil", "preservative"])
-        self.assertIs(p["nutrition_label"], label)
-        self.assertEqual(p["ingredient_flags"]["source_item_id"], "i")
+        source = p["nutrition_label"]["source"]
+        self.assertEqual(source["item_id"], "i")
+        self.assertEqual(source["coverage"], "ingredients")
+        self.assertEqual(source["matched_at"], p["ingredients_checked_at"])
+        self.assertNotIn("source_item_id", p["ingredient_flags"])
+
+    def test_allergen_only_label_keeps_source_without_highlights(self):
+        label = {"ingredients": "", "allergens": ["Milk"], "source": {"item_station": "Grill"}}
+        now = datetime.now(timezone.utc)
+        row = {"id": "i", "station": "Grill", "name": "Dish", **label_payload(label, now.isoformat(), "i")}
+        self.assertEqual(row["nutrition_label"]["source"]["coverage"], "allergens")
+        self.assertIsNone(row["ingredient_flags"])
+        events = [{"meal": "Dinner", "items": row}]
+        cutoff = now - timedelta(days=14)
+        self.assertFalse(wanted_items_by_meal(events, cutoff))
+        self.assertTrue(wanted_items_by_meal(events, now + timedelta(seconds=1)))
+        row["station"] = "Deli"
+        self.assertTrue(wanted_items_by_meal(events, cutoff))
 
     def test_no_ingredients(self):
         p = label_payload({"name": "Water", "ingredients": "  ", "allergens": []}, "t", "i")

@@ -16,6 +16,7 @@ menu are fetched right after selecting that menu.
 
 from __future__ import annotations
 
+from zoneinfo import ZoneInfo
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -51,13 +52,15 @@ def label_payload(label: dict, now_iso: str, item_id: str) -> dict:
     ingredients = (label.get("ingredients") or "").strip() or None
     allergens, notes = split_allergens(label.get("allergens"))
     flags = highlight_ingredients(ingredients)
-    if flags is not None:
-        flags["source_item_id"] = item_id
+    source = {
+        **label.get("source", {}), "item_id": item_id, "matched_at": now_iso,
+        "coverage": "ingredients" if ingredients else "allergens" if allergens else "unknown",
+    }
     return {
         "ingredients": ingredients,
         "allergens": allergens,
         "label_notes": notes,
-        "nutrition_label": label,
+        "nutrition_label": {**label, "source": source},
         "ingredient_flags": flags,
         "ingredients_checked_at": now_iso,
     }
@@ -66,8 +69,9 @@ def label_payload(label: dict, now_iso: str, item_id: str) -> dict:
 def _needs_lookup(item: dict, cutoff: datetime) -> bool:
     if (item.get("item_type") or "food") != "food":
         return False
-    if item.get("ingredients") and (item.get("ingredient_flags") or {}).get("source_item_id") == item["id"]:
-        return False
+    source = (item.get("nutrition_label") or {}).get("source") or {}
+    if source and (source.get("item_id") != item["id"] or source.get("item_station") != item.get("station")):
+        return True
     checked = item.get("ingredients_checked_at")
     if not checked:
         return True
@@ -174,7 +178,7 @@ def _crawl_hall(client, unit, on_date, wanted, budget, log) -> dict[str, dict]:
                 found[item["id"]] = {**label, "source": {
                     "unit_oid": unit["unit_oid"], "menu_oid": menu["menu_oid"],
                     "detail_oid": nn_item["detail_oid"], "date": on_date.isoformat(),
-                    "meal": meal, "station": nn_item["station"],
+                    "meal": meal, "station": nn_item["station"], "item_station": item["station"],
                 }}
                 if all(row["id"] in found for row in wanted[meal][key]):
                     names.discard(key)
@@ -197,7 +201,7 @@ def enrich_ingredients(
     now = datetime.now(timezone.utc)
     now_iso = now.isoformat()
     cutoff = now - timedelta(days=recheck_days)
-    start = today or datetime.now().date()
+    start = today or now.astimezone(ZoneInfo("America/New_York")).date()
     summary = {"labels": 0, "copied": 0, "checked_missing": 0, "errors": [], "updates": []}
     budget = _Budget(max_labels)
 
@@ -205,6 +209,8 @@ def enrich_ingredients(
         supabase.table("dining_halls").select("id, name, type").eq("type", DINING_HALL_TYPE).execute().data
         or []
     )
+    pending_misses: set[str] = set()
+    matched_ids: set[str] = set()
     client = None
     units = None
 
@@ -218,13 +224,14 @@ def enrich_ingredients(
         for hall in halls:
             events = (
                 supabase.table("menu_events")
-                .select("meal, items(id, name, station, item_type, ingredients, ingredient_flags, ingredients_checked_at)")
+                .select("meal, items(id, name, station, item_type, nutrition_label, ingredients_checked_at)")
                 .eq("dining_hall_id", hall["id"])
                 .eq("date", on_date.isoformat())
                 .execute()
                 .data
                 or []
             )
+            events = [event for event in events if (event.get("items") or {}).get("id") not in matched_ids]
             wanted = wanted_items_by_meal(events, cutoff)
             if not wanted:
                 continue
@@ -251,17 +258,22 @@ def enrich_ingredients(
 
             for item_id, label in found.items():
                 write(item_id, label_payload(label, now_iso, item_id))
+            matched_ids.update(found)
+            pending_misses.difference_update(found)
             summary["labels"] += len(found)
 
             # Only record misses after a completed lookup. Interrupted scans remain eligible.
             if budget.remaining > 0 and unit is not None and not scan_failed:
-                for item_id in all_wanted.keys() - found.keys():
-                    summary["checked_missing"] += 1
-                    if not dry_run:
-                        supabase.table("items").update({"ingredients_checked_at": now_iso}).eq("id", item_id).execute()
+                pending_misses.update(all_wanted.keys() - found.keys())
             log(f"   🧾 {hall['name']} {on_date}: {len(found)} labels, {len(all_wanted) - len(found)} not on NetNutrition")
 
             if budget.remaining <= 0:
                 log("   ⏸️ Stopping ingredient enrichment: label budget reached")
                 return summary
+
+    # A dish missing on an early date can have a published label later in the week.
+    summary["checked_missing"] = len(pending_misses)
+    if not dry_run:
+        for item_id in pending_misses:
+            supabase.table("items").update({"ingredients_checked_at": now_iso}).eq("id", item_id).execute()
     return summary

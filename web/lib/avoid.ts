@@ -1,3 +1,4 @@
+import { itemLabelMatch } from "./label-source";
 import type { Item } from "@/types/dining";
 import type { UserPreferences } from "@/types/preferences";
 import { ADDITIVE_CATEGORIES, type AdditiveCategory } from "@/lib/ingredients";
@@ -31,9 +32,10 @@ export function avoidCount(avoid: AvoidPrefs | null | undefined): number {
 }
 
 /** What we know about an item's ingredients (hall rows and Find food items alike). */
-export function ingredientInfo(item: Item): { known: boolean; allergens: string[]; additives: string[] } {
-  const flags = item.ingredient_flags as { source_item_id?: string; categories?: unknown } | null;
-  const known = flags?.source_item_id === item.id;
+export function ingredientInfo(item: Item, avoid?: AvoidPrefs): { known: boolean; allergens: string[]; additives: string[] } {
+  const flags = item.ingredient_flags as { categories?: unknown } | null;
+  const coverage = itemLabelMatch(item)?.coverage;
+  const known = coverage === "ingredients" || (coverage === "allergens" && !avoid?.additives.length);
   const additives = Array.isArray(flags?.categories) ? (flags.categories as string[]) : [];
   return { known, allergens: item.allergens ?? [], additives };
 }
@@ -44,7 +46,7 @@ export function ingredientInfo(item: Item): { known: boolean; allergens: string[
  */
 export function itemPassesAvoid(item: Item, avoid: AvoidPrefs | null | undefined): boolean {
   if (!avoid || avoidCount(avoid) === 0) return true;
-  const info = ingredientInfo(item);
+  const info = ingredientInfo(item, avoid);
   const blockedAllergens = new Set(
     AVOID_ALLERGENS.filter((a) => avoid.allergens.includes(a.id)).flatMap((a) => a.matches),
   );
