@@ -15,15 +15,6 @@ const nextConfig: NextConfig = {
     serverActions: { bodySizeLimit: "3mb" },
   },
 
-  async redirects() {
-    return [{
-      source: "/:path*",
-      has: [{ type: "host", value: "maizemeals\\.com" }],
-      destination: "https://www.maizemeals.com/:path*",
-      permanent: true,
-    }];
-  },
-
   async headers() {
     return [
       {
