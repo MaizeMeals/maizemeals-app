@@ -47,7 +47,7 @@ export type DayMenuItem = {
   allergens: string[];
   /** Additive highlight categories present in the ingredients ("seed_oil", ...). */
   additives: string[];
-  /** NetNutrition ingredients were found (so allergens/additives are meaningful). */
+  /** The ingredient label was matched to this item at its own location. */
   ingredientsKnown?: boolean;
 };
 

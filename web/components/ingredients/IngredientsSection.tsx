@@ -9,7 +9,7 @@ import { ADDITIVE_CATEGORIES, countByCategory, parseIngredientFlags } from "@/li
 import type { Item } from "@/types/dining";
 
 type Props = {
-  item: Pick<Item, "ingredients" | "ingredient_flags" | "allergens" | "label_notes">;
+  item: Pick<Item, "id" | "ingredients" | "ingredient_flags" | "allergens" | "label_notes">;
   /** Find food opens the drawer before the full record arrives. */
   loading?: boolean;
   className?: string;
@@ -132,7 +132,10 @@ export function IngredientsSection({ item, loading = false, className, hideHeadi
 
       <p className="flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground">
         <AlertTriangle className="mt-px h-3 w-3 shrink-0" aria-hidden />
-        From U-M NetNutrition. Recipes and suppliers change — always confirm allergens with dining staff.
+        {item.ingredients && (item.ingredient_flags as { source_item_id?: string } | null)?.source_item_id !== item.id
+          ? "This ingredient label hasn’t been confirmed for this dish at this location. "
+          : "Source: U-M NetNutrition. "}
+        Recipes and suppliers change — always confirm allergens with dining staff.
       </p>
     </section>
   );

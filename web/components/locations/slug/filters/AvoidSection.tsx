@@ -18,7 +18,10 @@ export function AvoidSection({ value, onChange }: { value: AvoidPrefs; onChange:
     <section>
       <h3 className="mb-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">Avoid</h3>
       <p className="mb-3 text-xs text-muted-foreground">
-        Hides dishes whose U-M ingredient label lists these. Saved for every menu.
+        Dishes listing a selected allergen or additive are hidden. For a food allergy, check{" "}
+        <a className="underline" href="https://fss.studentlife.umich.edu/NetNutrition/1">MyNutrition</a>
+        {" "}and speak with dining hall staff before eating.{" "}
+        <a className="underline" href="https://dining.umich.edu/about-our-food/allergies-special-diets/">Michigan Dining allergy guidance</a>
       </p>
 
       <p className="mb-2 text-xs font-semibold text-foreground">Allergens</p>
@@ -62,8 +65,7 @@ export function AvoidSection({ value, onChange }: { value: AvoidPrefs; onChange:
           <span>
             <span className="font-semibold text-foreground">Hide dishes with unknown ingredients</span>
             <span className="mt-0.5 block text-xs text-muted-foreground">
-              About a third of dishes have no published label. By default they stay visible, marked
-              &ldquo;Ingredients unknown&rdquo;.
+              Includes dishes whose ingredient label hasn’t been matched to this item at this location.
             </span>
           </span>
         </label>

@@ -5,7 +5,7 @@ NetNutrition failure can't empty or delay menus.
 
 Load on fss.studentlife.umich.edu is kept small:
 - dining halls only;
-- only items with no ingredients that weren't checked in ``recheck_days``
+- only items without a locally matched label that weren't checked in ``recheck_days``
   (dishes repeat, so after the first run a night needs few labels);
 - one session, sequential requests with a pause, retries with backoff on
   resets, and a hard cap on labels per run.
@@ -41,32 +41,32 @@ def unit_for_hall(units: list[dict], hall_name: str) -> dict | None:
     base = normalize_name(hall_name).replace("dining hall", "").strip()
     if not base:
         return None
-    by_norm = [(normalize_name(u.get("name")), u) for u in units]
-    for norm, unit in by_norm:
-        if norm == base:
-            return unit
-    for norm, unit in by_norm:
-        if norm.startswith(base) or base.startswith(norm):
-            return unit
-    return None
+    expected = {"twigs": "twigs at oxford"}.get(base, base)
+    matches = [unit for unit in units if normalize_name(unit.get("name")) == expected]
+    return matches[0] if len(matches) == 1 else None
 
 
-def label_payload(label: dict, now_iso: str) -> dict:
+def label_payload(label: dict, now_iso: str, item_id: str) -> dict:
     """Columns written to items for a fetched label."""
     ingredients = (label.get("ingredients") or "").strip() or None
     allergens, notes = split_allergens(label.get("allergens"))
+    flags = highlight_ingredients(ingredients)
+    if flags is not None:
+        flags["source_item_id"] = item_id
     return {
         "ingredients": ingredients,
         "allergens": allergens,
         "label_notes": notes,
         "nutrition_label": label,
-        "ingredient_flags": highlight_ingredients(ingredients),
+        "ingredient_flags": flags,
         "ingredients_checked_at": now_iso,
     }
 
 
 def _needs_lookup(item: dict, cutoff: datetime) -> bool:
-    if (item.get("item_type") or "food") != "food" or item.get("ingredients"):
+    if (item.get("item_type") or "food") != "food":
+        return False
+    if item.get("ingredients") and (item.get("ingredient_flags") or {}).get("source_item_id") == item["id"]:
         return False
     checked = item.get("ingredients_checked_at")
     if not checked:
@@ -113,6 +113,20 @@ def _with_retries(fn, *args):
     return None
 
 
+def matching_item(candidate: dict, source_items: list[dict], wanted: list[dict]) -> dict | None:
+    """Match one local row to one published label in the selected hall, date and meal."""
+    name = normalize_name(candidate.get("name"))
+    station = normalize_name(candidate.get("station"))
+    if not station or not candidate.get("detail_oid"):
+        return None
+    matches = [row for row in wanted if normalize_name(row.get("station")) == station]
+    source_ids = {row.get("detail_oid") for row in source_items
+                  if normalize_name(row.get("name")) == name and normalize_name(row.get("station")) == station}
+    if len(matches) != 1 or len(source_ids) != 1:
+        return None
+    return matches[0]
+
+
 def _crawl_hall(client, unit, on_date, wanted, budget, log) -> dict[str, dict]:
     """Fetch labels for wanted names at one hall/date. Returns {item_id: label}."""
     found: dict[str, dict] = {}
@@ -143,6 +157,9 @@ def _crawl_hall(client, unit, on_date, wanted, budget, log) -> dict[str, dict]:
                 key = normalize_name(nn_item.get("name"))
                 if key not in names or not nn_item.get("detail_oid"):
                     continue
+                item = matching_item(nn_item, nn_items, wanted[meal][key])
+                if item is None or item["id"] in found:
+                    continue
                 if not budget.take():
                     log("   ⏸️ NetNutrition label budget reached for this run")
                     return found
@@ -152,14 +169,15 @@ def _crawl_hall(client, unit, on_date, wanted, budget, log) -> dict[str, dict]:
                 except NetNutritionError as exc:
                     log(f"   ⚠️ label failed for {nn_item.get('name')}: {exc}")
                     continue
-                if not label.get("name"):
+                if normalize_name(label.get("name")) != key:
                     continue
-                for db_item in wanted[meal][key]:
-                    found[db_item["id"]] = label
-                names.discard(key)
-                # A dish served at several meals only needs one label.
-                for other in remaining.values():
-                    other.discard(key)
+                found[item["id"]] = {**label, "source": {
+                    "unit_oid": unit["unit_oid"], "menu_oid": menu["menu_oid"],
+                    "detail_oid": nn_item["detail_oid"], "date": on_date.isoformat(),
+                    "meal": meal, "station": nn_item["station"],
+                }}
+                if all(row["id"] in found for row in wanted[meal][key]):
+                    names.discard(key)
     return found
 
 
@@ -200,7 +218,7 @@ def enrich_ingredients(
         for hall in halls:
             events = (
                 supabase.table("menu_events")
-                .select("meal, items(id, name, item_type, ingredients, ingredients_checked_at)")
+                .select("meal, items(id, name, station, item_type, ingredients, ingredient_flags, ingredients_checked_at)")
                 .eq("dining_hall_id", hall["id"])
                 .eq("date", on_date.isoformat())
                 .execute()
@@ -213,6 +231,8 @@ def enrich_ingredients(
             all_wanted = {i["id"]: i for names in wanted.values() for items in names.values() for i in items}
 
             found: dict[str, dict] = {}
+            unit = None
+            scan_failed = False
             try:
                 if client is None:
                     client = client_factory(pause_seconds=pause_seconds)
@@ -224,42 +244,21 @@ def enrich_ingredients(
                 else:
                     found = _crawl_hall(client, unit, on_date, wanted, budget, log)
             except NetNutritionError as exc:
+                scan_failed = True
                 message = f"NetNutrition {hall['name']} {on_date}: {exc}"
                 log(f"   ⚠️ {message}")
                 summary["errors"].append(message)
 
             for item_id, label in found.items():
-                write(item_id, label_payload(label, now_iso))
+                write(item_id, label_payload(label, now_iso, item_id))
             summary["labels"] += len(found)
 
-            # Same dish name at another hall usually shares the recipe.
-            missing = {i: all_wanted[i] for i in all_wanted if i not in found}
-            if missing:
-                names = sorted({all_wanted[i]["name"] for i in missing})
-                donors = {}
-                for chunk_start in range(0, len(names), 50):
-                    rows = (
-                        supabase.table("items")
-                        .select("name, ingredients, allergens, label_notes, nutrition_label, ingredient_flags")
-                        .in_("name", names[chunk_start:chunk_start + 50])
-                        .not_.is_("ingredients", "null")
-                        .execute()
-                        .data
-                        or []
-                    )
-                    for row in rows:
-                        donors.setdefault(normalize_name(row["name"]), row)
-                for item_id, item in missing.items():
-                    donor = donors.get(normalize_name(item["name"]))
-                    if donor:
-                        payload = {k: donor[k] for k in ("ingredients", "allergens", "label_notes", "nutrition_label", "ingredient_flags")}
-                        payload["ingredients_checked_at"] = now_iso
-                        write(item_id, payload)
-                        summary["copied"] += 1
-                    else:
-                        summary["checked_missing"] += 1
-                        if not dry_run:
-                            supabase.table("items").update({"ingredients_checked_at": now_iso}).eq("id", item_id).execute()
+            # Only record misses after a completed lookup. Interrupted scans remain eligible.
+            if budget.remaining > 0 and unit is not None and not scan_failed:
+                for item_id in all_wanted.keys() - found.keys():
+                    summary["checked_missing"] += 1
+                    if not dry_run:
+                        supabase.table("items").update({"ingredients_checked_at": now_iso}).eq("id", item_id).execute()
             log(f"   🧾 {hall['name']} {on_date}: {len(found)} labels, {len(all_wanted) - len(found)} not on NetNutrition")
 
             if budget.remaining <= 0:

@@ -14,6 +14,7 @@ import { foodKey, type DayMenu, type DayMenuHall, type DayMenuItem } from "./typ
  *   the full nutrition label instantly (no second pop while loading).
  * - v3 appends allergens + additive categories (row markers in Find food).
  * - v4 appends ingredientsKnown (1/0) for the Avoid filters.
+ * - The optional final bit confirms item-specific provenance. Old v4 cache entries lack it.
  * - `key` is recomputed from `name` (foodKey(normalized_name) === foodKey(name)).
  * - carbon-footprint tags aren't sent (unused by these views).
  * - hall ids are replaced by an index into `halls`.
@@ -39,6 +40,7 @@ type WireItem = [
   allergens?: string[],
   additives?: string[],
   ingredientsKnown?: 0 | 1,
+  locationLabelMatched?: 0 | 1,
 ];
 
 export type DayMenuWire = {
@@ -84,6 +86,7 @@ export function toWire(menu: DayMenu): DayMenuWire {
         it.allergens,
         it.additives,
         it.ingredientsKnown ? 1 : 0,
+        it.ingredientsKnown ? 1 : 0,
       ]),
   };
 }
@@ -91,7 +94,7 @@ export function toWire(menu: DayMenu): DayMenuWire {
 export function fromWire(wire: DayMenuWire): DayMenu {
   if (![1, 2, 3, 4].includes(wire.v)) throw new Error(`Unsupported menu format v${String(wire.v)}`);
   const items: DayMenuItem[] = wire.items.map(
-    ([id, hall, name, station, tags, m, mScale, avgRating, reviewCount, meals, servingSize, allergens, additives, ingredientsKnown]) => ({
+    ([id, hall, name, station, tags, m, mScale, avgRating, reviewCount, meals, servingSize, allergens, additives, ingredientsKnown, locationLabelMatched]) => ({
       id,
       hallId: wire.halls[hall].id,
       name,
@@ -115,7 +118,7 @@ export function fromWire(wire: DayMenuWire): DayMenu {
       meals,
       allergens: allergens ?? [],
       additives: additives ?? [],
-      ingredientsKnown: ingredientsKnown === 1,
+      ingredientsKnown: ingredientsKnown === 1 && locationLabelMatched === 1,
     }),
   );
   return { date: wire.date, generatedAt: wire.generatedAt, halls: wire.halls, items };
