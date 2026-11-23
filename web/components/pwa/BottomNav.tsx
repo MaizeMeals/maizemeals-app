@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Flame, MapPin, Search, User } from "lucide-react";
@@ -29,6 +30,9 @@ const HIDDEN_ON = [/^\/login$/, /^\/signup$/, /^\/admin/];
 export function BottomNav() {
   const pathname = usePathname() ?? "/";
   const { track } = useAnalytics();
+  // The tapped tab lights up immediately; cleared once the route changes.
+  const [pending, setPending] = useState<string | null>(null);
+  useEffect(() => setPending(null), [pathname]);
 
   if (HIDDEN_ON.some((re) => re.test(pathname))) return null;
 
@@ -41,13 +45,16 @@ export function BottomNav() {
     >
       <ul className="mx-auto flex h-14 max-w-md items-stretch justify-around">
         {TABS.map(({ name, href, icon: Icon, match }) => {
-          const active = match(pathname);
+          const active = pending ? pending === href : match(pathname);
           return (
             <li key={href} className="flex-1">
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                onClick={() => track("bottom_nav_clicked", { tab: name.toLowerCase(), from: pathname })}
+                onClick={() => {
+                  if (!match(pathname)) setPending(href);
+                  track("bottom_nav_clicked", { tab: name.toLowerCase(), from: pathname });
+                }}
                 className={cn(
                   "flex h-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors",
                   active ? "text-umich-blue dark:text-maize" : "text-muted-foreground hover:text-foreground",

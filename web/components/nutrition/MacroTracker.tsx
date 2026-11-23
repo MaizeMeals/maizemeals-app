@@ -278,7 +278,6 @@ export function MacroTracker({
 
   return (
     <PageShell className="min-h-screen bg-muted/20 pb-16">
-      <p className="text-sm font-bold uppercase tracking-wider text-maize">Daily nutrition</p>
       <PageHeader
         className="mb-6"
         title="MaizeMacros"

@@ -28,7 +28,6 @@ const POINTS = [
 function MacrosPreview() {
   return (
     <PageShell className="min-h-screen bg-muted/20 pb-16">
-      <p className="text-sm font-bold uppercase tracking-wider text-maize">Daily nutrition</p>
       <PageHeader title="MaizeMacros" description="Track calories and macros from the dining hall menus you actually eat." />
       <div className="mt-6 grid grid-cols-2 gap-3 opacity-90 lg:grid-cols-4" aria-hidden>
         <ProgressCard label="Calories" value={1480} goal={2200} unit="" spokenUnit="calories" icon={Flame} barClass="bg-orange-500" iconClass="text-orange-500" />
