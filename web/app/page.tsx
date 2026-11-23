@@ -10,6 +10,8 @@ import { getMacroTrackerDay } from "@/app/actions/macro-tracker";
 import { createClient } from "@/lib/supabase/server";
 import { getScheduleNotice } from "@/lib/schedule-notice-server";
 import { dateInEasternTime } from "@/lib/nutrition";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { websiteJsonLd } from "@/lib/seo/structured-data";
 
 const description = "Search University of Michigan dining hall and café menus, check serving hours, and compare dishes by ingredients, calories, and protein.";
 export const metadata: Metadata = {
@@ -61,6 +63,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen pb-10">
+      <JsonLd data={websiteJsonLd()} />
       <LandingHero firstName={firstName} />
       {notice ? <ScheduleNoticeBanner notice={notice} /> : null}
       {macros ? <TodayMacros eaten={macros.eaten} goals={macros.goals} /> : null}

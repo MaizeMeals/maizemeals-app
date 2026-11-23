@@ -18,6 +18,7 @@ export default function Footer() {
                             <li><Link href="/menus" className="hover:text-foreground transition-colors">Menus</Link></li>
                             <li><Link href="/locations" className="hover:text-foreground transition-colors">Locations</Link></li>
                             <li><Link href="/nutrition" className="hover:text-foreground transition-colors">Macros</Link></li>
+                            <li><Link href="/hours" className="hover:text-foreground transition-colors">Hours</Link></li>
                         </ul>
                     </div>
                     <div>

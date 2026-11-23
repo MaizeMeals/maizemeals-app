@@ -35,9 +35,14 @@ export function OpenNow() {
         <h2 id="open-now-heading" className="font-heading text-2xl font-bold text-umich-blue dark:text-white md:text-3xl">
           Open now
         </h2>
-        <Link href="/locations" className="text-sm font-semibold text-umich-blue hover:underline dark:text-maize">
-          All locations
-        </Link>
+        <span className="flex gap-4">
+          <Link href="/hours" className="text-sm font-semibold text-umich-blue hover:underline dark:text-maize">
+            All hours
+          </Link>
+          <Link href="/locations" className="text-sm font-semibold text-umich-blue hover:underline dark:text-maize">
+            All locations
+          </Link>
+        </span>
       </div>
       <ul className="mt-4 grid gap-2.5 md:grid-cols-2 md:gap-4 lg:grid-cols-4">
         {loading

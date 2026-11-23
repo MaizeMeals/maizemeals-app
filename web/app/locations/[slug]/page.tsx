@@ -6,6 +6,8 @@ import { getLocationDirectory } from "@/lib/locations/directory";
 import { defaultLocationMeal } from "@/lib/locations/default-meal";
 import { loadLocationData } from "@/lib/locations/menu";
 import { anonClient } from "@/lib/supabase/public";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { hallJsonLd } from "@/lib/seo/structured-data";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -35,6 +37,8 @@ export default async function LocationPage({ params, searchParams }: Props) {
     !Number.isNaN(Date.parse(requested)) && new Date(requested).toISOString().startsWith(requested)
     ? requested : easternToday();
   const data = await loadLocationData(anonClient(), hall, date);
+  // Built before the payload is trimmed below (it needs names and nutrition only).
+  const structuredData = hallJsonLd(hall, data, date);
   // Only the selected dish needs its full label, highlight spans and photos.
   // Keep the public source identity and categories used by the list filters.
   for (const groups of Object.values(data.menu)) {
@@ -56,5 +60,8 @@ export default async function LocationPage({ params, searchParams }: Props) {
   }
   data.itemMetadata = {};
   const initialMeal = defaultLocationMeal(Object.keys(data.menu), data.hours) ?? "Lunch";
-  return <LocationMenu initialMeal={initialMeal} key={`${hall.slug}:${date}`} slug={hall.slug} initialDate={date} initialData={data} />;
+  return <>
+    <JsonLd data={structuredData} />
+    <LocationMenu initialMeal={initialMeal} key={`${hall.slug}:${date}`} slug={hall.slug} initialDate={date} initialData={data} />
+  </>;
 }
