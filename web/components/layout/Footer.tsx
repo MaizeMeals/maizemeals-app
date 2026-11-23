@@ -1,3 +1,4 @@
+import { FeedbackLink } from "@/components/feedback/FeedbackProvider";
 import Link from "next/link"
 import Logo from "@/components/branding/Logo"
 
@@ -28,6 +29,7 @@ export default function Footer() {
                             <li><Link href="/faq" className="hover:text-foreground transition-colors">FAQ</Link></li>
                             <li><Link href="/contact" className="hover:text-foreground transition-colors">Contact</Link></li>
                             <li><Link href="/join" className="hover:text-foreground transition-colors">Join the team</Link></li>
+                            <li><FeedbackLink className="hover:text-foreground transition-colors" /></li>
                         </ul>
                     </div>
                     <div>

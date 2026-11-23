@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { ADMIN_SECTIONS } from "@/lib/admin-nav";
 import { getStats, requireAdminPage } from "@/lib/admin/data";
+import { countNewFeedback } from "@/lib/admin/feedback";
 import { PageHeader, PageShell } from "@/components/layout/page-shell";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +28,7 @@ function Stat({ label, value, hint, href }: { label: string; value: string | num
 
 export default async function AdminHomePage() {
   const { admin } = await requireAdminPage();
-  const s = await getStats(admin);
+  const [s, newFeedback] = await Promise.all([getStats(admin), countNewFeedback(admin)]);
   const pct = (n: number | null) => (n == null ? "—" : `${Math.round(n * 100)}%`);
 
   return (
@@ -45,6 +46,7 @@ export default async function AdminHomePage() {
           href="/admin/reviews?filter=anonymous"
         />
         <Stat label="Photos awaiting review" value={s.pendingPhotos} href="/admin/photos" />
+        <Stat label="New feedback" value={newFeedback} href="/admin/feedback" />
         <Stat label="Menus posted through" value={s.menuThrough ?? "—"} hint="Latest scraped date" />
         <Stat label="Ingredients today" value={pct(s.ingredientCoverageToday)} hint="Menu items with a NetNutrition label" />
       </div>

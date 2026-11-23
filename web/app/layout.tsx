@@ -10,6 +10,7 @@ import { ThemeColorSync } from "@/components/providers/theme-color-sync";
 import { Toaster } from "@/components/ui/sonner";
 import { SignInSuccessToast } from "@/components/auth/sign-in-success-toast";
 import { ReviewDraftResume } from "@/components/reviews/ReviewDraftResume";
+import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
 import { cn } from "@/lib/utils";
 import { PostHogProvider } from "@/app/providers";
 import { QueryProvider } from "@/components/providers/query-provider";
@@ -96,6 +97,7 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
+              <FeedbackProvider>
               <ThemeColorSync />
               <ConditionalHeader>
                 <Header />
@@ -108,6 +110,7 @@ export default function RootLayout({
               <Toaster />
               <SignInSuccessToast />
               <ReviewDraftResume />
+              </FeedbackProvider>
             </ThemeProvider>
           </PostHogProvider>
         </QueryProvider>

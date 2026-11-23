@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { adminForAction } from "@/lib/admin/data";
 import { getAdminUserIds } from "@/lib/supabase/admin";
 import { removeReview } from "@/lib/reviews/remove";
+import { FEEDBACK_STATUSES, type FeedbackStatus } from "@/lib/admin/feedback";
 
 export type AdminActionResult = { success: true } | { success: false; error: string };
 
@@ -35,5 +36,27 @@ export async function adminSetBan(userId: string, length: BanLength): Promise<Ad
   const { error } = await ctx.admin.auth.admin.updateUserById(userId, { ban_duration: BAN_DURATIONS[length] });
   if (error) return { success: false, error: error.message };
   revalidatePath("/admin", "layout");
+  return { success: true };
+}
+
+/** Move a feedback message along (new → read → done, or archived). */
+export async function adminSetFeedbackStatus(id: string, status: FeedbackStatus): Promise<AdminActionResult> {
+  const ctx = await adminForAction();
+  if (!ctx) return { success: false, error: "Not allowed." };
+  if (!FEEDBACK_STATUSES.includes(status)) return { success: false, error: "Unknown status." };
+  const { error } = await ctx.admin.from("feedback").update({ status }).eq("id", id);
+  if (error) return { success: false, error: "Couldn't update that message." };
+  revalidatePath("/admin", "layout");
+  return { success: true };
+}
+
+/** Private note on a feedback message (what we did, who's on it). */
+export async function adminSaveFeedbackNote(id: string, note: string): Promise<AdminActionResult> {
+  const ctx = await adminForAction();
+  if (!ctx) return { success: false, error: "Not allowed." };
+  const trimmed = note.trim().slice(0, 2000);
+  const { error } = await ctx.admin.from("feedback").update({ admin_note: trimmed || null }).eq("id", id);
+  if (error) return { success: false, error: "Couldn't save the note." };
+  revalidatePath("/admin/feedback");
   return { success: true };
 }

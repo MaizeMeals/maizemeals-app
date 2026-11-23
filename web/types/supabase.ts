@@ -100,6 +100,54 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback: {
+        Row: {
+          admin_note: string | null
+          client_hash: string | null
+          contact_email: string | null
+          created_at: string
+          id: string
+          is_installed: boolean
+          kind: string
+          message: string
+          page_path: string | null
+          source: string
+          status: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          client_hash?: string | null
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          is_installed?: boolean
+          kind?: string
+          message: string
+          page_path?: string | null
+          source?: string
+          status?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          client_hash?: string | null
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          is_installed?: boolean
+          kind?: string
+          message?: string
+          page_path?: string | null
+          source?: string
+          status?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       favorite_foods: {
         Row: {
           created_at: string

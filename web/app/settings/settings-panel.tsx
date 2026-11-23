@@ -12,6 +12,7 @@ import { usePreferences } from "@/hooks/use-preferences";
 import { PageHeader, PageShell } from "@/components/layout/page-shell";
 import { appPrimaryButtonClassName } from "@/lib/button-styles";
 import { cn } from "@/lib/utils";
+import { useFeedback } from "@/components/feedback/FeedbackProvider";
 
 const DEALBREAKERS: { id: string; label: string }[] = [
   { id: "vegetarian", label: "Vegetarian" },
@@ -29,6 +30,7 @@ function dealbreakersOnly(filters: readonly string[]): string[] {
 
 export function SettingsPanel({ email }: { email: string | null }) {
   const { preferences, updatePreferences, loading } = usePreferences();
+  const { openFeedback } = useFeedback();
   const [slidersOpen, setSlidersOpen] = useState(false);
   const [savingDiet, setSavingDiet] = useState(false);
 
@@ -171,6 +173,21 @@ export function SettingsPanel({ email }: { email: string | null }) {
           className="mt-4 w-full sm:w-auto"
         >
           <Link href="/nutrition?edit=targets">Edit targets</Link>
+        </Button>
+      </section>
+
+      <section className="mt-10 border-t border-border pt-8">
+        <h2 className="text-lg font-semibold text-foreground">Feedback</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Found a bug or have an idea? Two students read every message.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-4 w-full sm:w-auto"
+          onClick={() => openFeedback("settings")}
+        >
+          Send feedback
         </Button>
       </section>
 

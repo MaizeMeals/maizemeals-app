@@ -103,6 +103,21 @@ export default function PrivacyPage() {
         </p>
       </Section>
 
+      <Section title="Feedback">
+        <p>
+          If you send feedback, we store your message, the type you picked
+          (idea, bug, praise or other), the page you sent it from, your
+          browser and device type, and whether you use the installed app. If
+          you are signed in, it is linked to your account; if not, we store the
+          email address you choose to give us, if any. Only MaizeMeals admins
+          can read feedback.
+        </p>
+        <p>
+          To limit spam we keep a one-way hash of your IP address with each
+          message. The address itself is not stored.
+        </p>
+      </Section>
+
       <Section title="Analytics">
         <p>
           When a PostHog project key is configured, MaizeMeals records product
@@ -180,6 +195,11 @@ export default function PrivacyPage() {
           &ldquo;Deleted user&rdquo; (or &ldquo;Anonymous&rdquo; if you posted
           them anonymously). To remove them, delete those reviews before
           deleting your account.
+        </p>
+        <p>
+          Feedback you send is kept so we can act on it. If you delete your
+          account, your feedback stays but is no longer linked to you. To have
+          a message removed, email us.
         </p>
         <p>
           Analytics events already sent to PostHog are not pulled back by
