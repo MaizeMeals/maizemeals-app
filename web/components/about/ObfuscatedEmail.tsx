@@ -9,13 +9,56 @@ import { cn } from "@/lib/utils";
  * HTML (no mailto: href, no "@"); it's assembled only when someone clicks
  * Email or Copy, which keeps simple scrapers from harvesting it.
  */
+function mailto(user: string, domain: string, subject?: string, body?: string): string {
+  const address = [user, domain].join(String.fromCharCode(64));
+  const params = new URLSearchParams();
+  if (subject) params.set("subject", subject);
+  if (body) params.set("body", body);
+  const query = params.toString().replace(/\+/g, "%20");
+  return `mailto:${address}${query ? `?${query}` : ""}`;
+}
+
+/** A button that opens a pre-filled email; the address is built only on click. */
+export function EmailButton({
+  user,
+  domain = "umich.edu",
+  subject,
+  body,
+  className,
+  children,
+}: {
+  user: string;
+  domain?: string;
+  subject?: string;
+  body?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        window.location.href = mailto(user, domain, subject, body);
+      }}
+      className={className}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function ObfuscatedEmail({
   user,
   domain = "umich.edu",
+  subject,
+  body,
   className,
 }: {
   user: string;
   domain?: string;
+  /** Pre-fills the subject line when someone clicks Email. */
+  subject?: string;
+  body?: string;
   className?: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -29,7 +72,7 @@ export function ObfuscatedEmail({
       <button
         type="button"
         onClick={() => {
-          window.location.href = `mailto:${address()}`;
+          window.location.href = mailto(user, domain, subject, body);
         }}
         className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs font-semibold hover:bg-muted"
         aria-label={`Email ${user}`}

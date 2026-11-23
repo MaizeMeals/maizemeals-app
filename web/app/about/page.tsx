@@ -49,6 +49,13 @@ export default function AboutPage() {
             </li>
           ))}
         </ul>
+        <p className="mt-4 rounded-2xl border border-border bg-muted/40 p-4 text-sm">
+          <span className="font-semibold text-foreground">Want to help build MaizeMeals?</span>{" "}
+          <span className="text-muted-foreground">We&apos;re looking for U-M students in development, data, design and growth.</span>{" "}
+          <Link href="/join" className="font-semibold text-primary underline-offset-4 hover:underline">
+            Join the team
+          </Link>
+        </p>
       </section>
 
       <p className="mt-8 text-sm text-muted-foreground">

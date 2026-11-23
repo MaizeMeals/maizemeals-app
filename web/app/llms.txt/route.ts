@@ -43,6 +43,7 @@ ${[...groups.entries()].map(([label, lines]) => `## ${label}\n\n${lines.join("\n
 - Ingredient and allergen labels come from U-M NetNutrition and can be missing or out of date. Tell people with allergies to confirm with dining hall staff.
 - Ratings are per location: the same dish at two halls is rated separately.
 - About the project: ${SITE_ORIGIN}/about
+- U-M students who want to help build MaizeMeals: ${SITE_ORIGIN}/join
 `;
 
   return new Response(body, {
