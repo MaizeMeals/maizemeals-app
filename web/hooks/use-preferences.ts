@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { MAIZE_PREFERENCES_MERGED_EVENT } from "@/lib/merge-guest-preferences";
 import {
@@ -50,13 +50,19 @@ export function usePreferences() {
 
   const supabase = createClient();
 
+  // Background reloads (another sign-in, a guest merge) keep showing the
+  // current preferences instead of flipping back to "loading".
+  const loadedOnce = useRef(false);
+  const loadedForUser = useRef<string | null | undefined>(undefined);
+
   const loadPreferences = useCallback(async () => {
-    setLoading(true);
+    if (!loadedOnce.current) setLoading(true);
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
+      loadedForUser.current = session?.user.id ?? null;
       if (session) {
         setIsGuest(false);
         setGuestTier1Done(false);
@@ -109,6 +115,7 @@ export function usePreferences() {
     } catch (error) {
       console.error("Unexpected error loading preferences", error);
     } finally {
+      loadedOnce.current = true;
       setLoading(false);
     }
   }, [supabase]);
@@ -120,7 +127,11 @@ export function usePreferences() {
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Supabase re-announces the session when a tab regains focus and on
+      // token refresh. Only a different user (sign in / out) needs a reload.
+      const id = session?.user.id ?? null;
+      if (loadedForUser.current !== undefined && id === loadedForUser.current) return;
       void loadPreferences();
     });
     return () => subscription.unsubscribe();

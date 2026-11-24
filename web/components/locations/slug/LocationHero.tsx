@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { MapPin, Clock, Heart, Share2, Info, ChevronLeft } from "lucide-react"
+import { MapPin, Clock, Heart, Share2, Navigation, ChevronLeft } from "lucide-react"
 import { useUserLocation } from "@/hooks/use-user-location"
 import { calculateDistance, formatDistance } from "@/lib/distance"
 import { getTypeForDisplay, cleanLocationName, STATUS_COLORS } from "@/lib/dining"
@@ -22,9 +22,12 @@ interface LocationHeroProps {
     color: "green" | "red" | "orange" | "gray"
     details: string
   }
+  /** Saved places (favorite_location_ids), shared with the map's side panel. */
+  isFavorite?: boolean
+  onToggleFavorite?: () => void
 }
 
-export function LocationHero({ name, type, imageUrl, address, latitude, longitude, status }: LocationHeroProps) {
+export function LocationHero({ name, type, imageUrl, address, latitude, longitude, status, isFavorite = false, onToggleFavorite }: LocationHeroProps) {
   const { coords } = useUserLocation()
 
   // Calculate distance if coords are available
@@ -40,32 +43,31 @@ export function LocationHero({ name, type, imageUrl, address, latitude, longitud
     ? distanceString
     : (address ? address.split(',')[0] : "North Campus");
 
+  // Share the page without the ?item= / ?review= state.
   const handleShare = async () => {
+    const url = `${window.location.origin}${window.location.pathname}`
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: name,
-          text: `Check out ${name} menu!`,
-          url: window.location.href,
-        });
-      } catch (err) {
-        console.error("Share failed:", err);
+        await navigator.share({ title: `${name} menu`, text: `${name} menu on MaizeMeals`, url })
+      } catch {
+        // dismissed
       }
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success("Link copied")
+    } catch {
+      toast.error("Couldn't copy the link", { description: url })
     }
   }
 
-  const handleInfo = async () => {
-    const text = `${name}\n${address || "Address not available"}\n${status.text}`;
-    try {
-      if (!navigator.clipboard?.writeText) {
-        throw new Error("Clipboard unavailable");
-      }
-      await navigator.clipboard.writeText(text);
-      toast.success("Copied to clipboard", { description: text });
-    } catch {
-      toast.error("Could not copy to clipboard", { description: text });
-    }
-  }
+  const directionsHref =
+    latitude != null && longitude != null
+      ? `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
+      : address
+        ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${address}, Ann Arbor, MI`)}`
+        : null
 
   const locationName = cleanLocationName(name, type);
 
@@ -86,8 +88,8 @@ export function LocationHero({ name, type, imageUrl, address, latitude, longitud
       </div>
 
       {/* Content over bottom gradient (dark area for readable type) */}
-      <div className="absolute bottom-0 left-0 w-full p-4 md:p-6 z-10">
-        <div className="flex justify-between items-end">
+      <div className="absolute bottom-0 left-0 w-full z-10">
+        <div className="container mx-auto flex justify-between items-end p-4 md:px-4 md:py-6">
           <div className="min-w-0 pr-2">
             <Link
               href="/locations"
@@ -122,25 +124,35 @@ export function LocationHero({ name, type, imageUrl, address, latitude, longitud
           {/* Action Buttons (Vertical on Mobile, Horizontal on Desktop) */}
           <div className="absolute right-4 bottom-20 flex flex-col gap-3 md:static md:flex-row md:gap-3">
              <button
+               type="button"
                onClick={handleShare}
-               className="md:hidden p-2 md:p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 active:scale-95 transition-all shadow-lg"
-               aria-label="Share"
+               className="p-2 md:p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 active:scale-95 transition-all shadow-lg"
+               aria-label={`Share ${name}`}
              >
                 <Share2 className="w-5 h-5" />
              </button>
-             <button
-               className="p-2 md:p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 active:scale-95 transition-all shadow-lg"
-               aria-label="Favorite"
-             >
-                <Heart className="w-5 h-5" />
-             </button>
-             <button
-               onClick={handleInfo}
-               className="p-2 md:p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 active:scale-95 transition-all shadow-lg"
-               aria-label="Info"
-             >
-                <Info className="w-5 h-5" />
-             </button>
+             {onToggleFavorite ? (
+               <button
+                 type="button"
+                 onClick={onToggleFavorite}
+                 aria-pressed={isFavorite}
+                 aria-label={isFavorite ? `Remove ${name} from saved places` : `Save ${name}`}
+                 className="p-2 md:p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 active:scale-95 transition-all shadow-lg"
+               >
+                  <Heart className={isFavorite ? "w-5 h-5 fill-maize text-maize" : "w-5 h-5"} />
+               </button>
+             ) : null}
+             {directionsHref ? (
+               <a
+                 href={directionsHref}
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 className="p-2 md:p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 active:scale-95 transition-all shadow-lg"
+                 aria-label={`Directions to ${name}`}
+               >
+                  <Navigation className="w-5 h-5" />
+               </a>
+             ) : null}
           </div>
         </div>
       </div>

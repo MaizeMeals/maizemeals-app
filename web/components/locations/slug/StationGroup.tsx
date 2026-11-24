@@ -20,7 +20,7 @@ export function StationGroup({ station, items, onItemClick, highlightedItemId, m
     <div className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
        <button
          onClick={() => setIsOpen(!isOpen)}
-         className="w-full flex items-center gap-2 text-lg font-extrabold text-foreground uppercase tracking-wider mb-3 px-1 hover:opacity-80 transition-opacity text-left"
+         className="w-full flex items-center gap-2 font-heading text-lg font-bold text-foreground mb-3 px-1 hover:opacity-80 transition-opacity text-left"
        >
           {isOpen ? <ChevronDown className="w-5 h-5 text-maize" /> : <ChevronRight className="w-5 h-5 text-maize" />}
           {station}
