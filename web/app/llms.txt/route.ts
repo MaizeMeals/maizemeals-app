@@ -1,7 +1,9 @@
 import { getLocationDirectory } from "@/lib/locations/directory";
 import { SITE_ORIGIN } from "@/lib/site";
 
-export const revalidate = 86400;
+// Rendered per request (the CDN caches it for a day via Cache-Control), so
+// builds without database access still succeed.
+export const dynamic = "force-dynamic";
 
 const TYPE_LABEL: Record<string, string> = {
   "DINING HALLS": "Dining halls",
@@ -12,7 +14,10 @@ const TYPE_LABEL: Record<string, string> = {
 
 /** Plain-text guide for AI assistants (https://llmstxt.org). */
 export async function GET() {
-  const halls = await getLocationDirectory();
+  const halls = await getLocationDirectory().catch((err) => {
+    console.error("[llms.txt] location directory unavailable:", err);
+    return [];
+  });
   const groups = new Map<string, string[]>();
   for (const h of halls) {
     const label = TYPE_LABEL[(h.type ?? "").toUpperCase()] ?? "Other locations";
