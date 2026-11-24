@@ -8,7 +8,9 @@ import { MenuTabs } from "@/components/locations/slug/MenuTabs"
 import { StationGroup } from "@/components/locations/slug/StationGroup"
 import { useItemDetails } from "@/components/menus/DishDetail"
 import { DetailDrawer, ItemDetailSidebar } from "@/components/locations/slug/DetailDrawer"
-import { SocialProof } from "@/components/locations/slug/SocialProof"
+import { easternToday } from "@/lib/day-menu/scoring"
+import { RecentReviews } from "@/components/locations/slug/RecentReviews"
+import { toast } from "@/lib/toast"
 import { ReviewItemPickerModal } from "@/components/locations/slug/ReviewItemPickerModal"
 import { ReviewModal } from "@/components/locations/detail-panel/ReviewModal"
 import { Utensils } from "lucide-react"
@@ -92,6 +94,17 @@ function findMealForItem(menu: MenuData, itemId: string): string | null {
     }
   }
   return null
+}
+
+/** "2026-11-24" → "Tuesday, November 24" (or "Tue, Nov 24" when short). */
+function longDate(date: string, short = false): string {
+  const [y, m, d] = date.split("-").map(Number)
+  return new Date(Date.UTC(y, m - 1, d, 12)).toLocaleDateString("en-US", {
+    weekday: short ? "short" : "long",
+    month: short ? "short" : "long",
+    day: "numeric",
+    timeZone: "UTC",
+  })
 }
 
 export default function LocationMenu({ slug, initialDate, initialData, initialMeal }: {
@@ -393,12 +406,22 @@ export default function LocationMenu({ slug, initialDate, initialData, initialMe
         latitude={hall.latitude}
         longitude={hall.longitude}
         status={status}
+        isFavorite={preferences.favorite_location_ids.includes(hall.id)}
+        onToggleFavorite={() => {
+          const saved = preferences.favorite_location_ids.includes(hall.id)
+          const next = saved
+            ? preferences.favorite_location_ids.filter((id) => id !== hall.id)
+            : [...preferences.favorite_location_ids, hall.id]
+          void updatePreferences({ favorite_location_ids: next })
+          toast.success(saved ? `Removed ${hall.name} from saved places` : `Saved ${hall.name}`)
+        }}
       />
 
       <p className="container mx-auto px-4 pt-3 text-sm text-muted-foreground">
-        Menu for <time dateTime={selectedDate}>{selectedDate}</time>
+        {selectedDate === easternToday() ? "Today’s menu" : "Menu"} for{" "}
+        <time dateTime={selectedDate}>{longDate(selectedDate)}</time>
         {nextOpening && <> · Next opening: <Link className="underline" href={`/locations/${slug}?date=${nextOpening.date}`}>
-          {nextOpening.date} at {formatTime(nextOpening.start_time)}
+          {longDate(nextOpening.date, true)} at {formatTime(nextOpening.start_time)}
         </Link></>}
       </p>
       <div className="lg:flex lg:w-full lg:items-start">
@@ -523,7 +546,7 @@ export default function LocationMenu({ slug, initialDate, initialData, initialMe
       </div>
 
       {/* 5. Social Proof */}
-      <SocialProof />
+      <RecentReviews hallId={hall.id} slug={slug} onAddReview={() => setReviewPickerOpen(true)} />
 
       <ReviewItemPickerModal
         open={reviewPickerOpen}

@@ -84,8 +84,14 @@ function start() {
   if (started || typeof window === "undefined") return;
   started = true;
   void load();
-  createClient().auth.onAuthStateChange((event) => {
-    if (event === "SIGNED_IN" || event === "SIGNED_OUT") void load();
+  // SIGNED_IN also fires when a tab regains focus; reload only for a new user.
+  let lastUser: string | null | undefined;
+  createClient().auth.onAuthStateChange((_event, session) => {
+    const id = session?.user.id ?? null;
+    if (id === lastUser) return;
+    const first = lastUser === undefined;
+    lastUser = id;
+    if (!first) void load();
   });
 }
 
